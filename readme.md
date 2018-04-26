@@ -30,7 +30,7 @@ auto main(int argc, char const *argv[])-> int {
    kernel.on(device, 1)[{64}]({128, 0.1}, d_y, d_x);    // run once in queue 1, wait for completion
    d_y.to_host(y);                                      // copy data back to host
 
-   {                                                    // kinda same but a bit different
+   {                                                    // kinda same but run 10 times
       auto program = kernel.on(device);                 // instantiate kernel on the device
                            .with({64});                 // set the specialization constants
                            .bind({128, 0.1}, d_y, d_x); // bind arrays and non-array parameters
