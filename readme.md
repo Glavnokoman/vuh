@@ -1,7 +1,6 @@
-# Vuh. A Vulkan-based library for GPGPU computing
-Because Vulkan runs virtually on any modern hardware/OS combination.
-And provides a low level interface to the hardware.
-So you have all the power at your fingertips.
+# Vuh. A Vulkan-based library for GPGPU computing.
+Vulkan runs virtually on any modern hardware/OS combination.
+It provides a low level interface to the hardware so you have all the power at your fingertips.
 At the price of ridiculous amount of boilerplate.
 Vuh aims to reduce the boilerplate to a reasonable minimum in most common GPGPU computing scenarios.
 
@@ -9,8 +8,8 @@ Vuh aims to reduce the boilerplate to a reasonable minimum in most common GPGPU 
 Draft saxpy implementation using vuh.
 ```c++
 auto main(int argc, char const *argv[])-> int {
-   auto y = std::vector<float>(100, 1.0f);
-   auto x = std::vector<float>(100, 2.0f);
+   auto y = std::vector<float>(128, 1.0f);
+   auto x = std::vector<float>(128, 2.0f);
 
    auto instance = vuh::Instance();
    auto device = instance.devices()[0];                 // just get the first compute-capable device
@@ -31,11 +30,11 @@ auto main(int argc, char const *argv[])-> int {
    d_y.to_host(y);                                      // copy data back to host
 
    {                                                    // kinda same but run 10 times
-      auto program = kernel.on(device);                 // instantiate kernel on the device
-                           .with({64});                 // set the specialization constants
+      auto program = kernel.on(device)                  // instantiate kernel on the device
+                           .with({64})                  // set the specialization constants
                            .bind({128, 0.1}, d_y, d_x); // bind arrays and non-array parameters
       for(size_t i = 0; i < 10; ++i){
-         program.run();                                 // push to default queue wait for completion
+         program.run();                                 // push to default queue (0). wait for completion
       }
    }
 
