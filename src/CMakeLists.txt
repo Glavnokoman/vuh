@@ -1,10 +1,9 @@
 find_package(Vulkan REQUIRED)
 
-add_library(vuh SHARED)
+add_library(vuh SHARED instance.cpp)
 target_sources(vuh PRIVATE
    device.cpp
    helpers.cpp
-   instance.cpp
    pipe.cpp
    string_view.cpp
 )
