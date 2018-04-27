@@ -39,7 +39,8 @@ auto main(int argc, char const *argv[])-> int {
       }
    } // scoped to release gpu resources acquired by program.bind()
 
-   return 0;}
+   return 0;
+}
 ```
 with the corresponding (compute) shader part:
 ```glsl
