@@ -28,6 +28,7 @@ namespace vuh {
 		}
 
 		auto batch(const Batch&)-> Program& {throw "not implemented";}
+		auto batch(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {throw "not implemented";}
 		auto bind(const Specs&)-> Program& {throw "not implemented";}
 		auto bind(const Params&, Arrays)-> Program& { throw "not implemented";}
 		auto bind(const Specs&, const Params&, Arrays)-> Program& {throw "not implemented";}
@@ -36,10 +37,10 @@ namespace vuh {
 		auto operator()(const Specs&, const Params&, Arrays) const-> void {throw "not implemented";}
 	private: // data
 		vuh::Pipe _pipe;
+		vuh::Device& _device;
 		vk::ShaderModule _shader;
 		vk::DescriptorSetLayout _dsclayout;
 		vk::DescriptorPool _dscpool;
 		vk::CommandBuffer _cmdbuffer;
-		vuh::Device& _device;
 	}; // class Program
 } // namespace vuh
