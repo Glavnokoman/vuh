@@ -22,5 +22,5 @@ function(add_catch_test arg_test_name arg_test_src)
    # add_dependencies(${arg_test_name} link_shaders_test)
 endfunction()
 
-# add_catch_test(test_saxpy_sync saxpy_sync_t.cpp)
-# target_link_libraries(test_saxpy_sync PRIVATE saxpy_sync)
+add_catch_test(test_saxpy_sync saxpy_sync_t.cpp)
+target_link_libraries(test_saxpy_sync PRIVATE vuh)

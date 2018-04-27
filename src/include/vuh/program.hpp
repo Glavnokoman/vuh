@@ -1,27 +1,39 @@
 #pragma once
 
-#include "kernel.hpp"
 #include "pipe.h"
 #include "device.h"
+#include "kernel.hpp"
 
 #include <vulkan/vulkan.hpp>
 
 namespace vuh {
-	///
-	template<class Specs
-	         , class Params
-	         , class Arrays
-	         >
+	/// work batch dimensions
+	struct Batch {
+		uint32_t x;
+		uint32_t y = 1;
+		uint32_t z = 1;
+	};
+	
+	/// Runnable program. Allows to bind the actual parameters to the interface and execute 
+	/// kernel on a Vulkan device.
+	template< class Specs
+	        , class Params
+	        , class Arrays
+	        >
 	class Program {
 	public:
-		explicit Program(vuh::Device& device, const Kernel<Specs, Params, Arrays>& kernel);
+		explicit Program(vuh::Device& device, const Kernel<Specs, Params, Arrays>& kernel) 
+		{
+			throw "not implemented";
+		}
 
-		auto with(const Specs&) const-> const Program&;
-		auto operator[](const Specs&) const-> const Program&;
-		auto bind(const Params&, Arrays) const-> const Program&;
-		auto unbind() const-> void;
-		auto run() const-> void;
-		auto operator()(const Params&, Arrays) const-> void;
+		auto batch(const Batch&)-> Program& {throw "not implemented";}
+		auto bind(const Specs&)-> Program& {throw "not implemented";}
+		auto bind(const Params&, Arrays)-> Program& { throw "not implemented";}
+		auto bind(const Specs&, const Params&, Arrays)-> Program& {throw "not implemented";}
+		auto unbind()-> void {throw "not implemented";}
+		auto run() const-> void {throw "not implemented";}
+		auto operator()(const Specs&, const Params&, Arrays) const-> void {throw "not implemented";}
 	private: // data
 		vuh::Pipe _pipe;
 		vk::ShaderModule _shader;

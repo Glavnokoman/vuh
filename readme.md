@@ -19,19 +19,20 @@ auto main(int argc, char const *argv[])-> int {
    auto d_x = vuh::Array<float>::from_host(x, device);  // same for x array (and a bit shorter)
 
    using specs_t = std::tuple<uint32_t>;                // specialization constants, here it is the workgroup size.
-   using arrays_t = vuh::typelist<float*, float*>;      // array parameters to kernel
+   using arrays_t = vuh::typelist<float, const float>;  // value types of kernel array parameters
    using params_t = struct {                            // non-array parameters to kernel (push-constants), should mirror exactly corresponding structure in the shader
       uint32_t size;                                    // array size
       float a;                                          // saxpy scaling parameter
    };
 
-   auto kernel = vuh::Kernel<specs_t, arrays_t, params_t>("shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
-   kernel.on(device, 1)[{64}]({128, 0.1}, d_y, d_x);    // run once in queue 1, wait for completion
+   auto kernel = vuh::Kernel<specs_t, arrays_t, params_t>("shaders/saxpy.spv"); // define kernel by linking interface and spir-v implementation
+   kernel.on(device).batch(128/64)(specs_t{64}, {128, 0.1}, d_y, d_x);          // run once, wait for completion
    d_y.to_host(y);                                      // copy data back to host
 
    {                                                    // kinda same but run 10 times
       auto program = kernel.on(device)                  // instantiate kernel on the device
-                           .with({64})                  // set the specialization constants
+                           .batch(128/64)               // specify number of workgroups to run
+                           .bind(specs_t{64})           // set the specialization constants
                            .bind({128, 0.1}, d_y, d_x); // bind arrays and non-array parameters
       for(size_t i = 0; i < 10; ++i){
          program.run();                                 // push to default queue (0). wait for completion
