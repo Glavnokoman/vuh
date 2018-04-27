@@ -9,7 +9,7 @@ auto main(int argc, char const *argv[])-> int {
    auto y = std::vector<float>(128, 1.0f);
    auto x = std::vector<float>(128, 2.0f);
    
-   auto instance = vuh::instance();
+   auto instance = vuh::Instance();
    auto device = instance.devices()[0];                  // get the first available device
    
    auto d_y = vuh::Array<float>(device, y.size());       // allocate memory on device

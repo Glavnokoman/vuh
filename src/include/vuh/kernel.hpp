@@ -9,7 +9,7 @@
 
 namespace vuh {
 	///
-	template<class... Ts> struct arrays_of{};
+	template<class... Ts> struct typelist{};
 
 	template<class Specs, class Params, class Arrays> class Program;
 
