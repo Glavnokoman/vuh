@@ -13,8 +13,8 @@ auto main(int argc, char const *argv[])-> int {
    auto device = instance.devices()[0];                  // get the first available device
    
    auto d_y = vuh::Array<float>(device, y.size());       // allocate memory on device
-   d_y.from_host(y);                                     // synchronous copy from host iterable to device buffer
-   auto d_x = vuh::Array<float>::from_host(x, device);   // same for x array
+   d_y.fromHost(y);                                     // synchronous copy from host iterable to device buffer
+   auto d_x = vuh::Array<float>::fromHost(x, device);   // same for x array
    
    using specs_t = std::tuple<uint32_t>;                 // specialization constants, here it is the workgroup size.
    using array_params_t = vuh::typelist<float, const float>; // array parameters to kernel
@@ -36,7 +36,7 @@ auto main(int argc, char const *argv[])-> int {
       }
    }
 
-   d_y.to_host(y);                                       // copy data back to host
+   d_y.toHost(y);                                       // copy data back to host
    
    return 0;
 }

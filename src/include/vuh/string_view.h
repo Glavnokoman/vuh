@@ -15,17 +15,18 @@ namespace vuh {
 				using pointer = char*;
 				using const_pointer = const char*;
 
-				explicit string_view(const std::string& in)
+				string_view(const std::string& in)
 				   : _begin(in.data()), _end(_begin + in.size()) {}
 
-				explicit string_view(const char* in, size_t size)
+				string_view(const char* in, size_t size)
 				   : _begin(in), _end(in + size) {}
 
-				template<size_t N>  explicit string_view(const char in[N])
+				string_view(const char* in)
+				   : _begin(in), _end(in + std::strlen(in)) {}
+
+				template<size_t N> string_view(const char in[N])
 				   : _begin(in), _end(in + N) {}
 
-				explicit string_view(const char* in)
-				   : _begin(in), _end(in + std::strlen(in)) {}
 
 				auto operator[](size_t i) const-> char { return *(_begin + i);}
 				auto data() const-> const_pointer { return _begin; }
