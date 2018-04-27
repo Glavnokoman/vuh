@@ -8,5 +8,7 @@ set(CMAKE_CXX_STANDARD 14)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/config)
 enable_testing()
 
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wall")
+
 add_subdirectory(src)
 add_subdirectory(test)

@@ -5,7 +5,7 @@
 #include <tuple>
 #include <cstdint>
 
-auto main(int argc, char const *argv[])-> int {
+auto main(int /*argc*/, char const */*argv*/[])-> int {
    auto y = std::vector<float>(128, 1.0f);
    auto x = std::vector<float>(128, 2.0f);
    
@@ -13,8 +13,8 @@ auto main(int argc, char const *argv[])-> int {
    auto device = instance.devices()[0];                  // get the first available device
    
    auto d_y = vuh::Array<float>(device, y.size());       // allocate memory on device
-   d_y.fromHost(y);                                     // synchronous copy from host iterable to device buffer
-   auto d_x = vuh::Array<float>::fromHost(x, device);   // same for x array
+   d_y.fromHost(y);                                      // synchronous copy from host iterable to device buffer
+   auto d_x = vuh::Array<float>::fromHost(x, device);    // same for x array
    
    using specs_t = std::tuple<uint32_t>;                 // specialization constants, here it is the workgroup size.
    using array_params_t = vuh::typelist<float, const float>; // array parameters to kernel
