@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vuh/string_view.h>
-
 #include <vulkan/vulkan.hpp>
 
 #include <vector>
@@ -9,14 +7,16 @@
 namespace vuh {
 	class Device;
 
+	using debug_reporter_t = PFN_vkDebugReportCallbackEXT;
+
 	/// Mostly RAII wrapper over Vulkan instance.
-	/// Instance of the vuh::Instance defines layers and extensions in use
-	/// and can enumerate present devices.
+	/// Defines layers and extensions in use and can enumerate present compute-capable devices.
 	class Instance {
 	public:
-		explicit Instance( const std::vector<string_view>& layers={}
-		                 , const std::vector<string_view>& extension={}
-		                 , vk::ApplicationInfo info={nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}
+		explicit Instance(const std::vector<const char*>& layers={}
+		                 , const std::vector<const char*>& extension={}
+		                 , const vk::ApplicationInfo& info={nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}
+		                 , debug_reporter_t report_callback=nullptr
 		                 );
 
 		~Instance() noexcept;
@@ -27,9 +27,9 @@ namespace vuh {
 		Instance& operator= (Instance&&) = default;
 
 		auto devices()-> std::vector<vuh::Device>;
-		auto resetMessageHandler(VkDebugReportCallbackEXT)-> void;
+		auto resetMessageHandler(debug_reporter_t)-> void;
 	protected: // data
-		vk::Instance _instance;               ///< vulkan instance
-		VkDebugReportCallbackEXT _report_cbk; ///< report callback to handle messages sent by validation layers
+		vk::Instance _instance;             ///< vulkan instance
+		VkDebugReportCallbackEXT _reporter; ///< report callback to handle messages sent by validation layers
 	}; // class Instance
 } // namespace vuh

@@ -8,7 +8,7 @@ namespace vuh {
 		using string_view = std::string_view;
 	#else
 		namespace detail {
-			/// Poor-man string_view. Implements subset of std::string_view interface.
+			/// Poor-man c++17 string_view replacement (partial).
 			class string_view {
 			public:
 				using value_type = char;
@@ -37,6 +37,16 @@ namespace vuh {
 				auto cbegin() const-> const_pointer { return _begin; }
 				auto end() const-> const_pointer { return _end; }
 				auto cend() const-> const_pointer { return _end; }
+
+				template<class U>
+				friend auto operator==(string_view s, const U& other){
+					using std::begin;
+					return 0 == std::strncmp(s._begin, begin(other), s.size());
+				}
+
+				friend auto operator== (string_view s, const char* other)-> bool {
+					return 0 == std::strncmp(s._begin, other, s.size());
+				}
 			private: // data
 				const const_pointer _begin;
 				const const_pointer _end = _begin;
