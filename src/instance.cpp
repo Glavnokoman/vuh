@@ -123,7 +123,7 @@ namespace vuh {
 	                   )
 	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
 	   , _reporter(registerReporter(_instance, report_callback ? report_callback : debugReporter))
-	   , _layers(filter_layers(layers))
+	   , _layers(filter_layers(layers)) // @todo: fix layers filtered twice.
 	{
 	}
 
