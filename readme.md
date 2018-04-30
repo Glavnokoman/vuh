@@ -5,7 +5,7 @@ At the price of ridiculous amount of boilerplate.
 Vuh aims to reduce the boilerplate to a reasonable minimum in most common GPGPU computing scenarios.
 
 # Motivating Example
-Draft saxpy implementation using vuh.
+saxpy implementation using vuh.
 ```c++
 auto main(int argc, char const *argv[])-> int {
    auto y = std::vector<float>(128, 1.0f);
@@ -61,7 +61,6 @@ void main(){
    arr_y[id] += params.a*arr_x[id];         // saxpy
 }
 ```
-Pity it does not work yet like this.
 
 # Build & Install
 ## Dependencies
