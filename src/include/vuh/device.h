@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vuh/string_view.h>
-
 #include <vulkan/vulkan.hpp>
 
 #include <vector>
@@ -12,26 +10,31 @@ namespace vuh {
 	///
 	class Device {
 	public:
-		explicit Device(vk::PhysicalDevice physdevice, const std::vector<string_view> layers={});
+		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers={});
 		~Device() noexcept;
 
 		Device(const Device&); // copy needs to create another logical device hande to the same physical device
-		Device& operator= (const Device&);
+		auto operator=(const Device&)-> Device&;
 		Device(Device&&) = default;
-		Device& operator= (Device&&) = default;
+		auto operator=(Device&&)-> Device& = default;
 
 		auto properties() const-> vk::PhysicalDeviceProperties;
 		auto isDiscreteGPU() const-> bool;
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
-		auto numComputeQueues() const-> uint32_t;
-		auto numTransferQueues() const-> uint32_t;
+		auto numComputeQueues() const-> uint32_t { return 1u;}
+		auto numTransferQueues() const-> uint32_t { return 1u;}
+	private: // helpers
+		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
+		                , const std::vector<vk::QueueFamilyProperties>& families);
+		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
+	                   , uint32_t computeFamilyId, uint32_t transferFamilyId);
 	protected: // data
-		vk::Device _dev;
-		vk::PhysicalDevice _physdev;
-		vk::CommandPool    _cmdpool;
-		std::vector<string_view> _layers;
-		uint32_t _compute_que_id = uint32_t(-1);   ///< compute queue family id. -1 if device does not have compute-capable queues.
-		uint32_t _transfer_ques_id = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
+		vk::Device _dev;                           ///< logical device handle
+		vk::PhysicalDevice _physdev;               ///< handle to associated physical device
+		vk::CommandPool    _cmdpool;               ///< handle to command pool associated with the logical device
+		std::vector<const char*> _layers;          ///< layers activated on device. Better be the same as on underlying instance.
+		uint32_t _computeFamilyId = uint32_t(-1);  ///< compute queue family id. -1 if device does not have compute-capable queues.
+		uint32_t _transferFamilyId = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
 	}; // class Device
 }

@@ -1,4 +1,5 @@
 #include "vuh/instance.h"
+#include "vuh/device.h"
 
 #include <algorithm>
 #include <iostream>
@@ -97,12 +98,12 @@ namespace {
 		auto createInfo = VkDebugReportCallbackCreateInfoEXT{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 		createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT
-		      | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+		                   | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
 		createInfo.pfnCallback = reporter;
 
-		// We have to explicitly load this function
+		// explicitly load this function
 		auto createFN = PFN_vkCreateDebugReportCallbackEXT(
-		         instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
+		                                  instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
 		if(createFN){
 			createFN(instance, &createInfo, nullptr, &ret);
 		} else {
@@ -110,8 +111,6 @@ namespace {
 		}
 		return ret;
 	}
-
-
 } // namespace
 
 namespace vuh {
@@ -124,10 +123,11 @@ namespace vuh {
 	                   )
 	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
 	   , _reporter(registerReporter(_instance, report_callback ? report_callback : debugReporter))
+	   , _layers(filter_layers(layers))
 	{
 	}
 
-	///
+	/// Clean instance resources.
 	Instance::~Instance() noexcept {
 		if(_reporter){// unregister callback.
 			auto destroyFn = PFN_vkDestroyDebugReportCallbackEXT(
@@ -140,4 +140,9 @@ namespace vuh {
 		_instance.destroy();
 	}
 
+	/// list of local compute-capable devices
+	auto Instance::devices()-> std::vector<Device>
+	{
+		throw "not implemented";
+	}
 } // namespace vuh

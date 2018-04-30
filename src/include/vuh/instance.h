@@ -27,9 +27,9 @@ namespace vuh {
 		Instance& operator= (Instance&&) = default;
 
 		auto devices()-> std::vector<vuh::Device>;
-		auto resetMessageHandler(debug_reporter_t)-> void;
 	protected: // data
 		vk::Instance _instance;             ///< vulkan instance
 		VkDebugReportCallbackEXT _reporter; ///< report callback to handle messages sent by validation layers
+		std::vector<const char*> _layers;   ///< some retarded drivers still require the device layers to be explicitely set, hence this variable.
 	}; // class Instance
 } // namespace vuh
