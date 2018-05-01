@@ -14,9 +14,10 @@ namespace vuh {
 		~Device() noexcept;
 
 		Device(const Device&);
-		auto operator=(const Device&)-> Device&;
-		Device(Device&&) = default;
-		auto operator=(Device&&)-> Device& = default;
+		auto operator=(Device)-> Device&;
+		Device(Device&&) noexcept;
+		auto operator=(Device&&) noexcept-> Device&;
+		friend auto swap(Device& d1, Device& d2)-> void;
 
 		auto properties() const-> vk::PhysicalDeviceProperties;
 		auto numComputeQueues() const-> uint32_t { return 1u;}
@@ -34,11 +35,15 @@ namespace vuh {
 		auto destroyBuffer(vk::Buffer)-> void;
 		auto computeCmdBuffer()-> vk::CommandBuffer {return _cmdbuf_compute;}
 		auto transferCmdBuffer()-> vk::CommandBuffer;
+		auto allocComputeCommandBuffer(vk::CommandBufferLevel level=vk::CommandBufferLevel::ePrimary
+		                              )-> vk::CommandBuffer;
+
 	private: // helpers
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
 		                , const std::vector<vk::QueueFamilyProperties>& families);
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
 	                   , uint32_t computeFamilyId, uint32_t transferFamilyId);
+		auto release() noexcept-> void;
 	protected: // data
 		vk::Device _dev;                           ///< logical device handle
 		vk::PhysicalDevice _physdev;               ///< handle to associated physical device

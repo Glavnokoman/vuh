@@ -1,25 +1,29 @@
 #include <vuh/device.h>
 
+#include <cassert>
 #include <limits>
 #define ARR_VIEW(x) uint32_t(x.size()), x.data()
 
 namespace {
 	// create logical device to interact with the physical one
 	auto createDevice(const vk::PhysicalDevice& physicalDevice, const std::vector<const char*>& layers
-	                  , uint32_t computeFamilyID
-	                  , uint32_t transferFamilyID
+	                  , uint32_t compute_family_id
+	                  , uint32_t transfer_family_id
 	                  )-> vk::Device
 	{
 		// When creating the device specify what queues it has
 		auto p = float(1.0); // queue priority
 		auto queueCIs = std::array<vk::DeviceQueueCreateInfo, 2>{};
-		queueCIs[0] = vk::DeviceQueueCreateInfo(vk::DeviceQueueCreateFlags(), computeFamilyID, 1, &p);
-		auto numQueues = uint32_t(1);
-		if(transferFamilyID != computeFamilyID){
-			queueCIs[1] = vk::DeviceQueueCreateInfo(vk::DeviceQueueCreateFlags(), transferFamilyID, 1, &p);
-			numQueues += 1;
+		queueCIs[0] = vk::DeviceQueueCreateInfo(vk::DeviceQueueCreateFlags()
+		                                        , compute_family_id, 1, &p);
+		auto n_queues = uint32_t(1);
+		if(transfer_family_id != compute_family_id){
+			queueCIs[1] = vk::DeviceQueueCreateInfo(vk::DeviceQueueCreateFlags()
+			                                        , transfer_family_id, 1, &p);
+			n_queues += 1;
 		}
-		auto devCI = vk::DeviceCreateInfo(vk::DeviceCreateFlags(), numQueues, queueCIs.data(), ARR_VIEW(layers));
+		auto devCI = vk::DeviceCreateInfo(vk::DeviceCreateFlags(), n_queues, queueCIs.data()
+		                                  , ARR_VIEW(layers));
 
 		return physicalDevice.createDevice(devCI, nullptr);
 	}
@@ -43,10 +47,18 @@ namespace {
 		}
 		return r;
 	}
+
+	///
+	auto allocCmdBuffer(vk::Device device, vk::CommandPool pool
+	                    , vk::CommandBufferLevel level=vk::CommandBufferLevel::ePrimary
+	                    )-> vk::CommandBuffer
+	{
+		auto commandBufferAI = vk::CommandBufferAllocateInfo(pool, level, 1);
+		return device.allocateCommandBuffers(commandBufferAI)[0];
+	}
 } // namespace
 
 namespace vuh {
-
 	///
 	Device::Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers)
 	   : Device(physdevice, layers, physdevice.getQueueFamilyProperties())
@@ -67,25 +79,74 @@ namespace vuh {
 	  : _dev(createDevice(physdevice, layers, computeFamilyId, transferFamilyId))
 	  , _physdev(physdevice)
 	  , _cmdpool_compute(_dev.createCommandPool({vk::CommandPoolCreateFlags(), computeFamilyId}))
+	  , _cmdbuf_compute(allocCmdBuffer(_dev, _cmdpool_compute))
 	  , _layers(layers)
 	  , _computeFamilyId(computeFamilyId)
 	  , _transferFamilyId(transferFamilyId)
-	{}
+	{
+	}
+
+	/// release resources associated with device
+	auto Device::release() noexcept-> void {
+		if(_dev){
+			_dev.destroyCommandPool(_cmdpool_compute);
+			if(_transferFamilyId != _computeFamilyId){
+				_dev.destroyCommandPool(_cmdpool_transfer);
+			}
+			_dev.destroy();
+		}
+	}
 
 	/// Release resources associated with a logical device
 	Device::~Device() noexcept {
-		_dev.destroyCommandPool(_cmdpool_compute);
-		_dev.destroy();
+		release();
 	}
 
-	/// Copy constructor. Creates new handle to the same physical device, same layers and queue families.
+	/// Copy constructor. Creates new handle to the same physical device, and recreates associated pools
 	Device::Device(const Device& other)
 	   : Device(other._physdev, other._layers, other._computeFamilyId, other._transferFamilyId)
 	{}
 
-	/// copy operator.
-	auto Device::operator=(const Device& other)-> Device& {
-		return *this = Device(other);
+	/// Copy assignment.
+	auto Device::operator=(Device other)-> Device& {
+		swap(*this, other);
+		return *this;
+	}
+
+	/// move constructor.
+	Device::Device(Device&& other) noexcept
+	   : _dev(other._dev)
+	   , _physdev(other._physdev)
+	   , _cmdpool_compute(other._cmdpool_compute)
+	   , _cmdbuf_compute(other._cmdbuf_compute)
+	   , _cmdpool_transfer(other._cmdpool_transfer)
+	   , _cmdbuf_transfer(other._cmdbuf_transfer)
+	   , _layers(std::move(other._layers))
+	   , _computeFamilyId(other._computeFamilyId)
+	   , _transferFamilyId(other._transferFamilyId)
+	{
+		other._dev = nullptr;
+	}
+
+	/// move assignment
+	auto Device::operator=(Device&& o) noexcept-> Device& {
+		swap(*this, o);
+		o._dev = nullptr;
+		return *this;
+	}
+
+	/// Swap the guts of two devices (member-wise)
+	auto swap(Device& d1, Device& d2)-> void {
+		using std::swap;
+		swap(d1._dev, d2._dev);
+		swap(d1._physdev         , d2._physdev         );
+		swap(d1._cmdpool_compute , d2._cmdpool_compute );
+		swap(d1._cmdbuf_compute  , d2._cmdbuf_compute  );
+		swap(d1._cmdpool_transfer, d2._cmdpool_transfer);
+		swap(d1._cmdbuf_transfer , d2._cmdbuf_transfer );
+		swap(d1._layers	          , d2._layers          );
+		swap(d1._computeFamilyId , d2._computeFamilyId );
+		swap(d1._transferFamilyId, d2._transferFamilyId);
 	}
 
 	/// @return physical device properties
@@ -161,12 +222,20 @@ namespace vuh {
 	/// @return handle to command buffer for transfer commands
 	auto Device::transferCmdBuffer()-> vk::CommandBuffer {
 		if(!_cmdbuf_transfer){
-			// initialize the command buffer and corresponding pool for transfer commands
-			throw "not implemented";
+			assert(!_cmdpool_transfer); // command buffer is supposed to be created together with the command pool
+			if(_transferFamilyId == _computeFamilyId){
+				_cmdpool_transfer = _cmdpool_compute;
+			} else {
+				_cmdpool_transfer = _dev.createCommandPool({vk::CommandPoolCreateFlags(), _transferFamilyId});
+			}
+			_cmdbuf_transfer = allocCmdBuffer(_dev, _cmdpool_transfer);
 		}
 		return _cmdbuf_transfer;
 	}
 
+	/// @return newly allocated command buffer
+	auto Device::allocComputeCommandBuffer(vk::CommandBufferLevel level)-> vk::CommandBuffer {
+		return allocCmdBuffer(_dev, _cmdpool_compute, level);
+	}
+
 } // namespace vuh
-
-
