@@ -66,7 +66,7 @@ namespace vuh {
 	               )
 	  : _dev(createDevice(physdevice, layers, computeFamilyId, transferFamilyId))
 	  , _physdev(physdevice)
-	  , _cmdpool(_dev.createCommandPool({vk::CommandPoolCreateFlags(), computeFamilyId}))
+	  , _cmdpool_compute(_dev.createCommandPool({vk::CommandPoolCreateFlags(), computeFamilyId}))
 	  , _layers(layers)
 	  , _computeFamilyId(computeFamilyId)
 	  , _transferFamilyId(transferFamilyId)
@@ -74,7 +74,7 @@ namespace vuh {
 
 	/// Release resources associated with a logical device
 	Device::~Device() noexcept {
-		_dev.destroyCommandPool(_cmdpool);
+		_dev.destroyCommandPool(_cmdpool_compute);
 		_dev.destroy();
 	}
 
@@ -113,6 +113,11 @@ namespace vuh {
 		return uint32_t(-1);
 	}
 
+	/// @return i-th queue in the family supporting transfer commands.
+	auto Device::transferQueue(uint32_t i)-> vk::Queue  {
+		return _dev.getQueue(_computeFamilyId, i);
+	}
+
 	/// Create buffer on a device. Does NOT allocate memory.
 	auto Device::makeBuffer(uint32_t size ///< size of buffer in bytes
 	                       , vk::BufferUsageFlags usage
@@ -139,9 +144,27 @@ namespace vuh {
 		_dev.freeMemory(memory);
 	}
 
+	/// Map device memory to get a host accessible pointer. No explicit unmapping required.
+	auto Device::mapMemory(vk::DeviceMemory memory
+	                       , uint32_t size    ///< size of mapped memory region in bytes
+	                       , uint32_t offset
+	                       )-> void*
+	{
+		return _dev.mapMemory(memory, offset, size);
+	}
+
 	/// deallocate buffer (does not deallocate associated memory)
 	auto Device::destroyBuffer(vk::Buffer buf)-> void {
 		_dev.destroyBuffer(buf);
+	}
+
+	/// @return handle to command buffer for transfer commands
+	auto Device::transferCmdBuffer()-> vk::CommandBuffer {
+		if(!_cmdbuf_transfer){
+			// initialize the command buffer and corresponding pool for transfer commands
+			throw "not implemented";
+		}
+		return _cmdbuf_transfer;
 	}
 
 } // namespace vuh

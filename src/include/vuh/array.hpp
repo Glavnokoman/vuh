@@ -1,13 +1,16 @@
 #pragma once
 
 #include "device.h"
-#include "utils.h"
+#include "hostVisibleMemView.hpp"
 
 #include <vulkan/vulkan.hpp>
 
-#include <memory>
+#include <cassert>
 
 namespace vuh {
+	using std::begin;
+	using std::end;
+
 	namespace detail {
 		/// Crutch to modify buffer usage flags to include transfer bit in case those may be needed.
 		inline auto update_usage(const vuh::Device& device
@@ -22,6 +25,24 @@ namespace vuh {
 				usage |= vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
 			}
 			return usage;
+		}
+
+		/// Copy device buffers using the transient command pool.
+		/// Fully sync, no latency hiding whatsoever.
+		inline auto copyBuf(vuh::Device& device
+		                    , vk::Buffer src, vk::Buffer dst
+		                    , uint32_t size  ///< size of memory chunk to copy in bytes
+		                    )-> void
+		{
+			auto cmd_buf = device.transferCmdBuffer();
+			cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+			auto region = vk::BufferCopy(0, 0, size);
+			cmd_buf.copyBuffer(src, dst, 1, &region);
+			cmd_buf.end();
+			auto queue = device.transferQueue();
+			auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
+			queue.submit({submit_info}, nullptr);
+			queue.waitIdle();
 		}
 	} // namespace detail
 
@@ -60,14 +81,49 @@ public:
 		return *this;
 	}
    
+	auto size() const-> uint32_t {return _size;}
+
    template<class C>
-   static auto fromHost(const C& c, vuh::Device& device)-> Array {throw "not implemented";}
+   static auto fromHost(vuh::Device& device, const C& c
+	                     , vk::MemoryPropertyFlags properties=vk::MemoryPropertyFlagBits::eDeviceLocal
+								, vk::BufferUsageFlags usage=vk::BufferUsageFlagBits::eStorageBuffer
+	                     )-> Array
+	{
+		auto r = Array<T>(device, uint32_t(c.size()), properties, usage);
+		if(r._flags & vk::MemoryPropertyFlagBits::eHostVisible){ // memory is host-visible
+			std::copy(begin(c), end(c), r.view_host_visible().begin());
+		} else { // memory is not host visible, use staging buffer
+			auto stage_buf = fromHost(device, c
+			                          , vk::MemoryPropertyFlagBits::eHostVisible
+			                          , vk::BufferUsageFlagBits::eTransferSrc);
+			detail::copyBuf(device, stage_buf, r, stage_buf.size()*sizeof(T));
+		}
+		return r;
+	}
    
+	/// copy from device buffer to some host iterable (+resizable()).
+	template<class C>
+	auto to_host(C& c)-> void {
+		if(_flags & vk::MemoryPropertyFlagBits::eHostVisible){ // memory IS host visible
+			auto hv = view_host_visible();
+			c.resize(size());
+			std::copy(begin(hv), end(hv), begin(c));
+		} else { // memory is not host visible, use staging buffer
+			// copy device memory to staging buffer
+			auto stage_buf = Array(_dev, size()
+			                      , vk::MemoryPropertyFlagBits::eHostVisible
+			                      , vk::BufferUsageFlagBits::eTransferDst);
+			detail::copyBuf(_dev, _buf, stage_buf, size()*sizeof(T));
+			stage_buf.to_host(c); // copy from staging buffer to host
+		}
+	}
+
    template<class C>
-   auto fromHost(const C& c)-> void {throw "not implemented";}
-   
-   template<class C>
-   auto toHost(C& c)-> void {throw "not implemented";}
+   auto toHost(C& c) const-> void {throw "not implemented";}
+
+	operator vk::Buffer& () {return _buf;}
+	operator const vk::Buffer& () const {return _buf;}
+
 private: // helpers
 	/// Helper constructor
 	Array(vuh::Device& device
@@ -96,11 +152,17 @@ private: // helpers
 			_dev.destroyBuffer(_buf);
 		}
 	}
+
+	/// @return array view for host visible device buffer
+	auto view_host_visible()-> HostVisibleMemView<T> {
+		assert(_flags & vk::MemoryPropertyFlagBits::eHostVisible);
+		return HostVisibleMemView<T>(_dev, _mem, _size);
+	}
 private: // data
 	vk::Buffer _buf;                        ///< device buffer
-	vk::DeviceMemory _mem;                  ///< associated chunk of device memorys
+	vk::DeviceMemory _mem;                  ///< associated chunk of device memory
 	vk::MemoryPropertyFlags _flags;         ///< Actual flags of allocated memory. Can be a superset of requested flags.
-	vuh::Device& _dev; ///< pointer to logical device. no real ownership, just to provide value semantics to the class.
-	uint32_t _size;                         ///< number of elements. actual allocated memory may be a bit bigger than necessary.
+	vuh::Device& _dev;                      ///< referes underlying logical device
+	uint32_t _size;                         ///< number of elements. Actual allocated memory may be a bit bigger than necessary.
 }; // class Array
 } // namespace vuh

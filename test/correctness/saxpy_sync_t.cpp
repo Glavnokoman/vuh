@@ -12,9 +12,8 @@ auto main(int /*argc*/, char const */*argv*/[])-> int {
 	auto instance = vuh::Instance();
 	auto device = instance.devices()[0];               // just get the first compute-capable device
 
-	auto d_y = vuh::Array<float>(device, y.size());    // allocate memory on device
-	d_y.fromHost(y);                                   // copy from host to device buffer
-	auto d_x = vuh::Array<float>::fromHost(x, device); // same for x
+	auto d_y = vuh::Array<float>::fromHost(device, y); // allocate memory on device and copy data from host
+	auto d_x = vuh::Array<float>::fromHost(device, x); // same for x
 
 	using specs_t = std::tuple<uint32_t>;              // specialization constants, here it is the workgroup size
 	using arrays_t = vuh::typelist<float, float>;      // value types of kernel array parameters
