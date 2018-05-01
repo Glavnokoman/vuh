@@ -35,8 +35,6 @@ namespace vuh {
 		auto destroyBuffer(vk::Buffer)-> void;
 		auto computeCmdBuffer()-> vk::CommandBuffer {return _cmdbuf_compute;}
 		auto transferCmdBuffer()-> vk::CommandBuffer;
-		auto allocComputeCommandBuffer(vk::CommandBufferLevel level=vk::CommandBufferLevel::ePrimary
-		                              )-> vk::CommandBuffer;
 
 	private: // helpers
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers

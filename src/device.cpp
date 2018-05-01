@@ -232,10 +232,4 @@ namespace vuh {
 		}
 		return _cmdbuf_transfer;
 	}
-
-	/// @return newly allocated command buffer
-	auto Device::allocComputeCommandBuffer(vk::CommandBufferLevel level)-> vk::CommandBuffer {
-		return allocCmdBuffer(_dev, _cmdpool_compute, level);
-	}
-
 } // namespace vuh
