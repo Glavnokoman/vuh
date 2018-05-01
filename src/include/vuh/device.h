@@ -13,17 +13,25 @@ namespace vuh {
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers={});
 		~Device() noexcept;
 
-		Device(const Device&); // copy needs to create another logical device hande to the same physical device
+		Device(const Device&);
 		auto operator=(const Device&)-> Device&;
 		Device(Device&&) = default;
 		auto operator=(Device&&)-> Device& = default;
 
 		auto properties() const-> vk::PhysicalDeviceProperties;
-		auto isDiscreteGPU() const-> bool;
-		auto computeQueue(uint32_t i = 0)-> vk::Queue;
-		auto transferQueue(uint32_t i = 0)-> vk::Queue;
 		auto numComputeQueues() const-> uint32_t { return 1u;}
 		auto numTransferQueues() const-> uint32_t { return 1u;}
+		auto memoryProperties(uint32_t id) const-> vk::MemoryPropertyFlags;
+		auto selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties) const-> uint32_t;
+
+		auto computeQueue(uint32_t i = 0)-> vk::Queue;
+		auto transferQueue(uint32_t i = 0)-> vk::Queue;
+		auto makeBuffer(uint32_t size, vk::BufferUsageFlags usage)-> vk::Buffer;
+		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
+		auto bindBufferMemory(vk::Buffer, vk::DeviceMemory, uint32_t offset)-> void;
+		auto freeMemory(vk::DeviceMemory)-> void;
+		auto destroyBuffer(vk::Buffer)-> void;
+
 	private: // helpers
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
 		                , const std::vector<vk::QueueFamilyProperties>& families);

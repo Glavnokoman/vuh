@@ -88,6 +88,62 @@ namespace vuh {
 		return *this = Device(other);
 	}
 
+	/// @return physical device properties
+	auto Device::properties() const-> vk::PhysicalDeviceProperties {
+		return _physdev.getProperties();
+	}
+
+	/// get memory properties of the memory with given id
+	auto Device::memoryProperties(uint32_t id) const-> vk::MemoryPropertyFlags {
+		return _physdev.getMemoryProperties().memoryTypes[id].propertyFlags;
+	}
+
+	/// Find first memory matching desired properties.
+	/// @return id of the suitable memory, -1 if no suitable memory found.
+	auto Device::selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties) const-> uint32_t {
+		auto memProperties = _physdev.getMemoryProperties();
+		auto memoryReqs = _dev.getBufferMemoryRequirements(buffer);
+		for(uint32_t i = 0; i < memProperties.memoryTypeCount; ++i){
+			if( (memoryReqs.memoryTypeBits & (1u << i))
+			    && ((properties & memProperties.memoryTypes[i].propertyFlags) == properties))
+			{
+				return i;
+			}
+		}
+		return uint32_t(-1);
+	}
+
+	/// Create buffer on a device. Does NOT allocate memory.
+	auto Device::makeBuffer(uint32_t size ///< size of buffer in bytes
+	                       , vk::BufferUsageFlags usage
+	                       )-> vk::Buffer
+	{
+		auto bufferCI = vk::BufferCreateInfo(vk::BufferCreateFlags(), size, usage);
+		return _dev.createBuffer(bufferCI);
+	}
+
+	/// Allocate memory on device on the heap with given id
+	auto Device::alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory {
+	   auto memoryReqs = _dev.getBufferMemoryRequirements(buf);
+	   auto allocInfo = vk::MemoryAllocateInfo(memoryReqs.size, memory_id);
+		return _dev.allocateMemory(allocInfo);
+	}
+
+	/// Bind memory to buffer
+	auto Device::bindBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, uint32_t offset)-> void {
+		_dev.bindBufferMemory(buffer, memory, offset);
+	}
+
+	/// free memory
+	auto Device::freeMemory(vk::DeviceMemory memory)-> void {
+		_dev.freeMemory(memory);
+	}
+
+	/// deallocate buffer (does not deallocate associated memory)
+	auto Device::destroyBuffer(vk::Buffer buf)-> void {
+		_dev.destroyBuffer(buf);
+	}
+
 } // namespace vuh
 
 
