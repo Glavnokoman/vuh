@@ -1,7 +1,6 @@
 #pragma once
 
 #include "device.h"
-#include "string_view.h"
 #include "program.hpp"
 
 #include <vulkan/vulkan.hpp>
@@ -20,7 +19,7 @@ namespace vuh {
            >
 	class Kernel {
 	public:
-		explicit Kernel(string_view path, vk::ShaderModuleCreateFlags flags={}) 
+		explicit Kernel(const char* path, vk::ShaderModuleCreateFlags flags={})
 		{
 			throw "not implemented";
 		}

@@ -25,7 +25,7 @@ public:
       throw "not implemented";
    }
    
-   ~Array() noexcept;
+	~Array() noexcept { throw "not implemented";}
    
    Array(const Array&) = delete;
    Array& operator= (const Array&) = delete;

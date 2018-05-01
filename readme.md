@@ -54,7 +54,7 @@ void main(){
 # Build & Install
 ## Dependencies
 - C++14 compliant compiler
-- Vulkan
+- Vulkan-headers
 - Vulkan-hpp
 - Glslang (optional, but very recommended)
 - CMake (build-only)

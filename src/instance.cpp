@@ -7,7 +7,6 @@
 using std::begin; using std::end;
 #define ALL(c) begin(c), end(c)
 #define ARR_VIEW(x) uint32_t(x.size()), x.data()
-#define ST_VIEW(s)  uint32_t(sizeof(s)), &s
 
 namespace {
 	static const char* debug_layers[] = {"VK_LAYER_LUNARG_standard_validation"};
