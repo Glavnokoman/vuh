@@ -154,14 +154,16 @@ namespace vuh {
 		return _physdev.getProperties();
 	}
 
-	/// get memory properties of the memory with given id
+	/// @return memory properties of the memory with given id
 	auto Device::memoryProperties(uint32_t id) const-> vk::MemoryPropertyFlags {
 		return _physdev.getMemoryProperties().memoryTypes[id].propertyFlags;
 	}
 
 	/// Find first memory matching desired properties.
 	/// @return id of the suitable memory, -1 if no suitable memory found.
-	auto Device::selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties) const-> uint32_t {
+	auto Device::selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties
+	                          ) const-> uint32_t
+	{
 		auto memProperties = _physdev.getMemoryProperties();
 		auto memoryReqs = _dev.getBufferMemoryRequirements(buffer);
 		for(uint32_t i = 0; i < memProperties.memoryTypeCount; ++i){
@@ -172,6 +174,24 @@ namespace vuh {
 			}
 		}
 		return uint32_t(-1);
+	}
+
+	/// Create shader module from binary shader code.
+	auto Device::createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags
+	                                )-> vk::ShaderModule
+	{
+		return _dev.createShaderModule({flags, code.size()
+		                                , reinterpret_cast<const uint32_t*>(code.data())});
+	}
+
+	/// Allocate descriptor pool to hold descritors of given pool sizes.
+	auto Device::allocDescriptorPool(const std::vector<vk::DescriptorPoolSize>& pool_sizes
+	                                 , uint32_t max_sets    ///< max number of descriptor sets that can be allocated from the pool
+	                                 , vk::DescriptorPoolCreateFlags flags
+	                                 )-> vk::DescriptorPool
+	{
+		return _dev.createDescriptorPool({flags, max_sets
+		                                  , uint32_t(pool_sizes.size()), pool_sizes.data()});
 	}
 
 	/// @return i-th queue in the family supporting transfer commands.
@@ -196,7 +216,9 @@ namespace vuh {
 	}
 
 	/// Bind memory to buffer
-	auto Device::bindBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, uint32_t offset)-> void {
+	auto Device::bindBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, uint32_t offset
+	                              )-> void
+	{
 		_dev.bindBufferMemory(buffer, memory, offset);
 	}
 

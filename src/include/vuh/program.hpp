@@ -6,6 +6,10 @@
 
 #include <vulkan/vulkan.hpp>
 
+namespace {
+
+} // namespace
+
 namespace vuh {
 	///
 	template<class... Ts> struct typelist{};
@@ -21,7 +25,7 @@ namespace vuh {
 	/// kernel on a Vulkan device.
 	template<class S, class P, class A> class Program;
 	
-	/// specialization to unpack 
+	/// specialization to unpack array types parameters
 	template< class Specs  ///< tuple of specialization parameters
 	        , class Params ///< shader push parameters structure
 	        , template<class...> class Arrays ///< typelist of value types of array parameters
@@ -29,8 +33,19 @@ namespace vuh {
 	        >
 	class Program<Specs, Params, Arrays<Ts...>> {
 	public:
-		explicit Program(vuh::Device& device, std::vector<char> code, vk::ShaderModuleCreateFlags flags) 
+		explicit Program(vuh::Device& device, const std::vector<char>& code
+		                 , vk::ShaderModuleCreateFlags flags
+		                 )
+		   : _device(device)
 		{
+//			auto config = std::vector<vk::DescriptorType>(sizeof...(Ts)
+//			                                              , vk::DescriptorType::eStorageBuffer); // for now only storage buffers supported
+			_shader = device.createShaderModule(code, flags);
+			_dscpool = device.allocDescriptorPool(
+			                                {{vk::DescriptorType::eStorageBuffer, sizeof...(Ts)}}, 1);
+			auto bind_layout = std::array<vk::DescriptorSetLayoutBinding, sizeof...(Ts)>{
+				              {0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute}};
+			_dsclayout = device.makeDescriptorsLayout();
 			throw "not implemented";
 		}
 
@@ -44,11 +59,11 @@ namespace vuh {
 		auto run() const-> void {throw "not implemented";}
 		auto operator()(const Specs&, const Params&, vuh::Array<Ts>&... ars) const-> void {throw "not implemented";}
 	private: // data
+		vk::ShaderModule _shader;
+		vk::DescriptorPool _dscpool;
+		vk::DescriptorSetLayout _dsclayout;
 		vuh::Pipe _pipe;
 		vuh::Device& _device;
-		vk::ShaderModule _shader;
-		vk::DescriptorSetLayout _dsclayout;
-		vk::DescriptorPool _dscpool;
-		vk::CommandBuffer _cmdbuffer;
+//		vk::CommandBuffer _cmdbuffer;
 	}; // class Program
 } // namespace vuh
