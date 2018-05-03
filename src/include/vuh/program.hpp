@@ -37,7 +37,7 @@ namespace {
 	template<size_t N>
 	auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types, uint32_t layout_id) {
 		auto r = std::array<vk::DescriptorSetLayoutBinding, N>{};
-		for(size_t i = 0; i < N; ++i){
+		for(size_t i = 0; i < N; ++i){ // this can be done compile-time, but hardly worth it.
 			r[i] = {i, dsc_types[i], layout_id, vk::ShaderStageFlagBits::eCompute};
 		}
 		return r;
@@ -48,13 +48,6 @@ namespace vuh {
 	///
 	template<class... Ts> struct typelist{};
 
-	/// work batch dimensions
-	struct Batch {
-		uint32_t x;
-		uint32_t y = 1;
-		uint32_t z = 1;
-	};
-	
 	/// Runnable program. Allows to bind the actual parameters to the interface and execute 
 	/// kernel on a Vulkan device.
 	template<class S, class P, class A> class Program;
@@ -76,11 +69,13 @@ namespace vuh {
 			_shader = device.createShaderModule(code, flags);
 			_dscpool = device.allocDescriptorPool(dscTypes, 1);
 			_dsclayout = device.makeDescriptorsLayout(dscTypesToLayout(dscTypes));
-			
-			throw "not implemented";
+			_pipecache = device.createPipeCache();
+			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
+			                                                 , 0, sizeof(Params));
+			_pipelayout = device.createPipelineLayout({_dsclayout}, {push_constant_range});
+			// the other structures specified at binding time
 		}
 
-		auto batch(const Batch&)-> Program& {throw "not implemented";}
 		auto batch(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {throw "not implemented";}
 		auto bind(const Specs&)-> Program& {throw "not implemented";}
 		
@@ -93,8 +88,10 @@ namespace vuh {
 		vk::ShaderModule _shader;
 		vk::DescriptorPool _dscpool;
 		vk::DescriptorSetLayout _dsclayout;
-		vuh::Pipe _pipe;
+		vk::PipelineCache _pipecache;
+		vk::PipelineLayout _pipelayout;
+		mutable vk::Pipeline _pipeline;
+		mutable vk::CommandBuffer _cmdbuffer;
 		vuh::Device& _device;
-//		vk::CommandBuffer _cmdbuffer;
 	}; // class Program
 } // namespace vuh

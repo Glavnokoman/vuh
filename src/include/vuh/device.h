@@ -45,6 +45,11 @@ namespace vuh {
 		auto makeDescriptorsLayout(array_view<vk::DescriptorSetLayoutBinding> bind_layout
 		                           , vk::DescriptorSetLayoutCreateFlags flags={}
 		                           )-> vk::DescriptorSetLayout;
+		auto createPipeCache(vk::PipelineCacheCreateInfo info={})-> vk::PipelineCache;
+		auto createPipelineLayout(array_view<vk::DescriptorSetLayout> dsc_layouts
+		                          , array_view<vk::PushConstantRange> push_constant_ranges
+		                          , vk::PipelineLayoutCreateFlags flags={}
+		                          )-> vk::PipelineLayout;
 	private: // helpers
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
 		                , const std::vector<vk::QueueFamilyProperties>& families);

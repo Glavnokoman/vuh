@@ -199,11 +199,29 @@ namespace vuh {
 	                                   , vk::DescriptorSetLayoutCreateFlags flags
 	                                   )-> vk::DescriptorSetLayout
 	{
-		throw "not implemented";
+		return _dev.createDescriptorSetLayout({vk::DescriptorSetLayoutCreateFlags{}
+		                                       , uint32_t(bind_layout.size()), bind_layout.data()});
+	}
+
+	/// Create pipeline cache
+	auto Device::createPipeCache(vk::PipelineCacheCreateInfo info)-> vk::PipelineCache {
+		return _dev.createPipelineCache(info);
+	}
+
+	/// Create pipeline layout. Pipeline layout defines shader interface as a set of layout
+	/// bindings and push constants.
+	auto Device::createPipelineLayout(array_view<vk::DescriptorSetLayout> dsc_layouts
+	                                  , array_view<vk::PushConstantRange> push_constant_ranges
+	                                  , vk::PipelineLayoutCreateFlags flags
+	                                  )-> vk::PipelineLayout
+	{
+		return _dev.createPipelineLayout({flags, uint32_t(dsc_layouts.size()), dsc_layouts.data()
+		                                  , uint32_t(push_constant_ranges.size())
+		                                  , push_constant_ranges.data()});
 	}
 
 	/// @return i-th queue in the family supporting transfer commands.
-	auto Device::transferQueue(uint32_t i)-> vk::Queue  {
+	auto Device::transferQueue(uint32_t i)-> vk::Queue {
 		return _dev.getQueue(_computeFamilyId, i);
 	}
 
