@@ -8,6 +8,40 @@
 
 namespace {
 
+	namespace detail {
+		template<class T> struct DictTypeToDsc;
+	
+		template<> struct DictTypeToDsc<float>{ 
+			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
+		};
+		
+		template<> struct DictTypeToDsc<uint32_t>{ 
+			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer; 
+		};
+		
+		/// Not currently used, just a wild idea on how to support uniforms (and dynamic uniforms),
+		/// needs check if that works. If not - descriptor types have to be passed as a parameter 
+		/// to kernel constructor.
+		template<> struct DictTypeToDsc<const float>{ 
+			static constexpr vk::DescriptorType value = vk::DescriptorType::eUniformBuffer;
+		};
+	} // namespace trais
+
+	/// doc me
+	template<template<class...> class L, class... Ts>
+	auto typesToDscTypes() {
+		return std::array<vk::DescriptorType, sizeof...(Ts)>{detail::DictTypeToDsc<Ts>::value...};
+	}
+	
+	/// doc me
+	template<size_t N>
+	auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types, uint32_t layout_id) {
+		auto r = std::array<vk::DescriptorSetLayoutBinding, N>{};
+		for(size_t i = 0; i < N; ++i){
+			r[i] = {i, dsc_types[i], layout_id, vk::ShaderStageFlagBits::eCompute};
+		}
+		return r;
+	}
 } // namespace
 
 namespace vuh {
@@ -38,14 +72,11 @@ namespace vuh {
 		                 )
 		   : _device(device)
 		{
-//			auto config = std::vector<vk::DescriptorType>(sizeof...(Ts)
-//			                                              , vk::DescriptorType::eStorageBuffer); // for now only storage buffers supported
+			auto dscTypes = typesToDscTypes<Arrays<Ts...>>();
 			_shader = device.createShaderModule(code, flags);
-			_dscpool = device.allocDescriptorPool(
-			                                {{vk::DescriptorType::eStorageBuffer, sizeof...(Ts)}}, 1);
-			auto bind_layout = std::array<vk::DescriptorSetLayoutBinding, sizeof...(Ts)>{
-				              {0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute}};
-			_dsclayout = device.makeDescriptorsLayout();
+			_dscpool = device.allocDescriptorPool(dscTypes, 1);
+			_dsclayout = device.makeDescriptorsLayout(dscTypesToLayout(dscTypes));
+			
 			throw "not implemented";
 		}
 

@@ -185,13 +185,21 @@ namespace vuh {
 	}
 
 	/// Allocate descriptor pool to hold descritors of given pool sizes.
-	auto Device::allocDescriptorPool(const std::vector<vk::DescriptorPoolSize>& pool_sizes
+	auto Device::allocDescriptorPool(array_view<vk::DescriptorPoolSize> pool_sizes
 	                                 , uint32_t max_sets    ///< max number of descriptor sets that can be allocated from the pool
 	                                 , vk::DescriptorPoolCreateFlags flags
 	                                 )-> vk::DescriptorPool
 	{
 		return _dev.createDescriptorPool({flags, max_sets
 		                                  , uint32_t(pool_sizes.size()), pool_sizes.data()});
+	}
+	
+	///
+	auto Device::makeDescriptorsLayout(array_view<vk::DescriptorSetLayoutBinding> bind_layout
+	                                   , vk::DescriptorSetLayoutCreateFlags flags
+	                                   )-> vk::DescriptorSetLayout
+	{
+		throw "not implemented";
 	}
 
 	/// @return i-th queue in the family supporting transfer commands.

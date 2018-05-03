@@ -1,5 +1,7 @@
 #pragma once
 
+#include "array_view.hpp"
+
 #include <vulkan/vulkan.hpp>
 
 #include <vector>
@@ -37,10 +39,10 @@ namespace vuh {
 		auto transferCmdBuffer()-> vk::CommandBuffer;
 		auto createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags={}
 		                        )-> vk::ShaderModule;
-		auto allocDescriptorPool(const std::vector<vk::DescriptorPoolSize>& pool_sizes
+		auto allocDescriptorPool(array_view<vk::DescriptorPoolSize> pool_sizes
 		                         , uint32_t max_sets
 		                         , vk::DescriptorPoolCreateFlags={})-> vk::DescriptorPool;
-		auto makeDescriptorsLayout(const std::vector<vk::DescriptorSetLayoutBinding>& bind_layout
+		auto makeDescriptorsLayout(array_view<vk::DescriptorSetLayoutBinding> bind_layout
 		                           , vk::DescriptorSetLayoutCreateFlags flags={}
 		                           )-> vk::DescriptorSetLayout;
 	private: // helpers
