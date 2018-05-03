@@ -75,8 +75,10 @@ namespace vuh {
 			// the other structures specified at binding time
 		}
 
+		/// specify running batch size (3D)
 		auto batch(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {
-			throw "not implemented";
+			_batch = {x, y, z};
+			return *this;
 		}
 		auto bind(const Specs&)-> Program& {throw "not implemented";}
 		
