@@ -1,6 +1,5 @@
 #pragma once
 
-#include "pipe.h"
 #include "device.h"
 #include "array.hpp"
 
@@ -76,7 +75,9 @@ namespace vuh {
 			// the other structures specified at binding time
 		}
 
-		auto batch(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {throw "not implemented";}
+		auto batch(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {
+			throw "not implemented";
+		}
 		auto bind(const Specs&)-> Program& {throw "not implemented";}
 		
 		auto bind(const Params&, vuh::Array<Ts>&... ars)-> Program& { throw "not implemented";}
@@ -92,6 +93,7 @@ namespace vuh {
 		vk::PipelineLayout _pipelayout;
 		mutable vk::Pipeline _pipeline;
 		mutable vk::CommandBuffer _cmdbuffer;
+		std::array<uint32_t, 3> _batch={0, 0, 0};
 		vuh::Device& _device;
 	}; // class Program
 } // namespace vuh
