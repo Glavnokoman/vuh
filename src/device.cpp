@@ -219,6 +219,20 @@ namespace vuh {
 		                                  , uint32_t(push_constant_ranges.size())
 		                                  , push_constant_ranges.data()});
 	}
+	
+	/// Create compute pipeline with a given layout.
+	/// Shader stage info incapsulates the shader and layout&values of specialization constants.
+	auto Device::createPipeline(vk::PipelineLayout pipe_layout
+	                            , vk::PipelineCache pipe_cache
+	                            , vk::PipelineShaderStageCreateInfo shader_stage_info
+	                            , vk::PipelineCreateFlags flags
+	                            )-> vk::Pipeline
+	{
+		auto pipelineCI = vk::ComputePipelineCreateInfo(flags
+																		, shader_stage_info, pipe_layout);
+		return _dev.createComputePipeline(pipe_cache, pipelineCI, nullptr);
+		
+	}
 
 	/// @return i-th queue in the family supporting transfer commands.
 	auto Device::transferQueue(uint32_t i)-> vk::Queue {

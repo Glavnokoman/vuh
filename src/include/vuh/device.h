@@ -50,6 +50,12 @@ namespace vuh {
 		                          , array_view<vk::PushConstantRange> push_constant_ranges
 		                          , vk::PipelineLayoutCreateFlags flags={}
 		                          )-> vk::PipelineLayout;
+		auto createPipeline(vk::PipelineLayout pipe_layout
+		                    , vk::PipelineCache pipe_cache
+		                    , vk::PipelineShaderStageCreateInfo shader_stage_info
+		                    , vk::PipelineCreateFlags flags={}
+		                    )-> vk::Pipeline;
+		
 	private: // helpers
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
 		                , const std::vector<vk::QueueFamilyProperties>& families);

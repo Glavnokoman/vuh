@@ -1,12 +1,16 @@
 #pragma once
 
-#include "device.h"
 #include "array.hpp"
+#include "device.h"
 
 #include <vulkan/vulkan.hpp>
 
-namespace {
+#include <array>
+#include <cstddef>
+#include <tuple>
+#include <utility>
 
+namespace {
 	namespace detail {
 		template<class T> struct DictTypeToDsc;
 	
@@ -24,6 +28,27 @@ namespace {
 		template<> struct DictTypeToDsc<const float>{ 
 			static constexpr vk::DescriptorType value = vk::DescriptorType::eUniformBuffer;
 		};
+	 
+		// Compile-time offset of tuple element.
+		// Probably UB as tuples are non-POD types (no easy way out till C++ gets some compile-time reflection).
+		// Should never be called outside constexpr context.
+		template<size_t Idx, class T>
+		constexpr auto tuple_element_offset()-> std::size_t {
+			constexpr T dum{};  
+			return size_t(reinterpret_cast<const char*>(&std::get<Idx>(dum))
+		                 - reinterpret_cast<const char*>(&dum));
+		}
+		
+		//
+		template<class T, size_t... I>
+		constexpr auto spec2entries(const T& specs, std::index_sequence<I...>){
+			return std::array<vk::SpecializationMapEntry, sizeof...(I)>{{
+			                       { uint32_t(I)
+			                       , uint32_t(tuple_element_offset<I, T>())
+			                       , uint32_t(sizeof(typename std::tuple_element<I, T>::type))
+			                       }...
+			                                                           }};
+		}
 	} // namespace trais
 
 	/// doc me
@@ -41,11 +66,18 @@ namespace {
 		}
 		return r;
 	}
+	
+	/// @return partially formed specialization map array, indexes and offsets are yet to be filled
+	template<template<class...> class T, class... Ts>
+	auto specs2mapentries(const T<Ts...>& specs
+	                      )-> std::array<vk::SpecializationMapEntry, sizeof...(Ts)> 
+	{
+		return detail::spec2entries(specs, std::make_index_sequence<sizeof...(Ts)>{});
+	}
 } // namespace
 
 namespace vuh {
-	///
-	template<class... Ts> struct typelist{};
+	template<class... Ts>	 struct typelist{};
 
 	/// Runnable program. Allows to bind the actual parameters to the interface and execute 
 	/// kernel on a Vulkan device.
@@ -75,15 +107,32 @@ namespace vuh {
 			// the other structures specified at binding time
 		}
 
-		/// specify running batch size (3D)
+		/// Specify running batch size (3D).
+ 		/// This only sets the dimensions of work batch in units of workgroup, does not start
+		/// the actual calculation.
 		auto batch(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {
 			_batch = {x, y, z};
 			return *this;
 		}
-		auto bind(const Specs&)-> Program& {throw "not implemented";}
 		
-		auto bind(const Params&, vuh::Array<Ts>&... ars)-> Program& { throw "not implemented";}
-		auto bind(const Specs&, const Params&, vuh::Array<Ts>&... ars)-> Program& {throw "not implemented";}
+		/// Specify values of specification constants.
+		/// Under the hood it creates the compute pipeline here.
+		auto bind(const Specs& specs) const-> const Program& {
+			// specialize constants of the shader
+			auto specEntries = specs2mapentries(specs);
+			auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
+																, sizeof(specs), &specs);
+		
+			// Specify the compute shader stage, and it's entry point (main), and specializations
+			auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
+																			 , vk::ShaderStageFlagBits::eCompute
+																			 , _shader, "main", &specInfo);
+			_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+			return *this;
+		}
+		
+		auto bind(const Params&, vuh::Array<Ts>&... ars) const-> const Program& { throw "not implemented";}
+		auto bind(const Specs&, const Params&, vuh::Array<Ts>&... ars) const-> const Program& {throw "not implemented";}
 		auto unbind()-> void {throw "not implemented";}
 		auto run() const-> void {throw "not implemented";}
 		auto operator()(const Specs&, const Params&, vuh::Array<Ts>&... ars) const-> void {throw "not implemented";}
