@@ -189,42 +189,11 @@ namespace vuh {
 		                                , reinterpret_cast<const uint32_t*>(code.data())});
 	}
 
-	/// Allocate descriptor pool to hold descritors of given pool sizes.
-	auto Device::allocDescriptorPool(array_view<vk::DescriptorPoolSize> pool_sizes
-	                                 , uint32_t max_sets    ///< max number of descriptor sets that can be allocated from the pool
-	                                 , vk::DescriptorPoolCreateFlags flags
-	                                 )-> vk::DescriptorPool
-	{
-		return _dev.createDescriptorPool({flags, max_sets
-		                                  , uint32_t(pool_sizes.size()), pool_sizes.data()});
-	}
-	
-	///
-	auto Device::makeDescriptorsLayout(array_view<vk::DescriptorSetLayoutBinding> bind_layout
-	                                   , vk::DescriptorSetLayoutCreateFlags flags
-	                                   )-> vk::DescriptorSetLayout
-	{
-		return _dev.createDescriptorSetLayout({vk::DescriptorSetLayoutCreateFlags{}
-		                                       , uint32_t(bind_layout.size()), bind_layout.data()});
-	}
-
 	/// Create pipeline cache
 	auto Device::createPipeCache(vk::PipelineCacheCreateInfo info)-> vk::PipelineCache {
 		return _dev.createPipelineCache(info);
 	}
 
-	/// Create pipeline layout. Pipeline layout defines shader interface as a set of layout
-	/// bindings and push constants.
-	auto Device::createPipelineLayout(array_view<vk::DescriptorSetLayout> dsc_layouts
-	                                  , array_view<vk::PushConstantRange> push_constant_ranges
-	                                  , vk::PipelineLayoutCreateFlags flags
-	                                  )-> vk::PipelineLayout
-	{
-		return _dev.createPipelineLayout({flags, uint32_t(dsc_layouts.size()), dsc_layouts.data()
-		                                  , uint32_t(push_constant_ranges.size())
-		                                  , push_constant_ranges.data()});
-	}
-	
 	/// Create compute pipeline with a given layout.
 	/// Shader stage info incapsulates the shader and layout&values of specialization constants.
 	auto Device::createPipeline(vk::PipelineLayout pipe_layout

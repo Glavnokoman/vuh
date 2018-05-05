@@ -39,17 +39,7 @@ namespace vuh {
 		auto transferCmdBuffer()-> vk::CommandBuffer&;
 		auto createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags={}
 		                        )-> vk::ShaderModule;
-		auto allocDescriptorPool(array_view<vk::DescriptorPoolSize> pool_sizes
-		                         , uint32_t max_sets
-		                         , vk::DescriptorPoolCreateFlags={})-> vk::DescriptorPool;
-		auto makeDescriptorsLayout(array_view<vk::DescriptorSetLayoutBinding> bind_layout
-		                           , vk::DescriptorSetLayoutCreateFlags flags={}
-		                           )-> vk::DescriptorSetLayout;
 		auto createPipeCache(vk::PipelineCacheCreateInfo info={})-> vk::PipelineCache;
-		auto createPipelineLayout(array_view<vk::DescriptorSetLayout> dsc_layouts
-		                          , array_view<vk::PushConstantRange> push_constant_ranges
-		                          , vk::PipelineLayoutCreateFlags flags={}
-		                          )-> vk::PipelineLayout;
 		auto createPipeline(vk::PipelineLayout pipe_layout
 		                    , vk::PipelineCache pipe_cache
 		                    , vk::PipelineShaderStageCreateInfo shader_stage_info

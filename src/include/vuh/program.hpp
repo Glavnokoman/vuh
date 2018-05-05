@@ -59,10 +59,10 @@ namespace {
 	
 	/// doc me
 	template<size_t N>
-	auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types, uint32_t layout_id) {
+	auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types) {
 		auto r = std::array<vk::DescriptorSetLayoutBinding, N>{};
 		for(size_t i = 0; i < N; ++i){ // this can be done compile-time, but hardly worth it.
-			r[i] = {i, dsc_types[i], layout_id, vk::ShaderStageFlagBits::eCompute};
+			r[i] = {uint32_t(i), dsc_types[i], 1, vk::ShaderStageFlagBits::eCompute};
 		}
 		return r;
 	}
@@ -117,16 +117,28 @@ namespace vuh {
 		                 )
 		   : _device(device)
 		{
-			auto dscTypes = typesToDscTypes<Arrays<Ts...>>();
 			_shader = device.createShaderModule(code, flags);
-			_dscpool = device.allocDescriptorPool(dscTypes, 1);
-			_dsclayout = device.makeDescriptorsLayout(dscTypesToLayout(dscTypes));
+			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
+			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
+			                                                   , dscTypes.size());
+			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
+			_dscpool = device._dev.createDescriptorPool(
+			           {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
+			            , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
+			            }
+			);
+			auto bindings = dscTypesToLayout(dscTypes);
+			_dsclayout = device._dev.createDescriptorSetLayout(
+			                                             {vk::DescriptorSetLayoutCreateFlags()
+			                                              , uint32_t(bindings.size()), bindings.data()
+			                                              }
+			);
 			_dscset = _device._dev.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
 			_pipecache = device.createPipeCache();
 			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
 			                                                 , 0, sizeof(Params));
-			_pipelayout = device.createPipelineLayout({_dsclayout}, {push_constant_range});
-			// the other structures specified at binding time
+			_pipelayout = device._dev.createPipelineLayout(
+						     {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, 1, &push_constant_range});
 		}
 
 		/// Specify running batch size (3D).
@@ -193,8 +205,16 @@ namespace vuh {
 		auto unbind()-> void {
 			_device._dev.destroyDescriptorPool(_dscpool);
 			_device._dev.resetCommandPool(_device._cmdpool_compute, vk::CommandPoolResetFlags());
-			auto dscTypes = typesToDscTypes<Arrays<Ts...>>();
-			_dscpool = _device.allocDescriptorPool(dscTypes, 1);
+			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
+//			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
+			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
+			                                                   , dscTypes.size());
+			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
+			_dscpool = _device._dev.createDescriptorPool(
+			           {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
+			            , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
+			            }
+			);
 		}
 
 		/// Run the Program object on previously bound parameters, wait for completion.

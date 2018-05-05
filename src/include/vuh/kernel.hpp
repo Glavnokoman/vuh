@@ -44,9 +44,9 @@ namespace vuh {
 		   , _flags(flags)
 		{}
 		
-		///
+		/// Instantiate kernel on a device, to obtain runnable Programs object.
 		auto on(vuh::Device& device)-> Program<Specs, Params, Arrays> {
-			throw "not implemented";
+			return Program<Specs, Params, Arrays>(device, _code, _flags);
 		}
 		
 		///
