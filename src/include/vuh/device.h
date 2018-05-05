@@ -62,7 +62,7 @@ namespace vuh {
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
 	                   , uint32_t computeFamilyId, uint32_t transferFamilyId);
 		auto release() noexcept-> void;
-	protected: // data
+	public: // data
 		vk::Device _dev;                           ///< logical device handle
 		vk::PhysicalDevice _physdev;               ///< handle to associated physical device
 		vk::CommandPool    _cmdpool_compute;       ///< handle to command pool for compute commands

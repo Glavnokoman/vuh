@@ -41,7 +41,7 @@ namespace {
 		
 		//
 		template<class T, size_t... I>
-		constexpr auto spec2entries(const T& specs, std::index_sequence<I...>){
+		constexpr auto spec2entries(const T& /*specs*/, std::index_sequence<I...>){
 			return std::array<vk::SpecializationMapEntry, sizeof...(I)>{{
 			                       { uint32_t(I)
 			                       , uint32_t(tuple_element_offset<I, T>())
@@ -74,6 +74,27 @@ namespace {
 	{
 		return detail::spec2entries(specs, std::make_index_sequence<sizeof...(Ts)>{});
 	}
+
+	///
+	template<class T, size_t... I>
+	auto dsc_infos2sets_(vk::DescriptorSet dscset, const T& infos
+	                     , std::index_sequence<I...>)
+	{
+		auto r = std::array<vk::WriteDescriptorSet, sizeof...(I)>{{
+			{dscset, uint32_t(I), 0, 1, vk::DescriptorType::eStorageBuffer, nullptr, &infos[I]}...
+		}};
+		return r;
+	}
+
+	/// Associate buffers to binding points in bindLayout.
+	template<class... Ts>
+	auto arrays2dscsets(const vk::DescriptorSet& dscset, vuh::Array<Ts>&... args){
+		constexpr auto N = sizeof...(args);
+		auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
+		auto r = dsc_infos2sets_(dscset, dscinfos, std::make_index_sequence<N>{});
+		return r;
+	}
+
 } // namespace
 
 namespace vuh {
@@ -100,6 +121,7 @@ namespace vuh {
 			_shader = device.createShaderModule(code, flags);
 			_dscpool = device.allocDescriptorPool(dscTypes, 1);
 			_dsclayout = device.makeDescriptorsLayout(dscTypesToLayout(dscTypes));
+			_dscset = _device._dev.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
 			_pipecache = device.createPipeCache();
 			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
 			                                                 , 0, sizeof(Params));
@@ -131,7 +153,32 @@ namespace vuh {
 			return *this;
 		}
 		
-		auto bind(const Params&, vuh::Array<Ts>&... ars) const-> const Program& { throw "not implemented";}
+		/// Associate buffers to binding points in bindLayout, and pushes the push constants.
+		/// Sets up the command buffer. Programs is ready to be run.
+		/// @pre Specs and batch sizes should be specified before calling this.
+		auto bind(const Params& p, vuh::Array<Ts>&... args) const-> const Program& {
+			_device._dev.updateDescriptorSets(arrays2dscsets(_dscset, args...), {}); // associate buffers to binding points in bindLayout
+
+			// Start recording commands into the newly allocated command buffer.
+			//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
+			auto beginInfo = vk::CommandBufferBeginInfo();
+			_device._cmdbuf_compute.begin(beginInfo);
+
+			// Before dispatch bind a pipeline, AND a descriptor set.
+			// The validation layer will NOT give warnings if you forget those.
+			_device._cmdbuf_compute.bindPipeline(vk::PipelineBindPoint::eCompute, _pipeline);
+			_device._cmdbuf_compute.bindDescriptorSets(vk::PipelineBindPoint::eCompute, _pipelayout
+			                                 , 0, {_dscset}, {});
+
+			_device._cmdbuf_compute.pushConstants(_pipelayout, vk::ShaderStageFlagBits::eCompute
+			                                      , 0, sizeof(p), &p);
+
+			_device._cmdbuf_compute.dispatch(_batch[0], _batch[1], _batch[2]); // start compute pipeline, execute the shader
+			_device._cmdbuf_compute.end(); // end recording commands
+
+			return *this;
+		}
+
 		auto bind(const Specs&, const Params&, vuh::Array<Ts>&... ars) const-> const Program& {throw "not implemented";}
 		auto unbind()-> void {throw "not implemented";}
 		auto run() const-> void {throw "not implemented";}
@@ -140,10 +187,10 @@ namespace vuh {
 		vk::ShaderModule _shader;
 		vk::DescriptorPool _dscpool;
 		vk::DescriptorSetLayout _dsclayout;
+		vk::DescriptorSet _dscset;
 		vk::PipelineCache _pipecache;
 		vk::PipelineLayout _pipelayout;
 		mutable vk::Pipeline _pipeline;
-		mutable vk::CommandBuffer _cmdbuffer;
 		std::array<uint32_t, 3> _batch={0, 0, 0};
 		vuh::Device& _device;
 	}; // class Program

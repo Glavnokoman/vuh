@@ -82,6 +82,7 @@ public:
 	}
    
 	auto size() const-> uint32_t {return _size;}
+	auto size_bytes() const-> uint32_t { return _size*sizeof(T);}
 
    template<class C>
    static auto fromHost(vuh::Device& device, const C& c
