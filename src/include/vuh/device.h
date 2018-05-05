@@ -35,8 +35,8 @@ namespace vuh {
 		auto freeMemory(vk::DeviceMemory)-> void;
 		auto mapMemory(vk::DeviceMemory, uint32_t size, uint32_t offset=0)-> void*;
 		auto destroyBuffer(vk::Buffer)-> void;
-		auto computeCmdBuffer()-> vk::CommandBuffer {return _cmdbuf_compute;}
-		auto transferCmdBuffer()-> vk::CommandBuffer;
+		auto computeCmdBuffer()-> vk::CommandBuffer& {return _cmdbuf_compute;}
+		auto transferCmdBuffer()-> vk::CommandBuffer&;
 		auto createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags={}
 		                        )-> vk::ShaderModule;
 		auto allocDescriptorPool(array_view<vk::DescriptorPoolSize> pool_sizes
@@ -70,7 +70,7 @@ namespace vuh {
 		vk::CommandPool    _cmdpool_transfer;      ///< handle to command pool for transfer instructions. Initialized on first trasnfer request.
 		vk::CommandBuffer  _cmdbuf_transfer;       ///< primary command buffer associated with transfer command pool. Initialized on first transfer request.
 		std::vector<const char*> _layers;          ///< layers activated on device. Better be the same as on underlying instance.
-		uint32_t _computeFamilyId = uint32_t(-1);  ///< compute queue family id. -1 if device does not have compute-capable queues.
-		uint32_t _transferFamilyId = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
+		uint32_t _cmp_family_id = uint32_t(-1);  ///< compute queue family id. -1 if device does not have compute-capable queues.
+		uint32_t _tfr_family_id = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
 	}; // class Device
 }

@@ -47,7 +47,7 @@ namespace {
 			                       , uint32_t(tuple_element_offset<I, T>())
 			                       , uint32_t(sizeof(typename std::tuple_element<I, T>::type))
 			                       }...
-			                                                           }};
+			}};
 		}
 	} // namespace trais
 
@@ -75,7 +75,7 @@ namespace {
 		return detail::spec2entries(specs, std::make_index_sequence<sizeof...(Ts)>{});
 	}
 
-	///
+	/// doc me
 	template<class T, size_t... I>
 	auto dsc_infos2sets_(vk::DescriptorSet dscset, const T& infos
 	                     , std::index_sequence<I...>)
@@ -153,7 +153,7 @@ namespace vuh {
 			return *this;
 		}
 		
-		/// Associate buffers to binding points in bindLayout, and pushes the push constants.
+		/// Associate buffers to binding points, and pushes the push constants.
 		/// Sets up the command buffer. Programs is ready to be run.
 		/// @pre Specs and batch sizes should be specified before calling this.
 		auto bind(const Params& p, vuh::Array<Ts>&... args) const-> const Program& {
@@ -179,10 +179,46 @@ namespace vuh {
 			return *this;
 		}
 
-		auto bind(const Specs&, const Params&, vuh::Array<Ts>&... ars) const-> const Program& {throw "not implemented";}
-		auto unbind()-> void {throw "not implemented";}
-		auto run() const-> void {throw "not implemented";}
-		auto operator()(const Specs&, const Params&, vuh::Array<Ts>&... ars) const-> void {throw "not implemented";}
+		/// Set the specialization constants, push the push parameters and associate buffers to binding points.
+		/// @pre bacth sizes should be specified before calling this.
+		auto bind(const Specs& specs, const Params& params, vuh::Array<Ts>&... args
+		          ) const-> const Program&
+		{
+			bind(specs);
+			return bind(params, args...);
+		}
+
+		/// Release device resources allocated by parameters binding.
+		/// Should only be manually called before binding new set of parameters to same Program object
+		auto unbind()-> void {
+			_device._dev.destroyDescriptorPool(_dscpool);
+			_device._dev.resetCommandPool(_device._cmdpool_compute, vk::CommandPoolResetFlags());
+			auto dscTypes = typesToDscTypes<Arrays<Ts...>>();
+			_dscpool = _device.allocDescriptorPool(dscTypes, 1);
+		}
+
+		/// Run the Program object on previously bound parameters, wait for completion.
+		/// @pre bacth sizes should be specified before calling this.
+		/// @pre all paramerters should be specialized, pushed and bound before calling this.
+		auto run() const-> void {
+			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
+
+			// submit the command buffer to the queue and set up a fence.
+			auto queue = _device.computeQueue();
+			auto fence = _device._dev.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+			queue.submit({submitInfo}, fence);
+			_device._dev.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
+			_device._dev.destroyFence(fence);
+		}
+
+		/// Run program with provided parameters.
+		/// @pre bacth sizes should be specified before calling this.
+		auto operator()(const Specs& specs, const Params& params, vuh::Array<Ts>&... args
+		                ) const-> void
+		{
+			bind(specs, params, args...);
+			run();
+		}
 	private: // data
 		vk::ShaderModule _shader;
 		vk::DescriptorPool _dscpool;

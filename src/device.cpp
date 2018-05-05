@@ -81,8 +81,8 @@ namespace vuh {
 	  , _cmdpool_compute(_dev.createCommandPool({vk::CommandPoolCreateFlags(), computeFamilyId}))
 	  , _cmdbuf_compute(allocCmdBuffer(_dev, _cmdpool_compute))
 	  , _layers(layers)
-	  , _computeFamilyId(computeFamilyId)
-	  , _transferFamilyId(transferFamilyId)
+	  , _cmp_family_id(computeFamilyId)
+	  , _tfr_family_id(transferFamilyId)
 	{
 	}
 
@@ -90,7 +90,7 @@ namespace vuh {
 	auto Device::release() noexcept-> void {
 		if(_dev){
 			_dev.destroyCommandPool(_cmdpool_compute);
-			if(_transferFamilyId != _computeFamilyId){
+			if(_tfr_family_id != _cmp_family_id){
 				_dev.destroyCommandPool(_cmdpool_transfer);
 			}
 			_dev.destroy();
@@ -104,7 +104,7 @@ namespace vuh {
 
 	/// Copy constructor. Creates new handle to the same physical device, and recreates associated pools
 	Device::Device(const Device& other)
-	   : Device(other._physdev, other._layers, other._computeFamilyId, other._transferFamilyId)
+	   : Device(other._physdev, other._layers, other._cmp_family_id, other._tfr_family_id)
 	{}
 
 	/// Copy assignment.
@@ -122,8 +122,8 @@ namespace vuh {
 	   , _cmdpool_transfer(other._cmdpool_transfer)
 	   , _cmdbuf_transfer(other._cmdbuf_transfer)
 	   , _layers(std::move(other._layers))
-	   , _computeFamilyId(other._computeFamilyId)
-	   , _transferFamilyId(other._transferFamilyId)
+	   , _cmp_family_id(other._cmp_family_id)
+	   , _tfr_family_id(other._tfr_family_id)
 	{
 		other._dev = nullptr;
 	}
@@ -145,8 +145,8 @@ namespace vuh {
 		swap(d1._cmdpool_transfer, d2._cmdpool_transfer);
 		swap(d1._cmdbuf_transfer , d2._cmdbuf_transfer );
 		swap(d1._layers	          , d2._layers          );
-		swap(d1._computeFamilyId , d2._computeFamilyId );
-		swap(d1._transferFamilyId, d2._transferFamilyId);
+		swap(d1._cmp_family_id , d2._cmp_family_id );
+		swap(d1._tfr_family_id, d2._tfr_family_id);
 	}
 
 	/// @return physical device properties
@@ -174,6 +174,11 @@ namespace vuh {
 			}
 		}
 		return uint32_t(-1);
+	}
+
+	///
+	auto Device::computeQueue(uint32_t i)-> vk::Queue {
+		return _dev.getQueue(_cmp_family_id, i);
 	}
 
 	/// Create shader module from binary shader code.
@@ -236,7 +241,7 @@ namespace vuh {
 
 	/// @return i-th queue in the family supporting transfer commands.
 	auto Device::transferQueue(uint32_t i)-> vk::Queue {
-		return _dev.getQueue(_computeFamilyId, i);
+		return _dev.getQueue(_cmp_family_id, i);
 	}
 
 	/// Create buffer on a device. Does NOT allocate memory.
@@ -282,13 +287,13 @@ namespace vuh {
 	}
 
 	/// @return handle to command buffer for transfer commands
-	auto Device::transferCmdBuffer()-> vk::CommandBuffer {
+	auto Device::transferCmdBuffer()-> vk::CommandBuffer& {
 		if(!_cmdbuf_transfer){
 			assert(!_cmdpool_transfer); // command buffer is supposed to be created together with the command pool
-			if(_transferFamilyId == _computeFamilyId){
+			if(_tfr_family_id == _cmp_family_id){
 				_cmdpool_transfer = _cmdpool_compute;
 			} else {
-				_cmdpool_transfer = _dev.createCommandPool({vk::CommandPoolCreateFlags(), _transferFamilyId});
+				_cmdpool_transfer = _dev.createCommandPool({vk::CommandPoolCreateFlags(), _tfr_family_id});
 			}
 			_cmdbuf_transfer = allocCmdBuffer(_dev, _cmdpool_transfer);
 		}
