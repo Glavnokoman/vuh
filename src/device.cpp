@@ -78,7 +78,8 @@ namespace vuh {
 	               )
 	  : _dev(createDevice(physdevice, layers, computeFamilyId, transferFamilyId))
 	  , _physdev(physdevice)
-	  , _cmdpool_compute(_dev.createCommandPool({vk::CommandPoolCreateFlags(), computeFamilyId}))
+	  , _cmdpool_compute(_dev.createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
+	                                             , computeFamilyId}))
 	  , _cmdbuf_compute(allocCmdBuffer(_dev, _cmdpool_compute))
 	  , _layers(layers)
 	  , _cmp_family_id(computeFamilyId)
@@ -262,7 +263,8 @@ namespace vuh {
 			if(_tfr_family_id == _cmp_family_id){
 				_cmdpool_transfer = _cmdpool_compute;
 			} else {
-				_cmdpool_transfer = _dev.createCommandPool({vk::CommandPoolCreateFlags(), _tfr_family_id});
+				_cmdpool_transfer = _dev.createCommandPool(
+				                 {vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _tfr_family_id});
 			}
 			_cmdbuf_transfer = allocCmdBuffer(_dev, _cmdpool_transfer);
 		}
