@@ -53,7 +53,7 @@ namespace {
 	                    , vk::CommandBufferLevel level=vk::CommandBufferLevel::ePrimary
 	                    )-> vk::CommandBuffer
 	{
-		auto commandBufferAI = vk::CommandBufferAllocateInfo(pool, level, 1);
+		auto commandBufferAI = vk::CommandBufferAllocateInfo(pool, level, 1); // 1 is the command buffer count here
 		return device.allocateCommandBuffers(commandBufferAI)[0];
 	}
 } // namespace
@@ -210,7 +210,7 @@ namespace vuh {
 
 	/// @return i-th queue in the family supporting transfer commands.
 	auto Device::transferQueue(uint32_t i)-> vk::Queue {
-		return _dev.getQueue(_cmp_family_id, i);
+		return _dev.getQueue(_tfr_family_id, i);
 	}
 
 	/// Create buffer on a device. Does NOT allocate memory.
@@ -243,8 +243,8 @@ namespace vuh {
 
 	/// Map device memory to get a host accessible pointer. No explicit unmapping required.
 	auto Device::mapMemory(vk::DeviceMemory memory
-	                       , uint32_t size    ///< size of mapped memory region in bytes
 	                       , uint32_t offset
+	                       , uint32_t size    ///< size of mapped memory region in bytes
 	                       )-> void*
 	{
 		return _dev.mapMemory(memory, offset, size);
