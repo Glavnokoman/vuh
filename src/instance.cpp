@@ -140,8 +140,12 @@ namespace vuh {
 	}
 
 	/// list of local compute-capable devices
-	auto Instance::devices()-> std::vector<Device>
-	{
-		throw "not implemented";
+	auto Instance::devices()-> std::vector<Device> {
+		auto physdevs = _instance.enumeratePhysicalDevices();
+		auto r = std::vector<Device>{};
+		for(auto pd: physdevs){
+			r.emplace_back(pd, _layers);
+		}
+		return r;
 	}
 } // namespace vuh

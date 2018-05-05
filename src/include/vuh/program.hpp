@@ -34,7 +34,7 @@ namespace {
 		// Should never be called outside constexpr context.
 		template<size_t Idx, class T>
 		constexpr auto tuple_element_offset()-> std::size_t {
-			constexpr T dum{};  
+			constexpr T dum{};
 			return size_t(reinterpret_cast<const char*>(&std::get<Idx>(dum))
 		                 - reinterpret_cast<const char*>(&dum));
 		}
@@ -123,9 +123,9 @@ namespace vuh {
 			                                                   , dscTypes.size());
 			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
 			_dscpool = device._dev.createDescriptorPool(
-			           {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
-			            , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
-			            }
+			                        {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
+			                         , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
+			                         }
 			);
 			auto bindings = dscTypesToLayout(dscTypes);
 			_dsclayout = device._dev.createDescriptorSetLayout(
