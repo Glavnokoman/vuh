@@ -67,7 +67,7 @@ namespace {
 		return r;
 	}
 	
-	/// @return partially formed specialization map array, indexes and offsets are yet to be filled
+	/// @return specialization map array
 	template<template<class...> class T, class... Ts>
 	auto specs2mapentries(const T<Ts...>& specs
 	                      )-> std::array<vk::SpecializationMapEntry, sizeof...(Ts)> 
@@ -85,16 +85,6 @@ namespace {
 		}};
 		return r;
 	}
-
-	/// Associate buffers to binding points in bindLayout.
-	template<class... Ts>
-	auto arrays2dscsets(const vk::DescriptorSet& dscset, vuh::Array<Ts>&... args){
-		constexpr auto N = sizeof...(args);
-		auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
-		auto r = dsc_infos2sets_(dscset, dscinfos, std::make_index_sequence<N>{});
-		return r;
-	}
-
 } // namespace
 
 namespace vuh {
@@ -169,7 +159,10 @@ namespace vuh {
 		/// Sets up the command buffer. Programs is ready to be run.
 		/// @pre Specs and batch sizes should be specified before calling this.
 		auto bind(const Params& p, vuh::Array<Ts>&... args) const-> const Program& {
-			_device._dev.updateDescriptorSets(arrays2dscsets(_dscset, args...), {}); // associate buffers to binding points in bindLayout
+			constexpr auto N = sizeof...(args);
+			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
+			auto write_dscsets = dsc_infos2sets_(_dscset, dscinfos, std::make_index_sequence<N>{});
+			_device._dev.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 			// Start recording commands into the newly allocated command buffer.
 			//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
