@@ -155,12 +155,12 @@ namespace vuh {
 			// specialize constants of the shader
 			auto specEntries = specs2mapentries(specs);
 			auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
-																, sizeof(specs), &specs);
+			                                       , sizeof(specs), &specs);
 		
 			// Specify the compute shader stage, and it's entry point (main), and specializations
 			auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
-																			 , vk::ShaderStageFlagBits::eCompute
-																			 , _shader, "main", &specInfo);
+			                                                 , vk::ShaderStageFlagBits::eCompute
+			                                                 , _shader, "main", &specInfo);
 			_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
 			return *this;
 		}

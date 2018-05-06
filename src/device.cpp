@@ -199,7 +199,7 @@ namespace vuh {
 	/// Shader stage info incapsulates the shader and layout&values of specialization constants.
 	auto Device::createPipeline(vk::PipelineLayout pipe_layout
 	                            , vk::PipelineCache pipe_cache
-	                            , vk::PipelineShaderStageCreateInfo shader_stage_info
+	                            , const vk::PipelineShaderStageCreateInfo& shader_stage_info
 	                            , vk::PipelineCreateFlags flags
 	                            )-> vk::Pipeline
 	{

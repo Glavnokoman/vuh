@@ -42,7 +42,7 @@ namespace vuh {
 		auto createPipeCache(vk::PipelineCacheCreateInfo info={})-> vk::PipelineCache;
 		auto createPipeline(vk::PipelineLayout pipe_layout
 		                    , vk::PipelineCache pipe_cache
-		                    , vk::PipelineShaderStageCreateInfo shader_stage_info
+		                    , const vk::PipelineShaderStageCreateInfo& shader_stage_info
 		                    , vk::PipelineCreateFlags flags={}
 		                    )-> vk::Pipeline;
 		
