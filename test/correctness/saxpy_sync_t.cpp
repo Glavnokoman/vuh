@@ -22,7 +22,7 @@ auto main(int /*argc*/, char const */*argv*/[])-> int {
 		float a;                                        // saxpy scaling parameter
 	};
 
-	auto kernel = vuh::Kernel<specs_t, params_t, arrays_t>("shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
+	auto kernel = vuh::Kernel<specs_t, params_t, arrays_t>("../shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
 	kernel.on(device).batch(128/64)(specs_t{64}, {128, 0.1f}, d_y, d_x); // run once, wait for completion
 	d_y.toHost(y);                                     // copy data back to host
 

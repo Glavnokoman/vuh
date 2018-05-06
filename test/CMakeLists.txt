@@ -1,11 +1,3 @@
 add_subdirectory(correctness)
 add_subdirectory(performance)
-
-if(VUH_BUILD_TESTS OR VUH_BUILD_BENCHMARKS)
-   include(CompileShader)
-
-   compile_shader(saxpy_shader
-      SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/shaders/saxpy.comp
-      TARGET ${CMAKE_CURRENT_BINARY_DIR}/shaders/saxpy.spv
-   )
-endif()
+add_subdirectory(shaders)
