@@ -21,6 +21,8 @@ namespace vuh {
 		auto operator=(Device&&) noexcept-> Device&;
 		friend auto swap(Device& d1, Device& d2)-> void;
 
+		operator vk::Device& () noexcept {return _dev;}
+
 		auto properties() const-> vk::PhysicalDeviceProperties;
 		auto numComputeQueues() const-> uint32_t { return 1u;}
 		auto numTransferQueues() const-> uint32_t { return 1u;}

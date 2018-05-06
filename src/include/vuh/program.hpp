@@ -77,8 +77,8 @@ namespace {
 
 	/// doc me
 	template<class T, size_t... I>
-	auto dsc_infos2sets_(vk::DescriptorSet dscset, const T& infos
-	                     , std::index_sequence<I...>)
+	auto dscinfos2writesets(vk::DescriptorSet dscset, const T& infos
+	                        , std::index_sequence<I...>)
 	{
 		auto r = std::array<vk::WriteDescriptorSet, sizeof...(I)>{{
 			{dscset, uint32_t(I), 0, 1, vk::DescriptorType::eStorageBuffer, nullptr, &infos[I]}...
@@ -102,9 +102,9 @@ namespace vuh {
 	        >
 	class Program<Specs, Params, Arrays<Ts...>> {
 	public:
-		explicit Program(vuh::Device& device, const std::vector<char>& code
-		                 , vk::ShaderModuleCreateFlags flags
-		                 )
+		Program(vuh::Device& device, const std::vector<char>& code
+		        , vk::ShaderModuleCreateFlags flags
+		        )
 		   : _device(device)
 		{
 			_shader = device.createShaderModule(code, flags);
@@ -129,6 +129,45 @@ namespace vuh {
 			                                                 , 0, sizeof(Params));
 			_pipelayout = device._dev.createPipelineLayout(
 						     {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, 1, &push_constant_range});
+		}
+
+		/// Destructor
+		~Program() noexcept { release(); }
+
+		Program(const Program&) = delete;
+		Program& operator= (const Program&) = delete;
+
+		Program(Program&& o) noexcept
+		   : _shader(o._shader)
+		   , _dscpool(o._dscpool)
+		   , _dsclayout(o._dsclayout)
+		   , _dscset(o._dscset)
+		   , _pipecache(o._pipecache)
+		   , _pipelayout(o._pipelayout)
+		   , _pipeline(o._pipeline)
+		   , _batch(o._batch)
+		   , _device(o._device)
+		{
+			o._shader = nullptr; //
+		}
+		/// Move assignment.
+		Program& operator= (Program&& o) noexcept {
+			release();
+			std::memcpy(this, &o, sizeof(Program));
+			o._shader = nullptr;
+			return *this;
+		}
+
+		/// Release resources associated with current Program.
+		auto release() noexcept {
+			if(_shader){
+				_device._dev.destroyShaderModule(_shader);
+				_device._dev.destroyDescriptorPool(_dscpool);
+				_device._dev.destroyDescriptorSetLayout(_dsclayout);
+				_device._dev.destroyPipelineCache(_pipecache);
+				_device._dev.destroyPipeline(_pipeline);
+				_device._dev.destroyPipelineLayout(_pipelayout);
+			}
 		}
 
 		/// Specify running batch size (3D).
@@ -161,7 +200,7 @@ namespace vuh {
 		auto bind(const Params& p, vuh::Array<Ts>&... args) const-> const Program& {
 			constexpr auto N = sizeof...(args);
 			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
-			auto write_dscsets = dsc_infos2sets_(_dscset, dscinfos, std::make_index_sequence<N>{});
+			auto write_dscsets = dscinfos2writesets(_dscset, dscinfos, std::make_index_sequence<N>{});
 			_device._dev.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 			// Start recording commands into the newly allocated command buffer.

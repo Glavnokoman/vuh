@@ -66,6 +66,7 @@ public:
    
    Array(const Array&) = delete;
    Array& operator= (const Array&) = delete;
+
 	/// move constructor. passes the underlying buffer ownership
 	Array(Array&& other) noexcept
 	   : _buf(other._buf), _mem(other._mem), _flags(other._flags), _dev(other._dev), _size(other._size)
@@ -73,7 +74,7 @@ public:
 		other._buf = nullptr;
 	}
 
-	/// Move assignment. Self move-assignment is UB (as it should be).
+	/// Move assignment.
 	auto operator= (Array&& other) noexcept-> Array& {
 		release();
 		std::memcpy(this, &other, sizeof(Array));
@@ -104,7 +105,7 @@ public:
    
 	/// copy from device buffer to some host iterable (+resizable()).
 	template<class C>
-	auto to_host(C& c)-> void {
+	auto toHost(C& c) const-> void {
 		if(_flags & vk::MemoryPropertyFlagBits::eHostVisible){ // memory IS host visible
 			auto hv = view_host_visible();
 			c.resize(size());
@@ -115,12 +116,9 @@ public:
 			                      , vk::MemoryPropertyFlagBits::eHostVisible
 			                      , vk::BufferUsageFlagBits::eTransferDst);
 			detail::copyBuf(_dev, _buf, stage_buf, size()*sizeof(T));
-			stage_buf.to_host(c); // copy from staging buffer to host
+			stage_buf.toHost(c); // copy from staging buffer to host
 		}
 	}
-
-   template<class C>
-   auto toHost(C& c) const-> void {throw "not implemented";}
 
 	operator vk::Buffer& () {return _buf;}
 	operator const vk::Buffer& () const {return _buf;}
@@ -155,7 +153,7 @@ private: // helpers
 	}
 
 	/// @return array view for host visible device buffer
-	auto view_host_visible()-> HostVisibleMemView<T> {
+	auto view_host_visible() const-> HostVisibleMemView<T> {
 		assert(_flags & vk::MemoryPropertyFlagBits::eHostVisible);
 		return HostVisibleMemView<T>(_dev, _mem, _size);
 	}

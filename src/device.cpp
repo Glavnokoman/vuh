@@ -132,22 +132,21 @@ namespace vuh {
 	/// move assignment
 	auto Device::operator=(Device&& o) noexcept-> Device& {
 		swap(*this, o);
-		o._dev = nullptr;
 		return *this;
 	}
 
 	/// Swap the guts of two devices (member-wise)
 	auto swap(Device& d1, Device& d2)-> void {
 		using std::swap;
-		swap(d1._dev, d2._dev);
+		swap(d1._dev             , d2._dev);
 		swap(d1._physdev         , d2._physdev         );
 		swap(d1._cmdpool_compute , d2._cmdpool_compute );
 		swap(d1._cmdbuf_compute  , d2._cmdbuf_compute  );
 		swap(d1._cmdpool_transfer, d2._cmdpool_transfer);
 		swap(d1._cmdbuf_transfer , d2._cmdbuf_transfer );
-		swap(d1._layers	          , d2._layers          );
-		swap(d1._cmp_family_id , d2._cmp_family_id );
-		swap(d1._tfr_family_id, d2._tfr_family_id);
+		swap(d1._layers	       , d2._layers          );
+		swap(d1._cmp_family_id   , d2._cmp_family_id   );
+		swap(d1._tfr_family_id   , d2._tfr_family_id   );
 	}
 
 	/// @return physical device properties
