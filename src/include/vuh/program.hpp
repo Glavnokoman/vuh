@@ -137,6 +137,7 @@ namespace vuh {
 		Program(const Program&) = delete;
 		Program& operator= (const Program&) = delete;
 
+		/// Move constructor.
 		Program(Program&& o) noexcept
 		   : _shader(o._shader)
 		   , _dscpool(o._dscpool)
