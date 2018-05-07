@@ -76,11 +76,11 @@ namespace vuh {
 	Device::Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
 	               , uint32_t computeFamilyId, uint32_t transferFamilyId
 	               )
-	  : _dev(createDevice(physdevice, layers, computeFamilyId, transferFamilyId))
+	  : vk::Device(createDevice(physdevice, layers, computeFamilyId, transferFamilyId))
 	  , _physdev(physdevice)
-	  , _cmdpool_compute(_dev.createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
+	  , _cmdpool_compute(createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
 	                                             , computeFamilyId}))
-	  , _cmdbuf_compute(allocCmdBuffer(_dev, _cmdpool_compute))
+	  , _cmdbuf_compute(allocCmdBuffer(*this, _cmdpool_compute))
 	  , _layers(layers)
 	  , _cmp_family_id(computeFamilyId)
 	  , _tfr_family_id(transferFamilyId)
@@ -89,12 +89,12 @@ namespace vuh {
 
 	/// release resources associated with device
 	auto Device::release() noexcept-> void {
-		if(_dev){
-			_dev.destroyCommandPool(_cmdpool_compute);
+		if((vk::Device&)(*this)){
+			destroyCommandPool(_cmdpool_compute);
 			if(_tfr_family_id != _cmp_family_id){
-				_dev.destroyCommandPool(_cmdpool_transfer);
+				destroyCommandPool(_cmdpool_transfer);
 			}
-			_dev.destroy();
+			vk::Device::destroy();
 		}
 	}
 
@@ -116,7 +116,7 @@ namespace vuh {
 
 	/// move constructor.
 	Device::Device(Device&& other) noexcept
-	   : _dev(other._dev)
+	   : vk::Device(std::move(other))
 	   , _physdev(other._physdev)
 	   , _cmdpool_compute(other._cmdpool_compute)
 	   , _cmdbuf_compute(other._cmdbuf_compute)
@@ -126,7 +126,7 @@ namespace vuh {
 	   , _cmp_family_id(other._cmp_family_id)
 	   , _tfr_family_id(other._tfr_family_id)
 	{
-		other._dev = nullptr;
+		(vk::Device&)other = nullptr;
 	}
 
 	/// move assignment
@@ -138,7 +138,7 @@ namespace vuh {
 	/// Swap the guts of two devices (member-wise)
 	auto swap(Device& d1, Device& d2)-> void {
 		using std::swap;
-		swap(d1._dev             , d2._dev);
+		swap((vk::Device&)d1     , (vk::Device&)d2);
 		swap(d1._physdev         , d2._physdev         );
 		swap(d1._cmdpool_compute , d2._cmdpool_compute );
 		swap(d1._cmdbuf_compute  , d2._cmdbuf_compute  );
@@ -165,7 +165,7 @@ namespace vuh {
 	                          ) const-> uint32_t
 	{
 		auto memProperties = _physdev.getMemoryProperties();
-		auto memoryReqs = _dev.getBufferMemoryRequirements(buffer);
+		auto memoryReqs = getBufferMemoryRequirements(buffer);
 		for(uint32_t i = 0; i < memProperties.memoryTypeCount; ++i){
 			if( (memoryReqs.memoryTypeBits & (1u << i))
 			    && ((properties & memProperties.memoryTypes[i].propertyFlags) == properties))
@@ -178,20 +178,21 @@ namespace vuh {
 
 	///
 	auto Device::computeQueue(uint32_t i)-> vk::Queue {
-		return _dev.getQueue(_cmp_family_id, i);
+		return getQueue(_cmp_family_id, i);
 	}
 
 	/// Create shader module from binary shader code.
+	/// @todo remove
 	auto Device::createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags
 	                                )-> vk::ShaderModule
 	{
-		return _dev.createShaderModule({flags, code.size()
+		return vk::Device::createShaderModule({flags, code.size()
 		                                , reinterpret_cast<const uint32_t*>(code.data())});
 	}
 
 	/// Create pipeline cache
 	auto Device::createPipeCache(vk::PipelineCacheCreateInfo info)-> vk::PipelineCache {
-		return _dev.createPipelineCache(info);
+		return createPipelineCache(info);
 	}
 
 	/// Create compute pipeline with a given layout.
@@ -204,55 +205,30 @@ namespace vuh {
 	{
 		auto pipelineCI = vk::ComputePipelineCreateInfo(flags
 																		, shader_stage_info, pipe_layout);
-		return _dev.createComputePipeline(pipe_cache, pipelineCI, nullptr);
+		return createComputePipeline(pipe_cache, pipelineCI, nullptr);
 		
 	}
 
 	/// @return i-th queue in the family supporting transfer commands.
 	auto Device::transferQueue(uint32_t i)-> vk::Queue {
-		return _dev.getQueue(_tfr_family_id, i);
+		return getQueue(_tfr_family_id, i);
 	}
 
 	/// Create buffer on a device. Does NOT allocate memory.
+	/// @todo remove
 	auto Device::makeBuffer(uint32_t size ///< size of buffer in bytes
 	                       , vk::BufferUsageFlags usage
 	                       )-> vk::Buffer
 	{
 		auto bufferCI = vk::BufferCreateInfo(vk::BufferCreateFlags(), size, usage);
-		return _dev.createBuffer(bufferCI);
+		return createBuffer(bufferCI);
 	}
 
-	/// Allocate memory on device on the heap with given id
+	/// Allocate device memory for the buffer on the heap with given id.
 	auto Device::alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory {
-	   auto memoryReqs = _dev.getBufferMemoryRequirements(buf);
+	   auto memoryReqs = getBufferMemoryRequirements(buf);
 	   auto allocInfo = vk::MemoryAllocateInfo(memoryReqs.size, memory_id);
-		return _dev.allocateMemory(allocInfo);
-	}
-
-	/// Bind memory to buffer
-	auto Device::bindBufferMemory(vk::Buffer buffer, vk::DeviceMemory memory, uint32_t offset
-	                              )-> void
-	{
-		_dev.bindBufferMemory(buffer, memory, offset);
-	}
-
-	/// free memory
-	auto Device::freeMemory(vk::DeviceMemory memory)-> void {
-		_dev.freeMemory(memory);
-	}
-
-	/// Map device memory to get a host accessible pointer. No explicit unmapping required.
-	auto Device::mapMemory(vk::DeviceMemory memory
-	                       , uint32_t offset
-	                       , uint32_t size    ///< size of mapped memory region in bytes
-	                       )-> void*
-	{
-		return _dev.mapMemory(memory, offset, size);
-	}
-
-	/// deallocate buffer (does not deallocate associated memory)
-	auto Device::destroyBuffer(vk::Buffer buf)-> void {
-		_dev.destroyBuffer(buf);
+		return allocateMemory(allocInfo);
 	}
 
 	/// @return handle to command buffer for transfer commands
@@ -262,10 +238,10 @@ namespace vuh {
 			if(_tfr_family_id == _cmp_family_id){
 				_cmdpool_transfer = _cmdpool_compute;
 			} else {
-				_cmdpool_transfer = _dev.createCommandPool(
+				_cmdpool_transfer = createCommandPool(
 				                 {vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _tfr_family_id});
 			}
-			_cmdbuf_transfer = allocCmdBuffer(_dev, _cmdpool_transfer);
+			_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer);
 		}
 		return _cmdbuf_transfer;
 	}

@@ -112,22 +112,22 @@ namespace vuh {
 			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
 			                                                   , dscTypes.size());
 			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-			_dscpool = device._dev.createDescriptorPool(
+			_dscpool = device.createDescriptorPool(
 			                        {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
 			                         , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
 			                         }
 			);
 			auto bindings = dscTypesToLayout(dscTypes);
-			_dsclayout = device._dev.createDescriptorSetLayout(
+			_dsclayout = device.createDescriptorSetLayout(
 			                                             {vk::DescriptorSetLayoutCreateFlags()
 			                                              , uint32_t(bindings.size()), bindings.data()
 			                                              }
 			);
-			_dscset = _device._dev.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
+			_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
 			_pipecache = device.createPipeCache();
 			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
 			                                                 , 0, sizeof(Params));
-			_pipelayout = device._dev.createPipelineLayout(
+			_pipelayout = device.createPipelineLayout(
 						     {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, 1, &push_constant_range});
 		}
 
@@ -162,12 +162,12 @@ namespace vuh {
 		/// Release resources associated with current Program.
 		auto release() noexcept {
 			if(_shader){
-				_device._dev.destroyShaderModule(_shader);
-				_device._dev.destroyDescriptorPool(_dscpool);
-				_device._dev.destroyDescriptorSetLayout(_dsclayout);
-				_device._dev.destroyPipelineCache(_pipecache);
-				_device._dev.destroyPipeline(_pipeline);
-				_device._dev.destroyPipelineLayout(_pipelayout);
+				_device.destroyShaderModule(_shader);
+				_device.destroyDescriptorPool(_dscpool);
+				_device.destroyDescriptorSetLayout(_dsclayout);
+				_device.destroyPipelineCache(_pipecache);
+				_device.destroyPipeline(_pipeline);
+				_device.destroyPipelineLayout(_pipelayout);
 			}
 		}
 
@@ -202,7 +202,7 @@ namespace vuh {
 			constexpr auto N = sizeof...(args);
 			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
 			auto write_dscsets = dscinfos2writesets(_dscset, dscinfos, std::make_index_sequence<N>{});
-			_device._dev.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
+			_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 			// Start recording commands into the newly allocated command buffer.
 			//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
@@ -236,14 +236,14 @@ namespace vuh {
 		/// Release device resources allocated by parameters binding.
 		/// Should only be manually called before binding new set of parameters to same Program object
 		auto unbind()-> void {
-			_device._dev.destroyDescriptorPool(_dscpool);
-			_device._dev.resetCommandPool(_device._cmdpool_compute, vk::CommandPoolResetFlags());
+			_device.destroyDescriptorPool(_dscpool);
+			_device.resetCommandPool(_device._cmdpool_compute, vk::CommandPoolResetFlags());
 			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
 //			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
 			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
 			                                                   , dscTypes.size());
 			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-			_dscpool = _device._dev.createDescriptorPool(
+			_dscpool = _device.createDescriptorPool(
 			           {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
 			            , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
 			            }
@@ -258,10 +258,10 @@ namespace vuh {
 
 			// submit the command buffer to the queue and set up a fence.
 			auto queue = _device.computeQueue();
-			auto fence = _device._dev.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+			auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
 			queue.submit({submitInfo}, fence);
-			_device._dev.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
-			_device._dev.destroyFence(fence);
+			_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
+			_device.destroyFence(fence);
 		}
 
 		/// Run program with provided parameters.

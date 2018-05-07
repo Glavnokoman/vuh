@@ -9,8 +9,8 @@
 namespace vuh {
 	class Instance;
 
-	///
-	class Device {
+	/// Logical device packed with associated command pools and buffers.
+	class Device: public vk::Device {
 	public:
 		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers={});
 		~Device() noexcept;
@@ -20,8 +20,6 @@ namespace vuh {
 		Device(Device&&) noexcept;
 		auto operator=(Device&&) noexcept-> Device&;
 		friend auto swap(Device& d1, Device& d2)-> void;
-
-		operator vk::Device& () noexcept {return _dev;}
 
 		auto properties() const-> vk::PhysicalDeviceProperties;
 		auto numComputeQueues() const-> uint32_t { return 1u;}
@@ -33,10 +31,6 @@ namespace vuh {
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
 		auto makeBuffer(uint32_t size, vk::BufferUsageFlags usage)-> vk::Buffer;
 		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
-		auto bindBufferMemory(vk::Buffer, vk::DeviceMemory, uint32_t offset=0)-> void;
-		auto freeMemory(vk::DeviceMemory)-> void;
-		auto mapMemory(vk::DeviceMemory, uint32_t size, uint32_t offset=0)-> void*;
-		auto destroyBuffer(vk::Buffer)-> void;
 		auto computeCmdBuffer()-> vk::CommandBuffer& {return _cmdbuf_compute;}
 		auto transferCmdBuffer()-> vk::CommandBuffer&;
 		auto createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags={}
@@ -55,7 +49,6 @@ namespace vuh {
 	                   , uint32_t computeFamilyId, uint32_t transferFamilyId);
 		auto release() noexcept-> void;
 	public: // data
-		vk::Device _dev;                           ///< logical device handle
 		vk::PhysicalDevice _physdev;               ///< handle to associated physical device
 		vk::CommandPool    _cmdpool_compute;       ///< handle to command pool for compute commands
 		vk::CommandBuffer  _cmdbuf_compute;        ///< primary command buffer associated with the compute command pool
