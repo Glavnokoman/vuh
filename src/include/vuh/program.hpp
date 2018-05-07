@@ -206,20 +206,19 @@ namespace vuh {
 
 			// Start recording commands into the newly allocated command buffer.
 			//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
+			auto cmdbuf = _device.computeCmdBuffer();
 			auto beginInfo = vk::CommandBufferBeginInfo();
-			_device._cmdbuf_compute.begin(beginInfo);
+			cmdbuf.begin(beginInfo);
 
 			// Before dispatch bind a pipeline, AND a descriptor set.
 			// The validation layer will NOT give warnings if you forget those.
-			_device._cmdbuf_compute.bindPipeline(vk::PipelineBindPoint::eCompute, _pipeline);
-			_device._cmdbuf_compute.bindDescriptorSets(vk::PipelineBindPoint::eCompute, _pipelayout
-			                                 , 0, {_dscset}, {});
+			cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, _pipeline);
+			cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, _pipelayout, 0, {_dscset}, {});
 
-			_device._cmdbuf_compute.pushConstants(_pipelayout, vk::ShaderStageFlagBits::eCompute
-			                                      , 0, sizeof(p), &p);
+			cmdbuf.pushConstants(_pipelayout, vk::ShaderStageFlagBits::eCompute , 0, sizeof(p), &p);
 
-			_device._cmdbuf_compute.dispatch(_batch[0], _batch[1], _batch[2]); // start compute pipeline, execute the shader
-			_device._cmdbuf_compute.end(); // end recording commands
+			cmdbuf.dispatch(_batch[0], _batch[1], _batch[2]); // start compute pipeline, execute the shader
+			cmdbuf.end(); // end recording commands
 
 			return *this;
 		}
@@ -237,9 +236,8 @@ namespace vuh {
 		/// Should only be manually called before binding new set of parameters to same Program object
 		auto unbind()-> void {
 			_device.destroyDescriptorPool(_dscpool);
-			_device.resetCommandPool(_device._cmdpool_compute, vk::CommandPoolResetFlags());
+			_device.resetCommandPool(_device.computeCmdBuffer(), vk::CommandPoolResetFlags());
 			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
-//			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
 			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
 			                                                   , dscTypes.size());
 			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
