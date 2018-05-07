@@ -123,20 +123,45 @@ namespace vuh {
 	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
 	   , _reporter(registerReporter(_instance, report_callback ? report_callback : debugReporter))
 	   , _layers(filter_layers(layers)) // @todo: fix layers filtered twice.
-	{
-	}
+	{}
 
 	/// Clean instance resources.
 	Instance::~Instance() noexcept {
-		if(_reporter){// unregister callback.
-			auto destroyFn = PFN_vkDestroyDebugReportCallbackEXT(
-			                     vkGetInstanceProcAddr(_instance, "vkDestroyDebugReportCallbackEXT"));
-			if(destroyFn){
-				destroyFn(_instance, _reporter, nullptr);
-			}
-		}
+		clear();
+	}
 
-		_instance.destroy();
+	/// move constructor
+	Instance::Instance(Instance&& o) noexcept
+	   : _instance(o._instance)
+	   , _reporter(o._reporter)
+	   , _layers(std::move(o._layers))
+	{
+		o._instance = nullptr;
+	}
+
+	/// move assignment
+	auto Instance::operator=(Instance&& o) noexcept-> Instance& {
+		using std::swap;
+		swap(_instance, o._instance);
+		swap(_reporter, o._reporter);
+		swap(_layers, o._layers);
+		return *this;
+	}
+
+	/// Destroy underlying vulkan instance.
+	/// All resources associated with it, should be released before that.
+	auto Instance::clear() noexcept-> void {
+		if(_instance){
+			if(_reporter){// unregister callback.
+				auto destroyFn = PFN_vkDestroyDebugReportCallbackEXT(
+				                     vkGetInstanceProcAddr(_instance, "vkDestroyDebugReportCallbackEXT"));
+				if(destroyFn){
+					destroyFn(_instance, _reporter, nullptr);
+				}
+			}
+
+			_instance.destroy();
+		}
 	}
 
 	/// list of local compute-capable devices
