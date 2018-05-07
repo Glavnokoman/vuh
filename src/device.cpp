@@ -5,8 +5,9 @@
 #define ARR_VIEW(x) uint32_t(x.size()), x.data()
 
 namespace {
-	// create logical device to interact with the physical one
-	auto createDevice(const vk::PhysicalDevice& physicalDevice, const std::vector<const char*>& layers
+	/// Create logical device.
+	auto createDevice(const vk::PhysicalDevice& physicalDevice
+	                  , const std::vector<const char*>& layers
 	                  , uint32_t compute_family_id
 	                  , uint32_t transfer_family_id
 	                  )-> vk::Device
@@ -29,7 +30,10 @@ namespace {
 	}
 
 	/// @return preffered family id for the desired queue flags combination, or -1 if none is found.
-	auto getFamilyID(const std::vector<vk::QueueFamilyProperties>& queue_families, vk::QueueFlags tgtFlag)-> uint32_t {
+	auto getFamilyID(const std::vector<vk::QueueFamilyProperties>& queue_families
+	                 , vk::QueueFlags tgtFlag
+	                 )-> uint32_t
+	{
 		auto r = uint32_t(-1);
 		auto minFlags = std::numeric_limits<VkFlags>::max();
 
@@ -78,13 +82,18 @@ namespace vuh {
 	               )
 	  : vk::Device(createDevice(physdevice, layers, computeFamilyId, transferFamilyId))
 	  , _physdev(physdevice)
-	  , _cmdpool_compute(createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
-	                                             , computeFamilyId}))
-	  , _cmdbuf_compute(allocCmdBuffer(*this, _cmdpool_compute))
 	  , _layers(layers)
 	  , _cmp_family_id(computeFamilyId)
 	  , _tfr_family_id(transferFamilyId)
 	{
+		try {
+			_cmdpool_compute = createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
+			                                     , computeFamilyId});
+			_cmdbuf_compute = allocCmdBuffer(*this, _cmdpool_compute);
+		} catch(vk::Error&) {
+			release(); // because vk::Device does not know how to clean after itself
+			throw;
+		}
 	}
 
 	/// release resources associated with device
@@ -138,7 +147,7 @@ namespace vuh {
 	/// Swap the guts of two devices (member-wise)
 	auto swap(Device& d1, Device& d2)-> void {
 		using std::swap;
-		swap((vk::Device&)d1     , (vk::Device&)d2);
+		swap((vk::Device&)d1     , (vk::Device&)d2     );
 		swap(d1._physdev         , d2._physdev         );
 		swap(d1._cmdpool_compute , d2._cmdpool_compute );
 		swap(d1._cmdbuf_compute  , d2._cmdbuf_compute  );
