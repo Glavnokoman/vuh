@@ -124,7 +124,7 @@ namespace vuh {
 			                                              }
 			);
 			_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
-			_pipecache = device.createPipeCache();
+			_pipecache = device.createPipelineCache({});
 			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
 			                                                 , 0, sizeof(Params));
 			_pipelayout = device.createPipelineLayout(

@@ -29,13 +29,11 @@ namespace vuh {
 
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
-		auto makeBuffer(uint32_t size, vk::BufferUsageFlags usage)-> vk::Buffer;
 		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
 		auto computeCmdBuffer()-> vk::CommandBuffer& {return _cmdbuf_compute;}
 		auto transferCmdBuffer()-> vk::CommandBuffer&;
 		auto createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags={}
 		                        )-> vk::ShaderModule;
-		auto createPipeCache(vk::PipelineCacheCreateInfo info={})-> vk::PipelineCache;
 		auto createPipeline(vk::PipelineLayout pipe_layout
 		                    , vk::PipelineCache pipe_cache
 		                    , const vk::PipelineShaderStageCreateInfo& shader_stage_info

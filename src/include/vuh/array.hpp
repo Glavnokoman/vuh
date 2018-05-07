@@ -57,8 +57,8 @@ public:
 	      , vk::BufferUsageFlags usage=vk::BufferUsageFlagBits::eStorageBuffer
 	      )
 	   : Array(device
-	           , device.makeBuffer(n_elements*sizeof(T)
-	                               , detail::update_usage(device, properties, usage))
+	           , device.createBuffer({{}, n_elements*sizeof(T)
+	                                  , detail::update_usage(device, properties, usage)})
 	           , properties, n_elements)
    {}
 

@@ -123,7 +123,7 @@ namespace vuh {
 		return *this;
 	}
 
-	/// move constructor.
+	/// Move constructor.
 	Device::Device(Device&& other) noexcept
 	   : vk::Device(std::move(other))
 	   , _physdev(other._physdev)
@@ -138,7 +138,7 @@ namespace vuh {
 		(vk::Device&)other = nullptr;
 	}
 
-	/// move assignment
+	/// Move assignment.
 	auto Device::operator=(Device&& o) noexcept-> Device& {
 		swap(*this, o);
 		return *this;
@@ -199,11 +199,6 @@ namespace vuh {
 		                                , reinterpret_cast<const uint32_t*>(code.data())});
 	}
 
-	/// Create pipeline cache
-	auto Device::createPipeCache(vk::PipelineCacheCreateInfo info)-> vk::PipelineCache {
-		return createPipelineCache(info);
-	}
-
 	/// Create compute pipeline with a given layout.
 	/// Shader stage info incapsulates the shader and layout&values of specialization constants.
 	auto Device::createPipeline(vk::PipelineLayout pipe_layout
@@ -221,16 +216,6 @@ namespace vuh {
 	/// @return i-th queue in the family supporting transfer commands.
 	auto Device::transferQueue(uint32_t i)-> vk::Queue {
 		return getQueue(_tfr_family_id, i);
-	}
-
-	/// Create buffer on a device. Does NOT allocate memory.
-	/// @todo remove
-	auto Device::makeBuffer(uint32_t size ///< size of buffer in bytes
-	                       , vk::BufferUsageFlags usage
-	                       )-> vk::Buffer
-	{
-		auto bufferCI = vk::BufferCreateInfo(vk::BufferCreateFlags(), size, usage);
-		return createBuffer(bufferCI);
 	}
 
 	/// Allocate device memory for the buffer on the heap with given id.
