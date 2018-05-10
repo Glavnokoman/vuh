@@ -11,6 +11,8 @@ namespace vuh {
 
 	/// Mostly RAII wrapper over Vulkan instance.
 	/// Defines layers and extensions in use and can enumerate present compute-capable devices.
+	/// In debug builds adds default validation layer/extension.
+	/// Default debug reporter spits messages to std::cerr.
 	class Instance {
 	public:
 		explicit Instance(const std::vector<const char*>& layers={}

@@ -1,40 +1,37 @@
-# Vuh. A Vulkan-based library for GPGPU computing.
+# Vuh. A Vulkan-based GPGPU computing framework.
 Vulkan runs virtually on any modern hardware/OS combination.
-It provides a low level interface to the hardware so you have all the power at your fingertips.
+It allows you to write GPU accelerated code once, and run it on iOS, Android, Linux, Windows, macOS...
+NVidia, Radeons, Intel, Adreno, Mali... whatever
+Vulkan provides a very low level interface so you have access to all the power hidden in the GPU.
 At the price of ridiculous amount of boilerplate.
-Vuh aims to reduce the boilerplate to a reasonable minimum in most common GPGPU computing scenarios.
+Vuh aims to reduce the boilerplate to (a reasonable) minimum in most common GPGPU computing scenarios.
 
 # Motivating Example
 saxpy implementation using vuh.
 ```c++
-auto main(int argc, char const *argv[])-> int {
+auto main()-> int {
    auto y = std::vector<float>(128, 1.0f);
    auto x = std::vector<float>(128, 2.0f);
 
    auto instance = vuh::Instance();
-   auto device = instance.devices()[0];               // just get the first compute-capable device
+   auto device = instance.devices().at(0);                        // just get the first available device
 
-   auto d_y = vuh::Array<float>::fromHost(device, y); // create device array and copy data from host
+   auto d_y = vuh::Array<float>::fromHost(device, y);             // create device arrays and copy data
    auto d_x = vuh::Array<float>::fromHost(device, x);
 
-   using specs_t = std::tuple<uint32_t>;              // specialization constants. here it is the workgroup size
-   using arrays_t = vuh::typelist<float, float>;      // value types of kernel array parameters
-   using params_t = struct {                          // non-array parameters to kernel (push-constants), should mirror exactly the corresponding structure in the shader
-      uint32_t size;                                  // array size
-      float a;                                        // saxpy scaling parameter
-   };
+   struct Params{uint32_t size; float a;};                        // push-constants interface of the shader
+   auto kernel = vuh::Kernel<Params>("shaders/saxpy.spv");        // load spir-v shader code
+   kernel.on(device).grid(128/64).spec(64)({128, 0.1}, d_y, d_x); // run once, wait for completion
 
-   auto kernel = vuh::Kernel<specs_t, params_t, arrays_t>("shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
-   kernel.on(device).batch(128/64)(specs_t{64}, {128, 0.1f}, d_y, d_x); // run once, wait for completion
-   d_y.toHost(y);                                     // copy data back to host
+   d_y.toHost(y);                                                 // copy data back to host
 
    return 0;
 }
 ```
-with the corresponding (compute) shader part:
+and the corresponding kernel (glsl compute shader) code:
 ```glsl
-layout(local_size_x_id = 0) in;             // workgroup size set with specialization constant
-layout(push_constant) uniform Parameters {  // push constants
+layout(local_size_x_id = 0) in;             // workgroup size (set with .spec(64) on C++ side)
+layout(push_constant) uniform Parameters {  // push constants (set with {128, 0.1} on C++ side)
    uint size;                               // array size
    float a;                                 // scaling parameter
 } params;
@@ -51,12 +48,19 @@ void main(){
 }
 ```
 
+# Features (so far)
+- device arrays, sync data exchange with host
+- specialization constants (to set workgroup dimensions, etc...)
+- push-constants (to pass small data (<= 128 Bytes), like task dimensions etc...)
+- layout bindings (to pass array parameters)
+- sync kernel execution
+
 # Build & Install
 ## Dependencies
 - C++14 compliant compiler
 - Vulkan-headers
 - Vulkan-hpp
-- Glslang (optional, but very recommended)
+- Glslang (optional (but very recommended))
 - CMake (build-only)
 - Catch2 (optional, build-only)
 - sltbench (optional, build-only)
