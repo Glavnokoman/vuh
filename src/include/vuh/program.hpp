@@ -174,7 +174,7 @@ namespace vuh {
 		/// Specify running batch size (3D).
  		/// This only sets the dimensions of work batch in units of workgroup, does not start
 		/// the actual calculation.
-		auto batch(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {
+		auto grid(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {
 			_batch = {x, y, z};
 			return *this;
 		}

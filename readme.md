@@ -1,7 +1,7 @@
 # Vuh. A Vulkan-based GPGPU computing framework.
 Vulkan runs virtually on any modern hardware/OS combination.
 It allows you to write GPU accelerated code once, and run it on iOS, Android, Linux, Windows, macOS...
-NVidia, Radeons, Intel, Adreno, Mali... whatever
+NVidia, Radeons, Intel, Adreno, Mali... whatever.
 Vulkan provides a very low level interface so you have access to all the power hidden in the GPU.
 At the price of ridiculous amount of boilerplate.
 Vuh aims to reduce the boilerplate to (a reasonable) minimum in most common GPGPU computing scenarios.
