@@ -28,13 +28,12 @@ namespace {
 } // namespace
 
 namespace vuh {
-	template<class Specs, class Params, class A> class Program;
+	template<class Params, class A> class Program;
 
 	/// Brings together shader interfaces declaration and the spirv code.
 	/// Needs to be linked to vuh::Device to get the runnable program.
 	/// Serves as a proxy object for typelist to pack of its types conversion.
-	template< class Specs   ///< tuple of specialization parameters
-	        , class Params  ///< shader push parameters interface
+	template< class Params  ///< shader push parameters interface
 	        , class Arrays  ///< typelist of value types of array parameters
            >
 	class Kernel {
@@ -45,12 +44,12 @@ namespace vuh {
 		{}
 		
 		/// Instantiate kernel on a device, to obtain runnable Programs object.
-		auto on(vuh::Device& device)-> Program<Specs, Params, Arrays> {
-			return Program<Specs, Params, Arrays>(device, _code, _flags);
+		auto on(vuh::Device& device)-> Program<Params, Arrays> {
+			return Program<Params, Arrays>(device, _code, _flags);
 		}
 		
 		///
-		auto on(vuh::Device& device, uint32_t queue_id)-> Program<Specs, Params, Arrays> {
+		auto on(vuh::Device& device, uint32_t queue_id)-> Program<Params, Arrays> {
 			throw "not implemented";
 		}
 	protected: // data

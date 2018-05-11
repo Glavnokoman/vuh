@@ -33,18 +33,17 @@ namespace {
 		// Probably UB as tuples are non-POD types (no easy way out till C++ gets some compile-time reflection).
 		// Should never be called outside constexpr context.
 		template<size_t Idx, class T>
-		constexpr auto tuple_element_offset()-> std::size_t {
-			constexpr T dum{};
-			return size_t(reinterpret_cast<const char*>(&std::get<Idx>(dum))
-		                 - reinterpret_cast<const char*>(&dum));
+		constexpr auto tuple_element_offset(const T& tup)-> std::size_t {
+			return size_t(reinterpret_cast<const char*>(&std::get<Idx>(tup))
+		                 - reinterpret_cast<const char*>(&tup));
 		}
 		
 		//
 		template<class T, size_t... I>
-		constexpr auto spec2entries(const T& /*specs*/, std::index_sequence<I...>){
+		constexpr auto spec2entries(const T& specs, std::index_sequence<I...>){
 			return std::array<vk::SpecializationMapEntry, sizeof...(I)>{{
 			                       { uint32_t(I)
-			                       , uint32_t(tuple_element_offset<I, T>())
+			                       , uint32_t(tuple_element_offset<I>(specs))
 			                       , uint32_t(sizeof(typename std::tuple_element<I, T>::type))
 			                       }...
 			}};
@@ -68,8 +67,8 @@ namespace {
 	}
 	
 	/// @return specialization map array
-	template<template<class...> class T, class... Ts>
-	auto specs2mapentries(const T<Ts...>& specs
+	template<class... Ts>
+	auto specs2mapentries(const std::tuple<Ts...>& specs
 	                      )-> std::array<vk::SpecializationMapEntry, sizeof...(Ts)> 
 	{
 		return detail::spec2entries(specs, std::make_index_sequence<sizeof...(Ts)>{});
@@ -92,15 +91,14 @@ namespace vuh {
 
 	/// Runnable program. Allows to bind the actual parameters to the interface and execute 
 	/// kernel on a Vulkan device.
-	template<class S, class P, class A> class Program;
+	template<class P, class A> class Program;
 	
 	/// specialization to unpack array types parameters
-	template< class Specs  ///< tuple of specialization parameters
-	        , class Params ///< shader push parameters structure
+	template<class Params ///< shader push parameters structure
 	        , template<class...> class Arrays ///< typelist of value types of array parameters
 	        , class... Ts  ///< pack of value types of array parameters
 	        >
-	class Program<Specs, Params, Arrays<Ts...>> {
+	class Program<Params, Arrays<Ts...>> {
 	public:
 		Program(vuh::Device& device, const std::vector<char>& code
 		        , vk::ShaderModuleCreateFlags flags
@@ -181,11 +179,13 @@ namespace vuh {
 		
 		/// Specify values of specification constants.
 		/// Under the hood it creates the compute pipeline here.
-		auto spec(const Specs& specs) const-> const Program& {
+		template<class... Us>
+		auto spec(Us... specs) const-> const Program& {
 			// specialize constants of the shader
-			auto specEntries = specs2mapentries(specs);
+			auto spec_tuple = std::tuple<Us...>(specs...);
+			auto specEntries = specs2mapentries(spec_tuple);
 			auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
-			                                       , sizeof(specs), &specs);
+			                                       , sizeof(spec_tuple), &spec_tuple);
 		
 			// Specify the compute shader stage, and it's entry point (main), and specializations
 			auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
