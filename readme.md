@@ -19,8 +19,9 @@ auto main()-> int {
    auto d_y = vuh::Array<float>::fromHost(device, y);      // create device arrays and copy data
    auto d_x = vuh::Array<float>::fromHost(device, x);
 
-   struct Params{uint32_t size; float a;};                 // push-constants interface of the shader
-   auto kernel = vuh::Kernel<Params>(device, "saxpy.spv"); // load spir-v shader code
+   using Specs = vuh::typelist<uint32_t>;                  // shader specialization constants interface
+   struct Params{uint32_t size; float a;};                 // shader push-constants interface
+   auto kernel = vuh::Kernel<Specs, Params>(device, "saxpy.spv"); // load spir-v shader code
    kernel.grid(128/64).spec(64)({128, 0.1}, d_y, d_x);     // run once, wait for completion
 
    d_y.toHost(y);                                          // copy data back to host
