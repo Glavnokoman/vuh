@@ -14,21 +14,10 @@ namespace {
 	namespace detail {
 		template<class T> struct DictTypeToDsc;
 	
-		template<> struct DictTypeToDsc<float>{ 
+		template<class T> struct DictTypeToDsc<vuh::Array<T>>{
 			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
 		};
 		
-		template<> struct DictTypeToDsc<uint32_t>{ 
-			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer; 
-		};
-		
-		/// Not currently used, just a wild idea on how to support uniforms (and dynamic uniforms),
-		/// needs check if that works. If not - descriptor types have to be passed as a parameter 
-		/// to kernel constructor.
-		template<> struct DictTypeToDsc<const float>{ 
-			static constexpr vk::DescriptorType value = vk::DescriptorType::eUniformBuffer;
-		};
-	 
 		// Compile-time offset of tuple element.
 		// Probably UB as tuples are non-POD types (no easy way out till C++ gets some compile-time reflection).
 		// Should never be called outside constexpr context.
@@ -51,7 +40,7 @@ namespace {
 	} // namespace trais
 
 	/// doc me
-	template<template<class...> class L, class... Ts>
+	template<class... Ts>
 	auto typesToDscTypes() {
 		return std::array<vk::DescriptorType, sizeof...(Ts)>{detail::DictTypeToDsc<Ts>::value...};
 	}
@@ -77,7 +66,8 @@ namespace {
 	/// doc me
 	template<class T, size_t... I>
 	auto dscinfos2writesets(vk::DescriptorSet dscset, const T& infos
-	                        , std::index_sequence<I...>)
+	                        , std::index_sequence<I...>
+	                        )-> std::array<vk::WriteDescriptorSet, sizeof...(I)>
 	{
 		auto r = std::array<vk::WriteDescriptorSet, sizeof...(I)>{{
 			{dscset, uint32_t(I), 0, 1, vk::DescriptorType::eStorageBuffer, nullptr, &infos[I]}...
@@ -89,16 +79,52 @@ namespace {
 namespace vuh {
 	template<class... Ts>	 struct typelist{};
 
-	/// Runnable program. Allows to bind the actual parameters to the interface and execute 
-	/// kernel on a Vulkan device.
-	template<class P, class A> class Program;
-	
+	template<class T> class Program;
+
+	namespace detail {
+		/// doc me
+		template<class Params, class... Specs>
+		class ProgramBindable {
+			using parent_t = Program<Params>;
+			std::tuple<Specs...> _specs;
+			parent_t& _p;
+		public:
+			explicit ProgramBindable(parent_t& program, Specs... specs)
+				: _specs(specs...), _p(program)
+			{}
+
+			template<class... Ts>
+			auto bind(const Params& p, Ts&... arrays)-> parent_t& {
+				_p.init_pipelayout(arrays...);
+				init_pipeline();
+				_p.create_command_buffer(p, arrays...);
+				return _p;
+			}
+
+			template<class... Ts>
+			auto operator()(const Params& p, Ts&... arrays)-> void {
+				bind(p, arrays...);
+				_p.run();
+			}
+		private: // helpers
+			auto init_pipeline()-> void {
+				auto specEntries = specs2mapentries(_specs);
+				auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
+				                                       , sizeof(_specs), &_specs);
+
+				// Specify the compute shader stage, and it's entry point (main), and specializations
+				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
+				                                                 , vk::ShaderStageFlagBits::eCompute
+				                                                 , _p._shader, "main", &specInfo);
+				_p._pipeline = _p._device.createPipeline(_p._pipelayout, _p._pipecache, stageCI);
+			}
+		}; // class Program_
+	} // namespace detail
+
 	/// specialization to unpack array types parameters
-	template<class Params ///< shader push parameters structure
-	        , template<class...> class Arrays ///< typelist of value types of array parameters
-	        , class... Ts  ///< pack of value types of array parameters
-	        >
-	class Program<Params, Arrays<Ts...>> {
+	template<class Params> ///< shader push parameters structure
+	class Program {
+		template<class P, class... Specs> friend class detail::ProgramBindable;
 	public:
 		Program(vuh::Device& device, const std::vector<char>& code
 		        , vk::ShaderModuleCreateFlags flags
@@ -106,27 +132,6 @@ namespace vuh {
 		   : _device(device)
 		{
 			_shader = device.createShaderModule(code, flags);
-			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
-			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
-			                                                   , dscTypes.size());
-			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-			_dscpool = device.createDescriptorPool(
-			                        {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
-			                         , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
-			                         }
-			);
-			auto bindings = dscTypesToLayout(dscTypes);
-			_dsclayout = device.createDescriptorSetLayout(
-			                                             {vk::DescriptorSetLayoutCreateFlags()
-			                                              , uint32_t(bindings.size()), bindings.data()
-			                                              }
-			);
-			_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
-			_pipecache = device.createPipelineCache({});
-			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
-			                                                 , 0, sizeof(Params));
-			_pipelayout = device.createPipelineLayout(
-						     {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, 1, &push_constant_range});
 		}
 
 		/// Destructor
@@ -178,27 +183,104 @@ namespace vuh {
 		}
 		
 		/// Specify values of specification constants.
-		/// Under the hood it creates the compute pipeline here.
 		template<class... Us>
-		auto spec(Us... specs) const-> const Program& {
+		auto spec(Us... specs)-> detail::ProgramBindable<Params, Us...> {
 			// specialize constants of the shader
-			auto spec_tuple = std::tuple<Us...>(specs...);
-			auto specEntries = specs2mapentries(spec_tuple);
-			auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
-			                                       , sizeof(spec_tuple), &spec_tuple);
-		
-			// Specify the compute shader stage, and it's entry point (main), and specializations
-			auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
-			                                                 , vk::ShaderStageFlagBits::eCompute
-			                                                 , _shader, "main", &specInfo);
-			_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
-			return *this;
+			return detail::ProgramBindable<Params, Us...>(*this, specs...);
 		}
 		
 		/// Associate buffers to binding points, and pushes the push constants.
-		/// Sets up the command buffer. Programs is ready to be run.
+		/// Does most of setup here. Programs is ready to be run.
 		/// @pre Specs and batch sizes should be specified before calling this.
-		auto bind(const Params& p, vuh::Array<Ts>&... args) const-> const Program& {
+		template<class... Ts>
+		auto bind(const Params& p, Ts&... args)-> const Program& {
+			init_pipelayout<Ts...>();
+			init_pipeline();
+			create_command_buffer(p, args...);
+			return *this;
+		}
+
+		/// Release device resources allocated by parameters binding.
+		/// @todo hide it or remove, should never be explicitely called.
+		auto unbind()-> void {
+			throw "not implemented"; // what follows is not a proper implementation. left here for reference.
+			_device.destroyDescriptorPool(_dscpool);
+			_device.resetCommandPool(_device.computeCmdBuffer(), vk::CommandPoolResetFlags());
+			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
+			                                                   , _num_sbo_params);
+			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
+			_dscpool = _device.createDescriptorPool(
+			           {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
+			            , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
+			            }
+			);
+		}
+
+		/// Run the Program object on previously bound parameters, wait for completion.
+		/// @pre bacth sizes should be specified before calling this.
+		/// @pre all paramerters should be specialized, pushed and bound before calling this.
+		auto run()-> void {
+			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
+
+			// submit the command buffer to the queue and set up a fence.
+			auto queue = _device.computeQueue();
+			auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+			queue.submit({submitInfo}, fence);
+			_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
+			_device.destroyFence(fence);
+		}
+
+		/// Run program with provided parameters.
+		/// @pre bacth sizes should be specified before calling this.
+
+		template<class... Ts>
+		auto operator()(const Params& params, Ts&... args)-> void {
+			bind(params, args...);
+			run();
+		}
+	private: // helpers
+		/// set up the state of the kernel that depends on number and types of bound array parameters
+		template<class... Ts ///< bound array-like parameters
+		         >
+		auto init_pipelayout(Ts&...)-> void {
+			_num_sbo_params = sizeof...(Ts);
+			auto dscTypes = typesToDscTypes<Ts...>();
+			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
+			                                                   , _num_sbo_params);
+			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
+			_dscpool = _device.createDescriptorPool(
+			                        {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
+			                         , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
+			                         }
+			);
+
+			auto bindings = dscTypesToLayout(dscTypes);
+			_dsclayout = _device.createDescriptorSetLayout(
+			                                             {vk::DescriptorSetLayoutCreateFlags()
+			                                              , uint32_t(bindings.size()), bindings.data()
+			                                              }
+			);
+			_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
+			_pipecache = _device.createPipelineCache({});
+			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
+			                                                 , 0, sizeof(Params));
+			_pipelayout = _device.createPipelineLayout(
+						     {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, 1, &push_constant_range});
+		}
+
+		///
+		auto init_pipeline()-> void {
+			// Specify the compute shader stage, and it's entry point (main), and specializations
+			auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
+			                                                 , vk::ShaderStageFlagBits::eCompute
+			                                                 , _shader, "main", nullptr);
+
+			_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+		}
+
+		///
+		template<class... Ts>
+		auto create_command_buffer(const Params& p, Ts&... args)-> void {
 			constexpr auto N = sizeof...(args);
 			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
 			auto write_dscsets = dscinfos2writesets(_dscset, dscinfos, std::make_index_sequence<N>{});
@@ -219,45 +301,6 @@ namespace vuh {
 
 			cmdbuf.dispatch(_batch[0], _batch[1], _batch[2]); // start compute pipeline, execute the shader
 			cmdbuf.end(); // end recording commands
-
-			return *this;
-		}
-
-		/// Release device resources allocated by parameters binding.
-		/// Should only be manually called before binding new set of parameters to same Program object
-		auto unbind()-> void {
-			_device.destroyDescriptorPool(_dscpool);
-			_device.resetCommandPool(_device.computeCmdBuffer(), vk::CommandPoolResetFlags());
-			auto dscTypes = typesToDscTypes<Arrays, Ts...>();
-			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
-			                                                   , dscTypes.size());
-			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-			_dscpool = _device.createDescriptorPool(
-			           {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
-			            , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
-			            }
-			);
-		}
-
-		/// Run the Program object on previously bound parameters, wait for completion.
-		/// @pre bacth sizes should be specified before calling this.
-		/// @pre all paramerters should be specialized, pushed and bound before calling this.
-		auto run() const-> void {
-			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
-
-			// submit the command buffer to the queue and set up a fence.
-			auto queue = _device.computeQueue();
-			auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
-			queue.submit({submitInfo}, fence);
-			_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
-			_device.destroyFence(fence);
-		}
-
-		/// Run program with provided parameters.
-		/// @pre bacth sizes should be specified before calling this.
-		auto operator()(const Params& params, vuh::Array<Ts>&... args ) const-> void {
-			bind(params, args...);
-			run();
 		}
 	private: // data
 		vk::ShaderModule _shader;
@@ -267,7 +310,10 @@ namespace vuh {
 		vk::PipelineCache _pipecache;
 		vk::PipelineLayout _pipelayout;
 		mutable vk::Pipeline _pipeline;
+
 		std::array<uint32_t, 3> _batch={0, 0, 0};
+		std::size_t _num_sbo_params;
+
 		vuh::Device& _device;
 	}; // class Program
 } // namespace vuh

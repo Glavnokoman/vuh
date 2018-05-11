@@ -28,7 +28,7 @@ namespace {
 } // namespace
 
 namespace vuh {
-	template<class Params, class A> class Program;
+	template<class Params> class Program;
 
 	/// Brings together shader interfaces declaration and the spirv code.
 	/// Needs to be linked to vuh::Device to get the runnable program.
@@ -44,12 +44,12 @@ namespace vuh {
 		{}
 		
 		/// Instantiate kernel on a device, to obtain runnable Programs object.
-		auto on(vuh::Device& device)-> Program<Params, Arrays> {
-			return Program<Params, Arrays>(device, _code, _flags);
+		auto on(vuh::Device& device)-> Program<Params> {
+			return Program<Params>(device, _code, _flags);
 		}
 		
 		///
-		auto on(vuh::Device& device, uint32_t queue_id)-> Program<Params, Arrays> {
+		auto on(vuh::Device& device, uint32_t queue_id)-> Program<Params> {
 			throw "not implemented";
 		}
 	protected: // data
