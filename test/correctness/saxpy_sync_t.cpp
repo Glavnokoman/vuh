@@ -35,7 +35,7 @@ TEST_CASE("saxpy_once", "[correctness]"){
 	};
 
 	auto kernel = vuh::Kernel<specs_t, params_t, arrays_t>("../shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
-	kernel.on(device).grid(128/64)(specs_t{64}, {128, a}, d_y, d_x); // run once, wait for completion
+	kernel.on(device).grid(128/64).spec(specs_t{64})({128, a}, d_y, d_x); // run once, wait for completion
 	d_y.toHost(y);                                     // copy data back to host
 
 	REQUIRE(y == approx(out_ref).eps(1.e-5).verbose());
@@ -68,7 +68,7 @@ TEST_CASE("saxpy_repeated", "[correctness]"){
 	auto kernel = vuh::Kernel<specs_t, params_t, arrays_t>("../shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
 	auto program = kernel.on(device);               // instantiate kernel on the device
 	program.grid(128/64)                           // set number of wrokgroups to run
-			 .bind(specs_t{64})                       // set the specialization constants
+			 .spec(specs_t{64})                       // set the specialization constants
 			 .bind({128, a}, d_y, d_x);	              // bind arrays and non-array parameters
 	for(size_t i = 0; i < n_repeat; ++i){
 		program.run();

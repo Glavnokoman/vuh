@@ -181,7 +181,7 @@ namespace vuh {
 		
 		/// Specify values of specification constants.
 		/// Under the hood it creates the compute pipeline here.
-		auto bind(const Specs& specs) const-> const Program& {
+		auto spec(const Specs& specs) const-> const Program& {
 			// specialize constants of the shader
 			auto specEntries = specs2mapentries(specs);
 			auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
@@ -223,15 +223,6 @@ namespace vuh {
 			return *this;
 		}
 
-		/// Set the specialization constants, push the push parameters and associate buffers to binding points.
-		/// @pre bacth sizes should be specified before calling this.
-		auto bind(const Specs& specs, const Params& params, vuh::Array<Ts>&... args
-		          ) const-> const Program&
-		{
-			bind(specs);
-			return bind(params, args...);
-		}
-
 		/// Release device resources allocated by parameters binding.
 		/// Should only be manually called before binding new set of parameters to same Program object
 		auto unbind()-> void {
@@ -264,10 +255,8 @@ namespace vuh {
 
 		/// Run program with provided parameters.
 		/// @pre bacth sizes should be specified before calling this.
-		auto operator()(const Specs& specs, const Params& params, vuh::Array<Ts>&... args
-		                ) const-> void
-		{
-			bind(specs, params, args...);
+		auto operator()(const Params& params, vuh::Array<Ts>&... args ) const-> void {
+			bind(params, args...);
 			run();
 		}
 	private: // data
