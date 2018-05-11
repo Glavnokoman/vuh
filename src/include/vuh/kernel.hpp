@@ -34,7 +34,6 @@ namespace vuh {
 	/// Needs to be linked to vuh::Device to get the runnable program.
 	/// Serves as a proxy object for typelist to pack of its types conversion.
 	template< class Params  ///< shader push parameters interface
-	        , class Arrays  ///< typelist of value types of array parameters
            >
 	class Kernel {
 	public:
