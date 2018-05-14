@@ -28,12 +28,13 @@ namespace {
 } // namespace
 
 namespace vuh {
-	template<class Params> class Program;
+	template<class Specs, class Params> class Program;
 
 	/// Brings together shader interfaces declaration and the spirv code.
 	/// Needs to be linked to vuh::Device to get the runnable program.
 	/// Serves as a proxy object for typelist to pack of its types conversion.
-	template< class Params  ///< shader push parameters interface
+	template< class Specs
+	        , class Params  ///< shader push parameters interface
            >
 	class Kernel {
 	public:
@@ -43,13 +44,8 @@ namespace vuh {
 		{}
 		
 		/// Instantiate kernel on a device, to obtain runnable Programs object.
-		auto on(vuh::Device& device)-> Program<Params> {
-			return Program<Params>(device, _code, _flags);
-		}
-		
-		///
-		auto on(vuh::Device& device, uint32_t queue_id)-> Program<Params> {
-			throw "not implemented";
+		auto on(vuh::Device& device)-> Program<Specs, Params> {
+			return Program<Specs, Params>(device, _code, _flags);
 		}
 	protected: // data
 		std::vector<char> _code;            ///< binary blob with a spirv shader code

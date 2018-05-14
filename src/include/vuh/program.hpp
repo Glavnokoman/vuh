@@ -79,53 +79,15 @@ namespace {
 namespace vuh {
 	template<class... Ts>	 struct typelist{};
 
-	template<class T> class Program;
+	template<class Specs, class T> class Program;
 
-	namespace detail {
-		/// doc me
-		template<class Params, class... Specs>
-		class ProgramBindable {
-			using parent_t = Program<Params>;
-			std::tuple<Specs...> _specs;
-			parent_t& _p;
-		public:
-			explicit ProgramBindable(parent_t& program, Specs... specs)
-				: _specs(specs...), _p(program)
-			{}
-
-			template<class... Ts>
-			auto bind(const Params& p, Ts&... arrays)-> parent_t& {
-				_p.init_pipelayout(arrays...);
-				_p.alloc_descriptor_sets();
-				init_pipeline();
-				_p.create_command_buffer(p, arrays...);
-				return _p;
-			}
-
-			template<class... Ts>
-			auto operator()(const Params& p, Ts&... arrays)-> void {
-				bind(p, arrays...);
-				_p.run();
-			}
-		private: // helpers
-			auto init_pipeline()-> void {
-				auto specEntries = specs2mapentries(_specs);
-				auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
-				                                       , sizeof(_specs), &_specs);
-
-				// Specify the compute shader stage, and it's entry point (main), and specializations
-				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
-				                                                 , vk::ShaderStageFlagBits::eCompute
-				                                                 , _p._shader, "main", &specInfo);
-				_p._pipeline = _p._device.createPipeline(_p._pipelayout, _p._pipecache, stageCI);
-			}
-		}; // class Program_
-	} // namespace detail
+	template<class Specs, class Params> class Program;
 
 	/// specialization to unpack array types parameters
-	template<class Params> ///< shader push parameters structure
-	class Program {
-		template<class P, class... Specs> friend class detail::ProgramBindable;
+	template<template<class...> class Specs, class... Specs_Ts
+	         , class Params  ///< shader push parameters structure
+	         >
+	class Program<Specs<Specs_Ts...>, Params> {
 	public:
 		Program(vuh::Device& device, const std::vector<char>& code
 		        , vk::ShaderModuleCreateFlags flags
@@ -184,18 +146,17 @@ namespace vuh {
 		}
 		
 		/// Specify values of specification constants.
-		template<class... Us>
-		auto spec(Us... specs)-> detail::ProgramBindable<Params, Us...> {
-			// specialize constants of the shader
-			return detail::ProgramBindable<Params, Us...>(*this, specs...);
+		auto spec(Specs_Ts... specs)-> Program& {
+			_specs = {specs...};
+			return *this;
 		}
 		
 		/// Associate buffers to binding points, and pushes the push constants.
 		/// Does most of setup here. Programs is ready to be run.
 		/// @pre Specs and batch sizes should be specified before calling this.
-		template<class... Ts>
-		auto bind(const Params& p, Ts&... args)-> const Program& {
-			init_pipelayout<Ts...>();
+		template<class... Arrs>
+		auto bind(const Params& p, Arrs&... args)-> const Program& {
+			init_pipelayout(args...);
 			alloc_descriptor_sets();
 			init_pipeline();
 			create_command_buffer(p, args...);
@@ -235,31 +196,29 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre bacth sizes should be specified before calling this.
 
-		template<class... Ts>
-		auto operator()(const Params& params, Ts&... args)-> void {
+		template<class... Arrs>
+		auto operator()(const Params& params, Arrs&... args)-> void {
 			bind(params, args...);
 			run();
 		}
 	private: // helpers
 		/// set up the state of the kernel that depends on number and types of bound array parameters
-		template<class... Ts ///< bound array-like parameters
+		template<class... Arrs ///< bound array-like parameters
 		         >
-		auto init_pipelayout(Ts&...)-> void {
-			_num_sbo_params = sizeof...(Ts);
-			auto dscTypes = typesToDscTypes<Ts...>();
+		auto init_pipelayout(Arrs&...)-> void {
+			_num_sbo_params = sizeof...(Arrs);
+			auto dscTypes = typesToDscTypes<Arrs...>();
 			auto bindings = dscTypesToLayout(dscTypes);
 			_dsclayout = _device.createDescriptorSetLayout(
-			                                             {vk::DescriptorSetLayoutCreateFlags()
-			                                              , uint32_t(bindings.size()), bindings.data()
-			                                              }
+			                         {vk::DescriptorSetLayoutCreateFlags()
+			                          , uint32_t(bindings.size()), bindings.data()
+			                          }
 			);
 			_pipecache = _device.createPipelineCache({});
 			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
 			                                                 , 0, sizeof(Params));
 			_pipelayout = _device.createPipelineLayout(
 						     {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, 1, &push_constant_range});
-
-
 		}
 
 		///
@@ -277,19 +236,35 @@ namespace vuh {
 			_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
 		}
 
+		template<class T> auto init_pipeline(const T&)-> void;
+
 		///
 		auto init_pipeline()-> void {
-			// Specify the compute shader stage, and it's entry point (main), and specializations
-			auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
-			                                                 , vk::ShaderStageFlagBits::eCompute
-			                                                 , _shader, "main", nullptr);
+			if(sizeof...(Specs_Ts) == 0){ // no specialization constants
+				// Specify the compute shader stage, and it's entry point (main), and specializations
+				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
+				                                                 , vk::ShaderStageFlagBits::eCompute
+				                                                 , _shader, "main", nullptr);
 
-			_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+			} else {
+				auto specEntries = specs2mapentries(_specs);
+				auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
+				                                       , sizeof(_specs), &_specs);
+
+				// Specify the compute shader stage, and it's entry point (main), and specializations
+				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
+				                                                 , vk::ShaderStageFlagBits::eCompute
+				                                                 , _shader, "main", &specInfo);
+				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+			}
 		}
 
 		///
-		template<class... Ts>
-		auto create_command_buffer(const Params& p, Ts&... args)-> void {
+		template<class... Arrs>
+		auto create_command_buffer(const Params& p, Arrs&... args)-> void {
+			assert(_pipeline); /// pipeline supposed to be initialized before this
+
 			constexpr auto N = sizeof...(args);
 			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
 			auto write_dscsets = dscinfos2writesets(_dscset, dscinfos, std::make_index_sequence<N>{});
@@ -321,6 +296,7 @@ namespace vuh {
 		mutable vk::Pipeline _pipeline;
 
 		std::array<uint32_t, 3> _batch={0, 0, 0};
+		std::tuple<Specs_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
 		std::size_t _num_sbo_params;
 
 		vuh::Device& _device;
