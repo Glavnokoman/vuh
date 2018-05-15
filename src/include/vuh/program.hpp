@@ -204,16 +204,15 @@ namespace vuh {
 		}
 	private: // helpers
 		/// set up the state of the kernel that depends on number and types of bound array parameters
-		template<class... Arrs ///< bound array-like parameters
-		         >
+		template<class... Arrs>
 		auto init_pipelayout(Arrs&...)-> void {
 			_num_sbo_params = sizeof...(Arrs);
 			auto dscTypes = detail::typesToDscTypes<Arrs...>();
 			auto bindings = detail::dscTypesToLayout(dscTypes);
 			_dsclayout = _device.createDescriptorSetLayout(
-			                         {vk::DescriptorSetLayoutCreateFlags()
-			                          , uint32_t(bindings.size()), bindings.data()
-			                          }
+			                         { vk::DescriptorSetLayoutCreateFlags()
+			                         , uint32_t(bindings.size()), bindings.data()
+			                         }
 			);
 			_pipecache = _device.createPipelineCache({});
 			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
