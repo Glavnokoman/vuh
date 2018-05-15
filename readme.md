@@ -17,7 +17,7 @@ auto main()-> int {
    auto device = instance.devices().at(0);             // just get the first available device
 
    auto d_y = vuh::Array<float>::fromHost(device, y);  // create device arrays and copy data
-   auto d_x = vuh::Array<float>::fromHost(device, x) ;
+   auto d_x = vuh::Array<float>::fromHost(device, x);
 
    using Specs = vuh::typelist<uint32_t>;              // shader specialization constants interface
    struct Params{uint32_t size; float a;};             // shader push-constants interface
@@ -59,11 +59,11 @@ void main(){
 # Build & Install
 ## Dependencies
 - C++14 compliant compiler
-- Vulkan-headers
-- Vulkan-hpp
-- Glslang (optional (but very recommended))
-- CMake (build-only)
-- Catch2 (optional, build-only)
-- sltbench (optional, build-only)
+- [Vulkan-headers](https://github.com/KhronosGroup/Vulkan-Headers)
+- [Vulkan-hpp](https://github.com/KhronosGroup/Vulkan-Hpp)
+- [Glslang](https://github.com/KhronosGroup/glslang) (optional (but very recommended))
+- [CMake](https://cmake.org/download/) (build-only)
+- [Catch2](https://github.com/catchorg/Catch2) (optional, build-only)
+- [sltbench](https://github.com/ivafanas/sltbench) (optional, build-only)
 
 # Use
