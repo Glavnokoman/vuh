@@ -153,7 +153,7 @@ namespace vuh {
 		}
 		
 		/// Associate buffers to binding points, and pushes the push constants.
-		/// Does most of setup here. Programs is ready to be run.
+		/// Does most of setup here. Program is ready to be run.
 		/// @pre Specs and batch sizes should be specified before calling this.
 		template<class... Arrs>
 		auto bind(const Params& p, Arrs&... args)-> const Program& {
