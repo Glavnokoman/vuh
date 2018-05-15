@@ -27,7 +27,7 @@ TEST_CASE("saxpy_once", "[correctness]"){
 	auto d_x = vuh::Array<float>::fromHost(device, x); // same for x
 
 	using Specs = vuh::typelist<uint32_t>;
-	struct Params { uint32_t size; float a; };
+	struct Params{uint32_t size; float a;};
 
 	auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
 	program.grid(128/64).spec(64)({128, a}, d_y, d_x); // run once, wait for completion
@@ -54,7 +54,7 @@ TEST_CASE("saxpy_repeated", "[correctness]"){
 	auto d_x = vuh::Array<float>::fromHost(device, x); // same for x
 
 	using Specs = vuh::typelist<uint32_t>;
-	struct Params { uint32_t size; float a; };
+	struct Params{uint32_t size; float a;};
 
 	auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
 	program.grid(128/64)                            // set number of wrokgroups to run
