@@ -11,71 +11,68 @@
 #include <tuple>
 #include <utility>
 
-namespace {
+namespace vuh {
 	namespace detail {
 		template<class T> struct DictTypeToDsc;
-	
+
 		template<class T> struct DictTypeToDsc<vuh::Array<T>>{
 			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
 		};
-		
-		// Compile-time offset of tuple element.
+
+		// @return tuple element offset
 		template<size_t Idx, class T>
 		constexpr auto tuple_element_offset(const T& tup)-> std::size_t {
 			return size_t(reinterpret_cast<const char*>(&std::get<Idx>(tup))
 		                 - reinterpret_cast<const char*>(&tup));
 		}
-		
+
 		//
 		template<class T, size_t... I>
-		constexpr auto spec2entries(const T& specs, std::index_sequence<I...>){
-			return std::array<vk::SpecializationMapEntry, sizeof...(I)>{{
-			                       { uint32_t(I)
-			                       , uint32_t(tuple_element_offset<I>(specs))
-			                       , uint32_t(sizeof(typename std::tuple_element<I, T>::type))
-			                       }...
+		constexpr auto spec2entries(const T& specs, std::index_sequence<I...>
+		                            )-> std::array<vk::SpecializationMapEntry, sizeof...(I)>
+		{
+			return {{ { uint32_t(I)
+			          , uint32_t(tuple_element_offset<I>(specs))
+			          , uint32_t(sizeof(typename std::tuple_element<I, T>::type))
+			          }... }};
+		}
+
+		/// doc me
+		template<class... Ts>
+		auto typesToDscTypes()->std::array<vk::DescriptorType, sizeof...(Ts)> {
+			return {detail::DictTypeToDsc<Ts>::value...};
+		}
+
+		/// doc me
+		template<size_t N>
+		auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types) {
+			auto r = std::array<vk::DescriptorSetLayoutBinding, N>{};
+			for(size_t i = 0; i < N; ++i){ // can be done compile-time
+				r[i] = {uint32_t(i), dsc_types[i], 1, vk::ShaderStageFlagBits::eCompute};
+			}
+			return r;
+		}
+
+		/// @return specialization map array
+		template<class... Ts>
+		auto specs2mapentries(const std::tuple<Ts...>& specs
+		                      )-> std::array<vk::SpecializationMapEntry, sizeof...(Ts)>
+		{
+			return spec2entries(specs, std::make_index_sequence<sizeof...(Ts)>{});
+		}
+
+		/// doc me
+		template<class T, size_t... I>
+		auto dscinfos2writesets(vk::DescriptorSet dscset, const T& infos
+		                        , std::index_sequence<I...>
+		                        )-> std::array<vk::WriteDescriptorSet, sizeof...(I)>
+		{
+			auto r = std::array<vk::WriteDescriptorSet, sizeof...(I)>{{
+				{dscset, uint32_t(I), 0, 1, vk::DescriptorType::eStorageBuffer, nullptr, &infos[I]}...
 			}};
+			return r;
 		}
 	} // namespace detail
-
-	/// doc me
-	template<class... Ts>
-	auto typesToDscTypes() {
-		return std::array<vk::DescriptorType, sizeof...(Ts)>{detail::DictTypeToDsc<Ts>::value...};
-	}
-	
-	/// doc me
-	template<size_t N>
-	auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types) {
-		auto r = std::array<vk::DescriptorSetLayoutBinding, N>{};
-		for(size_t i = 0; i < N; ++i){ // this can be done compile-time, but hardly worth it.
-			r[i] = {uint32_t(i), dsc_types[i], 1, vk::ShaderStageFlagBits::eCompute};
-		}
-		return r;
-	}
-	
-	/// @return specialization map array
-	template<class... Ts>
-	auto specs2mapentries(const std::tuple<Ts...>& specs
-	                      )-> std::array<vk::SpecializationMapEntry, sizeof...(Ts)> 
-	{
-		return detail::spec2entries(specs, std::make_index_sequence<sizeof...(Ts)>{});
-	}
-
-	/// doc me
-	template<class T, size_t... I>
-	auto dscinfos2writesets(vk::DescriptorSet dscset, const T& infos
-	                        , std::index_sequence<I...>
-	                        )-> std::array<vk::WriteDescriptorSet, sizeof...(I)>
-	{
-		auto r = std::array<vk::WriteDescriptorSet, sizeof...(I)>{{
-			{dscset, uint32_t(I), 0, 1, vk::DescriptorType::eStorageBuffer, nullptr, &infos[I]}...
-		}};
-		return r;
-	}
-} // namespace
-
-namespace vuh {
 
 	/// doc me
 	template<class Specs, class Params> class Program;
@@ -211,8 +208,8 @@ namespace vuh {
 		         >
 		auto init_pipelayout(Arrs&...)-> void {
 			_num_sbo_params = sizeof...(Arrs);
-			auto dscTypes = typesToDscTypes<Arrs...>();
-			auto bindings = dscTypesToLayout(dscTypes);
+			auto dscTypes = detail::typesToDscTypes<Arrs...>();
+			auto bindings = detail::dscTypesToLayout(dscTypes);
 			_dsclayout = _device.createDescriptorSetLayout(
 			                         {vk::DescriptorSetLayoutCreateFlags()
 			                          , uint32_t(bindings.size()), bindings.data()
@@ -250,7 +247,7 @@ namespace vuh {
 
 				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
 			} else {
-				auto specEntries = specs2mapentries(_specs);
+				auto specEntries = detail::specs2mapentries(_specs);
 				auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
 				                                       , sizeof(_specs), &_specs);
 
@@ -269,7 +266,8 @@ namespace vuh {
 
 			constexpr auto N = sizeof...(args);
 			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
-			auto write_dscsets = dscinfos2writesets(_dscset, dscinfos, std::make_index_sequence<N>{});
+			auto write_dscsets = detail::dscinfos2writesets(_dscset, dscinfos
+			                                                , std::make_index_sequence<N>{});
 			_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 			// Start recording commands into the newly allocated command buffer.
