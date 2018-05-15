@@ -164,22 +164,6 @@ namespace vuh {
 			return *this;
 		}
 
-		/// Release device resources allocated by parameters binding.
-		/// @todo hide it or remove, should never be explicitely called.
-		auto unbind()-> void {
-			throw "not implemented"; // what follows is not a proper implementation. left here for reference.
-			_device.destroyDescriptorPool(_dscpool);
-			_device.resetCommandPool(_device.computeCmdBuffer(), vk::CommandPoolResetFlags());
-			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
-			                                                   , _num_sbo_params);
-			auto descriptor_sizes = std::vector<vk::DescriptorPoolSize>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-			_dscpool = _device.createDescriptorPool(
-			           {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
-			            , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
-			            }
-			);
-		}
-
 		/// Run the Program object on previously bound parameters, wait for completion.
 		/// @pre bacth sizes should be specified before calling this.
 		/// @pre all paramerters should be specialized, pushed and bound before calling this.
@@ -224,6 +208,10 @@ namespace vuh {
 		///
 		auto alloc_descriptor_sets()-> void {
 			assert(_dsclayout);
+			if(_dscpool){ // unbind previously bound descriptor sets if any
+				_device.destroyDescriptorPool(_dscpool);
+				_device.resetCommandPool(_device.computeCmdPool(), vk::CommandPoolResetFlags());
+			}
 
 			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
 			                                                   , _num_sbo_params);

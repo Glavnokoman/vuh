@@ -30,6 +30,7 @@ namespace vuh {
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
 		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
+		auto computeCmdPool()-> vk::CommandPool {return _cmdpool_compute;}
 		auto computeCmdBuffer()-> vk::CommandBuffer& {return _cmdbuf_compute;}
 		auto transferCmdBuffer()-> vk::CommandBuffer&;
 		auto createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags={}
