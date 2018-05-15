@@ -87,11 +87,12 @@ namespace vuh {
 	class Program<Specs<Specs_Ts...>, Params> {
 	public:
 
+		/// Initialize program on a device using spirv code at a given path
 		Program(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
 		   : Program(device, read_spirv(filepath), flags)
 		{}
 
-
+		/// Initialize program on a device from binary spirv code
 		Program(vuh::Device& device, const std::vector<char>& code
 		        , vk::ShaderModuleCreateFlags flags={}
 		        )
