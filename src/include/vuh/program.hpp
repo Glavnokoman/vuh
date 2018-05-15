@@ -2,6 +2,7 @@
 
 #include "array.hpp"
 #include "device.h"
+#include "utils.h"
 
 #include <vulkan/vulkan.hpp>
 
@@ -19,8 +20,6 @@ namespace {
 		};
 		
 		// Compile-time offset of tuple element.
-		// Probably UB as tuples are non-POD types (no easy way out till C++ gets some compile-time reflection).
-		// Should never be called outside constexpr context.
 		template<size_t Idx, class T>
 		constexpr auto tuple_element_offset(const T& tup)-> std::size_t {
 			return size_t(reinterpret_cast<const char*>(&std::get<Idx>(tup))
@@ -37,7 +36,7 @@ namespace {
 			                       }...
 			}};
 		}
-	} // namespace trais
+	} // namespace detail
 
 	/// doc me
 	template<class... Ts>
@@ -77,10 +76,8 @@ namespace {
 } // namespace
 
 namespace vuh {
-	template<class... Ts>	 struct typelist{};
 
-	template<class Specs, class T> class Program;
-
+	/// doc me
 	template<class Specs, class Params> class Program;
 
 	/// specialization to unpack array types parameters
@@ -89,8 +86,14 @@ namespace vuh {
 	         >
 	class Program<Specs<Specs_Ts...>, Params> {
 	public:
+
+		Program(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
+		   : Program(device, read_spirv(filepath), flags)
+		{}
+
+
 		Program(vuh::Device& device, const std::vector<char>& code
-		        , vk::ShaderModuleCreateFlags flags
+		        , vk::ShaderModuleCreateFlags flags={}
 		        )
 		   : _device(device)
 		{
@@ -106,8 +109,8 @@ namespace vuh {
 		/// Move constructor.
 		Program(Program&& o) noexcept
 		   : _shader(o._shader)
-		   , _dscpool(o._dscpool)
 		   , _dsclayout(o._dsclayout)
+		   , _dscpool(o._dscpool)
 		   , _dscset(o._dscset)
 		   , _pipecache(o._pipecache)
 		   , _pipelayout(o._pipelayout)
@@ -236,8 +239,6 @@ namespace vuh {
 			_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
 		}
 
-		template<class T> auto init_pipeline(const T&)-> void;
-
 		///
 		auto init_pipeline()-> void {
 			if(sizeof...(Specs_Ts) == 0){ // no specialization constants
@@ -288,8 +289,8 @@ namespace vuh {
 		}
 	private: // data
 		vk::ShaderModule _shader;
-		vk::DescriptorPool _dscpool;
 		vk::DescriptorSetLayout _dsclayout;
+		vk::DescriptorPool _dscpool;
 		vk::DescriptorSet _dscset;
 		vk::PipelineCache _pipecache;
 		vk::PipelineLayout _pipelayout;

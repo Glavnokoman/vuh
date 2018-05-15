@@ -14,17 +14,17 @@ auto main()-> int {
    auto x = std::vector<float>(128, 2.0f);
 
    auto instance = vuh::Instance();
-   auto device = instance.devices().at(0);                 // just get the first available device
+   auto device = instance.devices().at(0);             // just get the first available device
 
-   auto d_y = vuh::Array<float>::fromHost(device, y);      // create device arrays and copy data
-   auto d_x = vuh::Array<float>::fromHost(device, x);
+   auto d_y = vuh::Array<float>::fromHost(device, y);  // create device arrays and copy data
+   auto d_x = vuh::Array<float>::fromHost(device, x) ;
 
-   using Specs = vuh::typelist<uint32_t>;                  // shader specialization constants interface
-   struct Params{uint32_t size; float a;};                 // shader push-constants interface
+   using Specs = vuh::typelist<uint32_t>;              // shader specialization constants interface
+   struct Params{uint32_t size; float a;};             // shader push-constants interface
    auto kernel = vuh::Kernel<Specs, Params>(device, "saxpy.spv"); // load spir-v shader code
-   kernel.grid(128/64).spec(64)({128, 0.1}, d_y, d_x);     // run once, wait for completion
+   kernel.grid(128/64).spec(64)({128, 0.1}, d_y, d_x); // run once, wait for completion
 
-   d_y.toHost(y);                                          // copy data back to host
+   d_y.toHost(y);                                      // copy data back to host
 
    return 0;
 }
