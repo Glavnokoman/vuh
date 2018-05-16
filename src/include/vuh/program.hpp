@@ -75,13 +75,79 @@ namespace vuh {
 	} // namespace detail
 
 	/// doc me
-	template<class Specs, class Params> class Program;
+	template<class Specs=typelist<>, class Params=typelist<>> class Program;
+
+	/// Program base class for 'code reuse via inheritance' :).
+	class ProgramData {
+	public:
+		ProgramData(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
+			: ProgramData(device, read_spirv(filepath), flags)
+		{}
+		ProgramData(vuh::Device& device, const std::vector<char>& code
+		            , vk::ShaderModuleCreateFlags flags={}
+		            )
+		   : _device(device)
+		{
+			_shader = device.createShaderModule(code, flags);
+		}
+
+		~ProgramData() noexcept {
+			release();
+		}
+
+		ProgramData(const ProgramData&) = delete;
+		ProgramData& operator= (const ProgramData&) = delete;
+
+		/// Move constructor.
+		ProgramData(ProgramData&& o) noexcept
+		   : _shader(o._shader)
+		   , _dsclayout(o._dsclayout)
+		   , _dscpool(o._dscpool)
+		   , _dscset(o._dscset)
+		   , _pipecache(o._pipecache)
+		   , _pipelayout(o._pipelayout)
+		   , _pipeline(o._pipeline)
+		   , _device(o._device)
+		   , _batch(o._batch)
+		{
+			o._shader = nullptr; //
+		}
+		/// Move assignment.
+		ProgramData& operator= (ProgramData&& o) noexcept {
+			release();
+			std::memcpy(this, &o, sizeof(ProgramData));
+			o._shader = nullptr;
+			return *this;
+		}
+	protected:
+		/// Release resources associated with current Program.
+		auto release() noexcept-> void {
+			if(_shader){
+				_device.destroyShaderModule(_shader);
+				_device.destroyDescriptorPool(_dscpool);
+				_device.destroyDescriptorSetLayout(_dsclayout);
+				_device.destroyPipelineCache(_pipecache);
+				_device.destroyPipeline(_pipeline);
+				_device.destroyPipelineLayout(_pipelayout);
+			}
+		}
+	protected: // data
+		vk::ShaderModule _shader;
+		vk::DescriptorSetLayout _dsclayout;
+		vk::DescriptorPool _dscpool;
+		vk::DescriptorSet _dscset;
+		vk::PipelineCache _pipecache;
+		vk::PipelineLayout _pipelayout;
+		mutable vk::Pipeline _pipeline;
+
+		vuh::Device& _device;
+		std::array<uint32_t, 3> _batch={0, 0, 0};
+	}; // class ProgramBase
 
 	/// specialization to unpack array types parameters
 	template<template<class...> class Specs, class... Specs_Ts , class Params>
 	class Program<Specs<Specs_Ts...>, Params> {
 	public:
-
 		/// Initialize program on a device using spirv code at a given path
 		Program(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
 		   : Program(device, read_spirv(filepath), flags)
@@ -111,8 +177,8 @@ namespace vuh {
 		   , _pipecache(o._pipecache)
 		   , _pipelayout(o._pipelayout)
 		   , _pipeline(o._pipeline)
-		   , _batch(o._batch)
 		   , _device(o._device)
+		   , _batch(o._batch)
 		{
 			o._shader = nullptr; //
 		}
@@ -156,7 +222,7 @@ namespace vuh {
 		template<class... Arrs>
 		auto bind(const Params& p, Arrs&... args)-> const Program& {
 			init_pipelayout(args...);
-			alloc_descriptor_sets();
+			alloc_descriptor_sets(args...);
 			init_pipeline();
 			create_command_buffer(p, args...);
 			return *this;
@@ -188,7 +254,6 @@ namespace vuh {
 		/// set up the state of the kernel that depends on number and types of bound array parameters
 		template<class... Arrs>
 		auto init_pipelayout(Arrs&...)-> void {
-			_num_sbo_params = sizeof...(Arrs);
 			auto dscTypes = detail::typesToDscTypes<Arrs...>();
 			auto bindings = detail::dscTypesToLayout(dscTypes);
 			_dsclayout = _device.createDescriptorSetLayout(
@@ -204,7 +269,8 @@ namespace vuh {
 		}
 
 		///
-		auto alloc_descriptor_sets()-> void {
+		template<class... Arrs>
+		auto alloc_descriptor_sets(Arrs&...)-> void {
 			assert(_dsclayout);
 			if(_dscpool){ // unbind previously bound descriptor sets if any
 				_device.destroyDescriptorPool(_dscpool);
@@ -212,7 +278,7 @@ namespace vuh {
 			}
 
 			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
-			                                                   , _num_sbo_params);
+			                                                   , sizeof...(Arrs));
 			auto descriptor_sizes = std::array<vk::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
 			_dscpool = _device.createDescriptorPool(
 			                        {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
@@ -279,12 +345,10 @@ namespace vuh {
 		vk::PipelineCache _pipecache;
 		vk::PipelineLayout _pipelayout;
 		mutable vk::Pipeline _pipeline;
+		vuh::Device& _device;
 
 		std::array<uint32_t, 3> _batch={0, 0, 0};
 		std::tuple<Specs_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
-		std::size_t _num_sbo_params;
-
-		vuh::Device& _device;
 	}; // class Program
 
 	/// specialization with non-empty specialization constants and empty push constants
