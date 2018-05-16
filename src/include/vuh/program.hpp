@@ -144,7 +144,7 @@ namespace vuh {
 	/// doc me
 	template<class Specs=typelist<>, class Params=typelist<>> class Program;
 
-	/// specialization to specification constants
+	/// specialization to with non-empty specialization constants and push constants
 	template<template<class...> class Specs, class... Specs_Ts , class Params>
 	class Program<Specs<Specs_Ts...>, Params>: ProgramData {
 	public:
