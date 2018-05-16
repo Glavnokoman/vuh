@@ -109,7 +109,7 @@ TEST_CASE("saxpy_nopush", "[correctness]"){
 
 	using Specs = vuh::typelist<uint32_t>;
 	auto program = vuh::Program<Specs, vuh::typelist<>>(device, "../shaders/saxpy_nopush.spv"); // define the kernel by linking interface and spir-v implementation
-//	program.grid(2)(d_y, d_x);              // run once, wait for completion
+	program.grid(2).spec(64)(d_y, d_x);              // run once, wait for completion
 	d_y.toHost(y);                                     // copy data back to host
 
 	REQUIRE(y == approx(out_ref).eps(1.e-5).verbose());
