@@ -75,6 +75,7 @@ namespace vuh {
 	} // namespace detail
 
 	/// Program base class for 'code reuse via inheritance' :).
+	/// It keeps all (almost) state variables, and handles most of array arguments bindings.
 	class ProgramBase {
 	public:
 		ProgramBase(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
@@ -220,7 +221,10 @@ namespace vuh {
 		std::array<uint32_t, 3> _batch={0, 0, 0};
 	}; // class ProgramBase
 
-	/// Specialization constants dependent part of Program
+	/// Specialization constants dependent part of Program.
+	/// Keeps the specialization constants state
+	/// (between its set by Program::spec() call and actually communicated to device).
+	/// Does the pipeline init.
 	template<class Specs> class SpecsBase;
 	
 	/// Non-empty specialization constants interface
@@ -269,7 +273,9 @@ namespace vuh {
 		}
 	}; // class SpecsBase
 	
-	/// doc me
+	/// Actually runnable entity. Before array parameters are bound (and program run)
+	/// working grid dimensions should be set up, and if there are specialization constants to set
+	/// they should be set before that too.
 	template<class Specs=typelist<>, class Params=typelist<>> class Program;
 
 	/// specialization to with non-empty specialization constants and push constants
