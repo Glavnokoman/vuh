@@ -116,6 +116,20 @@ namespace vuh {
 			o._shader = nullptr;
 			return *this;
 		}
+		
+		/// Run the Program object on previously bound parameters, wait for completion.
+		/// @pre bacth sizes should be specified before calling this.
+		/// @pre all paramerters should be specialized, pushed and bound before calling this.
+		auto run()-> void {
+			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
+
+			// submit the command buffer to the queue and set up a fence.
+			auto queue = _device.computeQueue();
+			auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+			queue.submit({submitInfo}, fence);
+			_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
+			_device.destroyFence(fence);
+		}
 	protected:
 		/// Release resources associated with current Program.
 		auto release() noexcept-> void {
@@ -146,7 +160,7 @@ namespace vuh {
 
 	/// specialization to with non-empty specialization constants and push constants
 	template<template<class...> class Specs, class... Specs_Ts , class Params>
-	class Program<Specs<Specs_Ts...>, Params>: ProgramData {
+	class Program<Specs<Specs_Ts...>, Params>: public ProgramData {
 	public:
 		/// Initialize program on a device using spirv code at a given path
 		Program(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
@@ -186,23 +200,8 @@ namespace vuh {
 			return *this;
 		}
 
-		/// Run the Program object on previously bound parameters, wait for completion.
-		/// @pre bacth sizes should be specified before calling this.
-		/// @pre all paramerters should be specialized, pushed and bound before calling this.
-		auto run()-> void {
-			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
-
-			// submit the command buffer to the queue and set up a fence.
-			auto queue = _device.computeQueue();
-			auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
-			queue.submit({submitInfo}, fence);
-			_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
-			_device.destroyFence(fence);
-		}
-
 		/// Run program with provided parameters.
 		/// @pre bacth sizes should be specified before calling this.
-
 		template<class... Arrs>
 		auto operator()(const Params& params, Arrs&... args)-> void {
 			bind(params, args...);
@@ -301,7 +300,7 @@ namespace vuh {
 
 	/// specialization with non-empty specialization constants and empty push constants
 	template<template<class...> class Specs, class... Specs_Ts>
-	class Program<Specs<Specs_Ts...>, typelist<>>: ProgramData {
+	class Program<Specs<Specs_Ts...>, typelist<>>: public ProgramData {
 	public:
 		/// Initialize program on a device using spirv code at a given path
 		Program(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
@@ -335,29 +334,14 @@ namespace vuh {
 		template<class... Arrs>
 		auto bind(Arrs&... args)-> const Program& {
 			init_pipelayout(args...);
-			alloc_descriptor_sets();
+			alloc_descriptor_sets(args...);
 			init_pipeline();
 			create_command_buffer(args...);
 			return *this;
 		}
 
-		/// Run the Program object on previously bound parameters, wait for completion.
-		/// @pre bacth sizes should be specified before calling this.
-		/// @pre all paramerters should be specialized, pushed and bound before calling this.
-		auto run()-> void {
-			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
-
-			// submit the command buffer to the queue and set up a fence.
-			auto queue = _device.computeQueue();
-			auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
-			queue.submit({submitInfo}, fence);
-			_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
-			_device.destroyFence(fence);
-		}
-
 		/// Run program with provided parameters.
 		/// @pre bacth sizes should be specified before calling this.
-
 		template<class... Arrs>
 		auto operator()(Arrs&... args)-> void {
 			bind(args...);
