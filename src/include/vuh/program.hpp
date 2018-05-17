@@ -142,6 +142,21 @@ namespace vuh {
 				_device.destroyPipelineLayout(_pipelayout);
 			}
 		}
+		
+		///
+		template<size_t N, class... Arrs>
+		auto init_pipelayout(const std::array<vk::PushConstantRange, N>& psrange, Arrs&...)-> void {
+			auto dscTypes = detail::typesToDscTypes<Arrs...>();
+			auto bindings = detail::dscTypesToLayout(dscTypes);
+			_dsclayout = _device.createDescriptorSetLayout(
+			                                       { vk::DescriptorSetLayoutCreateFlags()
+			                                       , uint32_t(bindings.size()), bindings.data()
+			                                       });
+			_pipecache = _device.createPipelineCache({});
+			_pipelayout = _device.createPipelineLayout(
+			        {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N), psrange.data()});
+			
+		}
 	public: // data
 		vk::ShaderModule _shader;
 		vk::DescriptorSetLayout _dsclayout;
@@ -260,18 +275,10 @@ namespace vuh {
 	private: // helpers
 		/// set up the state of the kernel that depends on number and types of bound array parameters
 		template<class... Arrs>
-		auto init_pipelayout(Arrs&...)-> void {
-			auto dscTypes = detail::typesToDscTypes<Arrs...>();
-			auto bindings = detail::dscTypesToLayout(dscTypes);
-			Base::_dsclayout = Base::_device.createDescriptorSetLayout(
-			                                       { vk::DescriptorSetLayoutCreateFlags()
-			                                       , uint32_t(bindings.size()), bindings.data()
-			                                       });
-			Base::_pipecache = Base::_device.createPipelineCache({});
-			auto push_constant_range = vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute
-			                                                 , 0, sizeof(Params));
-			Base::_pipelayout = Base::_device.createPipelineLayout(
-			        {vk::PipelineLayoutCreateFlags(), 1, &(Base::_dsclayout), 1, &push_constant_range});
+		auto init_pipelayout(Arrs&... args)-> void {
+			auto psranges = std::array<vk::PushConstantRange, 1>{{
+					vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, sizeof(Params))}};
+			Base::init_pipelayout(psranges, args...);
 		}
 
 		///
@@ -362,7 +369,7 @@ namespace vuh {
 		/// @pre Specs and batch sizes should be specified before calling this.
 		template<class... Arrs>
 		auto bind(Arrs&... args)-> const Program& {
-			init_pipelayout(args...);
+			Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
 			alloc_descriptor_sets(args...);
 			Base::init_pipeline();
 			create_command_buffer(args...);
@@ -377,20 +384,6 @@ namespace vuh {
 			Base::run();
 		}
 	private: // helpers
-		/// set up the state of the kernel that depends on number and types of bound array parameters
-		template<class... Arrs>
-		auto init_pipelayout(Arrs&...)-> void {
-			auto dscTypes = detail::typesToDscTypes<Arrs...>();
-			auto bindings = detail::dscTypesToLayout(dscTypes);
-			Base::_dsclayout = Base::_device.createDescriptorSetLayout(
-			                                    { vk::DescriptorSetLayoutCreateFlags()
-			                                    , uint32_t(bindings.size()), bindings.data()
-			                                    });
-			Base::_pipecache = Base::_device.createPipelineCache({});
-			Base::_pipelayout = Base::_device.createPipelineLayout(
-						     {vk::PipelineLayoutCreateFlags(), 1, &(Base::_dsclayout)});
-		}
-
 		///
 		template<class... Arrs>
 		auto alloc_descriptor_sets(Arrs&...)-> void {
