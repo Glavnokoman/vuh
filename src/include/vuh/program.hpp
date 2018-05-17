@@ -157,7 +157,57 @@ namespace vuh {
 			        {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N), psrange.data()});
 			
 		}
-	public: // data
+		
+		///
+		template<class... Arrs>
+		auto alloc_descriptor_sets(Arrs&...)-> void {
+			assert(_dsclayout);
+			if(_dscpool){ // unbind previously bound descriptor sets if any
+				_device.destroyDescriptorPool(_dscpool);
+				_device.resetCommandPool(_device.computeCmdPool(), vk::CommandPoolResetFlags());
+			}
+
+			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
+			                                                   , sizeof...(Arrs));
+			auto descriptor_sizes = std::array<vk::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
+			_dscpool = _device.createDescriptorPool(
+			                             {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
+			                              , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
+			                              });
+			_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
+		}
+
+		///
+		template<class... Arrs>
+		auto command_buffer_begin(Arrs&... arrs)-> void {
+			assert(_pipeline); /// pipeline supposed to be initialized before this
+
+			constexpr auto N = sizeof...(arrs);
+			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{arrs, 0, arrs.size_bytes()}... }}; // 0 is the offset here
+			auto write_dscsets = detail::dscinfos2writesets(_dscset, dscinfos
+			                                                , std::make_index_sequence<N>{});
+			_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
+
+			// Start recording commands into the newly allocated command buffer.
+			//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
+			auto cmdbuf = _device.computeCmdBuffer();
+			auto beginInfo = vk::CommandBufferBeginInfo();
+			cmdbuf.begin(beginInfo);
+
+			// Before dispatch bind a pipeline, AND a descriptor set.
+			// The validation layer will NOT give warnings if you forget those.
+			cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, _pipeline);
+			cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, _pipelayout
+			                          , 0, {_dscset}, {});
+		}
+		
+		///
+		auto command_buffer_end()-> void {
+			auto cmdbuf = _device.computeCmdBuffer();
+			cmdbuf.dispatch(_batch[0], _batch[1], _batch[2]); // start compute pipeline, execute the shader
+			cmdbuf.end(); // end recording commands
+		}
+	protected: // data
 		vk::ShaderModule _shader;
 		vk::DescriptorSetLayout _dsclayout;
 		vk::DescriptorPool _dscpool;
@@ -259,7 +309,7 @@ namespace vuh {
 		template<class... Arrs>
 		auto bind(const Params& p, Arrs&... args)-> const Program& {
 			init_pipelayout(args...);
-			alloc_descriptor_sets(args...);
+			Base::alloc_descriptor_sets(args...);
 			Base::init_pipeline();
 			create_command_buffer(p, args...);
 			return *this;
@@ -283,53 +333,11 @@ namespace vuh {
 
 		///
 		template<class... Arrs>
-		auto alloc_descriptor_sets(Arrs&...)-> void {
-			assert(Base::_dsclayout);
-			if(Base::_dscpool){ // unbind previously bound descriptor sets if any
-				Base::_device.destroyDescriptorPool(Base::_dscpool);
-				Base::_device.resetCommandPool(Base::_device.computeCmdPool()
-				                               , vk::CommandPoolResetFlags());
-			}
-
-			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
-			                                                   , sizeof...(Arrs));
-			auto descriptor_sizes = std::array<vk::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-			Base::_dscpool = Base::_device.createDescriptorPool(
-			                             {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
-			                              , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
-			                              }
-			);
-			Base::_dscset = Base::_device.allocateDescriptorSets(
-			                                              {Base::_dscpool, 1, &(Base::_dsclayout)})[0];
-		}
-
-		///
-		template<class... Arrs>
 		auto create_command_buffer(const Params& p, Arrs&... args)-> void {
-			assert(Base::_pipeline); /// pipeline supposed to be initialized before this
-
-			constexpr auto N = sizeof...(args);
-			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
-			auto write_dscsets = detail::dscinfos2writesets(Base::_dscset, dscinfos
-			                                                , std::make_index_sequence<N>{});
-			Base::_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
-
-			// Start recording commands into the newly allocated command buffer.
-			//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
-			auto cmdbuf = Base::_device.computeCmdBuffer();
-			auto beginInfo = vk::CommandBufferBeginInfo();
-			cmdbuf.begin(beginInfo);
-
-			// Before dispatch bind a pipeline, AND a descriptor set.
-			// The validation layer will NOT give warnings if you forget those.
-			cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, Base::_pipeline);
-			cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, Base::_pipelayout
-			                          , 0, {Base::_dscset}, {});
-
-			cmdbuf.pushConstants(Base::_pipelayout, vk::ShaderStageFlagBits::eCompute , 0, sizeof(p), &p);
-
-			cmdbuf.dispatch(Base::_batch[0], Base::_batch[1], Base::_batch[2]); // start compute pipeline, execute the shader
-			cmdbuf.end(); // end recording commands
+			Base::command_buffer_begin(args...);
+			Base::_device.computeCmdBuffer().pushConstants(Base::_pipelayout
+			                           , vk::ShaderStageFlagBits::eCompute , 0, sizeof(p), &p);
+			Base::command_buffer_end();
 		}
 	}; // class Program
 
@@ -350,7 +358,7 @@ namespace vuh {
 		   : Base (device, code, flags)
 		{}
 
-		/// Specify running batch size (3D).
+		/// Specify (3D) running batch size.
  		/// This only sets the dimensions of work batch in units of workgroup, does not start
 		/// the actual calculation.
 		auto grid(uint32_t x, uint32_t y = 1, uint32_t z = 1)-> Program& {
@@ -370,9 +378,10 @@ namespace vuh {
 		template<class... Arrs>
 		auto bind(Arrs&... args)-> const Program& {
 			Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
-			alloc_descriptor_sets(args...);
+			Base::alloc_descriptor_sets(args...);
 			Base::init_pipeline();
-			create_command_buffer(args...);
+			Base::command_buffer_begin(args...);
+			Base::command_buffer_end();
 			return *this;
 		}
 
@@ -383,53 +392,5 @@ namespace vuh {
 			bind(args...);
 			Base::run();
 		}
-	private: // helpers
-		///
-		template<class... Arrs>
-		auto alloc_descriptor_sets(Arrs&...)-> void {
-			assert(Base::_dsclayout);
-			if(Base::_dscpool){ // unbind previously bound descriptor sets if any
-				Base::_device.destroyDescriptorPool(Base::_dscpool);
-				Base::_device.resetCommandPool(Base::_device.computeCmdPool(), vk::CommandPoolResetFlags());
-			}
-
-			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
-			                                                   , sizeof...(Arrs));
-			auto descriptor_sizes = std::array<vk::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-			Base::_dscpool = Base::_device.createDescriptorPool(
-			                        {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
-			                         , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
-			                         }
-			);
-			Base::_dscset = Base::_device.allocateDescriptorSets({Base::_dscpool, 1, &(Base::_dsclayout)})[0];
-		}
-
-		///
-		template<class... Arrs>
-		auto create_command_buffer(Arrs&... args)-> void {
-			assert(Base::_pipeline); /// pipeline supposed to be initialized before this
-
-			constexpr auto N = sizeof...(args);
-			auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{args, 0, args.size_bytes()}... }}; // 0 is the offset here
-			auto write_dscsets = detail::dscinfos2writesets(Base::_dscset, dscinfos
-			                                                , std::make_index_sequence<N>{});
-			Base::_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
-
-			// Start recording commands into the newly allocated command buffer.
-			//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
-			auto cmdbuf = Base::_device.computeCmdBuffer();
-			auto beginInfo = vk::CommandBufferBeginInfo();
-			cmdbuf.begin(beginInfo);
-
-			// Before dispatch bind a pipeline, AND a descriptor set.
-			// The validation layer will NOT give warnings if you forget those.
-			cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, Base::_pipeline);
-			cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, Base::_pipelayout, 0
-			                           , {Base::_dscset}, {});
-
-			cmdbuf.dispatch(Base::_batch[0], Base::_batch[1], Base::_batch[2]); // start compute pipeline, execute the shader
-			cmdbuf.end(); // end recording commands
-		}
 	}; // class Program
-
 } // namespace vuh
