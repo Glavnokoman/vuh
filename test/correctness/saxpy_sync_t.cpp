@@ -147,3 +147,25 @@ TEST_CASE("saxpy_nopush", "[correctness]"){
 	REQUIRE(y == approx(out_ref).eps(1.e-5).verbose());
 }
 
+TEST_CASE("saxpy_nothing", "[correctness]"){
+	auto y = std::vector<float>(128, 1.0f);
+	auto x = std::vector<float>(128, 2.0f);
+	const auto a = 0.1f; // saxpy scaling constant
+
+	auto out_ref = y;
+	for(size_t i = 0; i < y.size(); ++i){
+		out_ref[i] += a*x[i];
+	}
+
+	auto instance = vuh::Instance();
+	auto device = instance.devices().at(0);            // just get the first compute-capable device
+
+	auto d_y = vuh::Array<float>::fromHost(device, y); // allocate memory on device and copy data from host
+	auto d_x = vuh::Array<float>::fromHost(device, x); // same for x
+
+	auto program = vuh::Program<>(device, "../shaders/saxpy_noth.spv"); // define the kernel by linking interface and spir-v implementation
+	program.grid(2)(d_y, d_x);              // run once, wait for completion
+	d_y.toHost(y);                                     // copy data back to host
+
+	REQUIRE(y == approx(out_ref).eps(1.e-5).verbose());
+}

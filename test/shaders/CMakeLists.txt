@@ -19,4 +19,10 @@ if(VUH_BUILD_TESTS OR VUH_BUILD_BENCHMARKS)
       TARGET ${CMAKE_CURRENT_BINARY_DIR}/saxpy_nopush.spv
    )
    add_dependencies(test_shaders saxpy_shader_nopush)
+
+   compile_shader(saxpy_shader_noth
+      SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/saxpy_noth.comp
+      TARGET ${CMAKE_CURRENT_BINARY_DIR}/saxpy_noth.spv
+   )
+   add_dependencies(test_shaders saxpy_shader_noth)
 endif()
