@@ -61,10 +61,9 @@ void main(){
 # Build & Install
 ## Dependencies
 - C++14 compliant compiler
-- [Vulkan-headers](https://github.com/KhronosGroup/Vulkan-Headers)
-- [Vulkan-hpp](https://github.com/KhronosGroup/Vulkan-Hpp)
-- [Glslang](https://github.com/KhronosGroup/glslang) (optional (but very recommended))
+- [Vulkan-Loader](https://github.com/KhronosGroup/Vulkan-Loader)
 - [CMake](https://cmake.org/download/) (build-only)
+- [Glslang](https://github.com/KhronosGroup/glslang) (optional, build-only)
 - [Catch2](https://github.com/catchorg/Catch2) (optional, build-only)
 - [sltbench](https://github.com/ivafanas/sltbench) (optional, build-only)
 
