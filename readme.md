@@ -1,4 +1,6 @@
 # Vuh. A Vulkan-based GPGPU computing framework.
+[![Build Status](https://travis-ci.org/Glavnokoman/vuh.svg?branch=master)](https://travis-ci.org/Glavnokoman/vuh)
+
 Vulkan runs virtually on any modern hardware/OS combination.
 It allows you to write GPU accelerated code once, and run it on iOS, Android, Linux, Windows, macOS...
 NVidia, Radeons, Intel, Adreno, Mali... whatever.

@@ -1,0 +1,55 @@
+language: cpp
+dist: trusty
+sudo: required
+
+# branches:
+#   except:
+#      - /dev-appveyor.*/
+
+common_sources: &all_sources
+  - ubuntu-toolchain-r-test
+  - llvm-toolchain-trusty-6.0
+
+matrix:
+  include:
+    # normal build
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: *all_sources
+          packages: ['clang-6.0', 'libstdc++-6-dev']
+      env: COMPILER='clang++-6.0'
+
+    # examples, coverage builds
+    - os: linux
+      compiler: clang
+      addons:
+        apt:
+          sources: *all_sources
+          packages: ['clang-6.0', 'libstdc++-6-dev', 'lcov']
+      env: COMPILER='clang++-6.0'
+
+before_install:
+  - sudo apt-get -y install libxkbcommon-dev libxrandr-dev libx11-xcb-dev
+
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/.local"
+  - pip install --user cget
+  - export CGET_PREFIX=${DEPS_DIR}
+
+  - export CMAKE_PREFIX_PATH="$DEPS_DIR:$CMAKE_PREFIX_PATH"
+  - bash ./config/install_dependencies.sh
+
+before_script:
+  - export CXX=${COMPILER}
+  - cd ${TRAVIS_BUILD_DIR}
+
+# Use Debug builds for running Valgrind and building examples
+# - cmake -H. -BBuild-Debug -DCMAKE_BUILD_TYPE=Debug -Wdev -DUSE_CPP14=${CPP14} -DCATCH_USE_VALGRIND=${VALGRIND} -DCATCH_BUILD_EXAMPLES=${EXAMPLES} -DCATCH_ENABLE_COVERAGE=${COVERAGE}
+# Don't bother with release build for coverage build
+# - cmake -H. -BBuild-Release -DCMAKE_BUILD_TYPE=Release -Wdev -DUSE_CPP14=${CPP14}
+
+script:
+  - cmake -H. -Bbuild-release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${CGET_PREFIX}"
+  - cd build-release
+  - cmake --build .
