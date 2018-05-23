@@ -19,9 +19,9 @@ namespace traits {
 		///
 		template<class T>		
 		auto is_contiguous_iterable_impl(int)
-		   -> decltype( std::declval<T&>.data() + std::declval<T&>.size()
+		   -> decltype( T::data() + T::size()
 		               , void()
-		               , void(*std::declval<T&>.data())
+		               , void(*T::data())
 		               , std::true_type{});
 	} // namespace detail
 	

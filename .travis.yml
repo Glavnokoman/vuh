@@ -2,7 +2,8 @@ language: cpp
 dist: trusty
 sudo: required
 
-# branches:
+branches:
+  - /master/
 #   except:
 #      - /dev-appveyor.*/
 
