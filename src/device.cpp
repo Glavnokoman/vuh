@@ -98,7 +98,7 @@ namespace vuh {
 
 	/// release resources associated with device
 	auto Device::release() noexcept-> void {
-		if((vk::Device&)(*this)){
+		if(static_cast<vk::Device&>(*this)){
 			destroyCommandPool(_cmdpool_compute);
 			if(_tfr_family_id != _cmp_family_id){
 				destroyCommandPool(_cmdpool_transfer);
@@ -135,7 +135,7 @@ namespace vuh {
 	   , _cmp_family_id(other._cmp_family_id)
 	   , _tfr_family_id(other._tfr_family_id)
 	{
-		(vk::Device&)other = nullptr;
+		static_cast<vk::Device&>(other)= nullptr;
 	}
 
 	/// Move assignment.

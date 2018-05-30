@@ -15,7 +15,7 @@ namespace vuh {
 	namespace detail {
 		template<class T> struct DictTypeToDsc;
 
-		template<class T> struct DictTypeToDsc<vuh::Array<T>>{
+		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::DeviceArray<T, Alloc>>{
 			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
 		};
 
@@ -74,13 +74,29 @@ namespace vuh {
 		}
 	} // namespace detail
 
+	
 	/// Program base class for 'code reuse via inheritance' :).
 	/// It keeps all (almost) state variables, and handles most of array arguments bindings.
 	class ProgramBase {
 	public:
+		/// Run the Program object on previously bound parameters, wait for completion.
+		/// @pre bacth sizes should be specified before calling this.
+		/// @pre all paramerters should be specialized, pushed and bound before calling this.
+		auto run()-> void {
+			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
+
+			// submit the command buffer to the queue and set up a fence.
+			auto queue = _device.computeQueue();
+			auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+			queue.submit({submitInfo}, fence);
+			_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
+			_device.destroyFence(fence);
+		}
+	protected:
 		ProgramBase(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
 			: ProgramBase(device, read_spirv(filepath), flags)
 		{}
+		
 		ProgramBase(vuh::Device& device, const std::vector<char>& code
 		            , vk::ShaderModuleCreateFlags flags={}
 		            )
@@ -118,20 +134,6 @@ namespace vuh {
 			return *this;
 		}
 		
-		/// Run the Program object on previously bound parameters, wait for completion.
-		/// @pre bacth sizes should be specified before calling this.
-		/// @pre all paramerters should be specialized, pushed and bound before calling this.
-		auto run()-> void {
-			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
-
-			// submit the command buffer to the queue and set up a fence.
-			auto queue = _device.computeQueue();
-			auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
-			queue.submit({submitInfo}, fence);
-			_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
-			_device.destroyFence(fence);
-		}
-	protected:
 		/// Release resources associated with current Program.
 		auto release() noexcept-> void {
 			if(_shader){
@@ -156,17 +158,16 @@ namespace vuh {
 			_pipecache = _device.createPipelineCache({});
 			_pipelayout = _device.createPipelineLayout(
 			        {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N), psrange.data()});
-			
 		}
 		
 		///
 		template<class... Arrs>
 		auto alloc_descriptor_sets(Arrs&...)-> void {
 			assert(_dsclayout);
-			if(_dscpool){ // unbind previously bound descriptor sets if any
-				_device.destroyDescriptorPool(_dscpool);
-				_device.resetCommandPool(_device.computeCmdPool(), vk::CommandPoolResetFlags());
-			}
+//			if(_dscpool){ // unbind previously bound descriptor sets if any
+//				_device.destroyDescriptorPool(_dscpool);
+//				_device.resetCommandPool(_device.computeCmdPool(), vk::CommandPoolResetFlags());
+//			}
 
 			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
 			                                                   , sizeof...(Arrs));
@@ -234,9 +235,11 @@ namespace vuh {
 		SpecsBase(Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
 		   : ProgramBase(device, filepath, flags)
 		{}
+		
 		SpecsBase(Device& device, const std::vector<char>& code, vk::ShaderModuleCreateFlags f={})
 		   : ProgramBase(device, code, f)
 		{}
+		
 		///
 		auto init_pipeline()-> void {
 			auto specEntries = detail::specs2mapentries(_specs);
@@ -252,6 +255,7 @@ namespace vuh {
 	protected:
 		std::tuple<Spec_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
 	};
+
 	
 	/// Empty specialization constants interface
 	template<>
@@ -272,11 +276,13 @@ namespace vuh {
 			_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
 		}
 	}; // class SpecsBase
-	
+
+
 	/// Actually runnable entity. Before array parameters are bound (and program run)
 	/// working grid dimensions should be set up, and if there are specialization constants to set
 	/// they should be set before that too.
 	template<class Specs=typelist<>, class Params=typelist<>> class Program;
+
 
 	/// specialization to with non-empty specialization constants and push constants
 	template<template<class...> class Specs, class... Specs_Ts , class Params>
@@ -314,9 +320,11 @@ namespace vuh {
 		/// @pre Specs and batch sizes should be specified before calling this.
 		template<class... Arrs>
 		auto bind(const Params& p, Arrs&... args)-> const Program& {
-			init_pipelayout(args...);
-			Base::alloc_descriptor_sets(args...);
-			Base::init_pipeline();
+			if(!Base::_pipeline){ // handle multiple rebind
+				init_pipelayout(args...);
+				Base::alloc_descriptor_sets(args...);
+				Base::init_pipeline();
+			}
 			create_command_buffer(p, args...);
 			return *this;
 		}
@@ -346,6 +354,7 @@ namespace vuh {
 			Base::command_buffer_end();
 		}
 	}; // class Program
+
 
 	/// specialization with non-empty specialization constants and empty push constants
 	template<template<class...> class Specs, class... Specs_Ts>
@@ -383,9 +392,11 @@ namespace vuh {
 		/// @pre Specs and batch sizes should be specified before calling this.
 		template<class... Arrs>
 		auto bind(Arrs&... args)-> const Program& {
-			Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
-			Base::alloc_descriptor_sets(args...);
-			Base::init_pipeline();
+			if(!Base::_pipeline){ // handle multiple rebind
+				Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
+				Base::alloc_descriptor_sets(args...);
+				Base::init_pipeline();
+			}
 			Base::command_buffer_begin(args...);
 			Base::command_buffer_end();
 			return *this;

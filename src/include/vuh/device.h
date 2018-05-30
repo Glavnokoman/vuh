@@ -1,7 +1,5 @@
 #pragma once
 
-#include "array_view.hpp"
-
 #include <vulkan/vulkan.hpp>
 
 #include <vector>
