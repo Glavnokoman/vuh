@@ -20,42 +20,46 @@ TEST_CASE("array_alloc_basic", "[array]"){
 		REQUIRE(d0.size_bytes() == arr_size*sizeof(float));
 	}
 	SECTION("device memory"){
-	   auto d1 = vuh::Array<float, vuh::mem::Device>(device, arr_size);
-		REQUIRE(d1.size() == arr_size);
+		SECTION("size constructor + fromHost() data transfer"){
+			auto d1 = vuh::Array<float, vuh::mem::Device>(device, arr_size);
+			REQUIRE(d1.size() == arr_size);
 
-		d1.fromHost(begin(h0), end(h0));
-		auto h1 = std::vector<float>(arr_size, 0.f);
-		d1.toHost(begin(h1));
-		REQUIRE(h0 == h1);
-
-	   auto d4 = vuh::Array<float, vuh::mem::Device>(device, h0);
-		REQUIRE(d4.size() == h0.size());
-
-		auto h4_tst = std::vector<float>(arr_size, 0.f);
-		d4.toHost(begin(h4_tst), [](auto x){return 2.f*x;});
-		auto h4_ref = h0;
-		for(auto& x: h4_ref){ x *= 2.f; }
-		REQUIRE(h4_tst == h4_ref);
-
-	   auto d6 = vuh::Array<float, vuh::mem::Device>(device, begin(h0), end(h0));
-		REQUIRE(d6.size() == h0.size());
-
-		auto h6_tst = std::vector<float>(arr_size, 0.f);
-		d6.toHost(begin(h6_tst), arr_size/2, [](auto x){return 3.f*x;});
-		d6.toHost(begin(h6_tst) + arr_size/2, arr_size/2, [](auto x){return 4.f*x;});
-		auto h6_ref = h0;
-		for(size_t i = 0; i < arr_size; ++i){
-			h6_ref[i] *= (i < arr_size/2 ? 3.f : 4.f);
+			d1.fromHost(begin(h0), end(h0));
+			auto h1 = std::vector<float>(arr_size, 0.f);
+			d1.toHost(begin(h1));
+			REQUIRE(h0 == h1);
 		}
-		REQUIRE(h6_tst == h6_ref);
+		SECTION("construct from iterable + toHost with lambda"){
+			auto d4 = vuh::Array<float, vuh::mem::Device>(device, h0);
+			REQUIRE(d4.size() == h0.size());
 
-		auto d3 = vuh::Array<float, vuh::mem::Device>(device, arr_size,
-	                                                 [&](size_t i){return h0[i];});
-		REQUIRE(d3.size() == arr_size);
+			auto h4_tst = std::vector<float>(arr_size, 0.f);
+			d4.toHost(begin(h4_tst), [](auto x){return 2.f*x;});
+			auto h4_ref = h0;
+			for(auto& x: h4_ref){ x *= 2.f; }
+			REQUIRE(h4_tst == h4_ref);
+		}
+		SECTION("construct from range + toHost with size and lambda"){
+			auto d6 = vuh::Array<float, vuh::mem::Device>(device, begin(h0), end(h0));
+			REQUIRE(d6.size() == h0.size());
 
-		auto h3_tst = d3.toHost<std::vector<float>>();
-		REQUIRE(h3_tst == h0);
+			auto h6_tst = std::vector<float>(arr_size, 0.f);
+			d6.toHost(begin(h6_tst), arr_size/2, [](auto x){return 3.f*x;});
+			d6.toHost(begin(h6_tst) + arr_size/2, arr_size/2, [](auto x){return 4.f*x;});
+			auto h6_ref = h0;
+			for(size_t i = 0; i < arr_size; ++i){
+				h6_ref[i] *= (i < arr_size/2 ? 3.f : 4.f);
+			}
+			REQUIRE(h6_tst == h6_ref);
+		}
+		SECTION("size and lambda constructor + toHost by value"){
+			auto d3 = vuh::Array<float, vuh::mem::Device>(device, arr_size,
+		                                                 [&](size_t i){return h0[i];});
+			REQUIRE(d3.size() == arr_size);
 
+			auto h3_tst = d3.toHost<std::vector<float>>();
+			REQUIRE(h3_tst == h0);
+		}
 		// auto d7 = vuh::Array<float, vuh::pool::Device>(pool, arr_size);
 	}
 	SECTION("unified memory"){
