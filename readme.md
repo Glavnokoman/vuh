@@ -60,6 +60,7 @@ void main(){
 # Build & Install
 ## Dependencies
 - C++14 compliant compiler
+- [Vulkan-headers](https://github.com/KhronosGroup/Vulkan-Headers)
 - [Vulkan-Loader](https://github.com/KhronosGroup/Vulkan-Loader)
 - [CMake](https://cmake.org/download/) (build-only)
 - [Glslang](https://github.com/KhronosGroup/glslang) (optional, build-only)
