@@ -8,7 +8,7 @@
 using std::begin;
 using std::end;
 
-TEST_CASE("array_alloc_basic", "[array]"){
+TEST_CASE("array_alloc_basic", "[array][correctness]"){
 	constexpr auto arr_size = size_t(128);
 	const auto h0 = std::vector<float>(arr_size, 3.14f);
 
@@ -87,5 +87,10 @@ TEST_CASE("array_alloc_basic", "[array]"){
 		auto h1 = std::vector<float>(arr_size, 0.f);
 	   std::copy(begin(d2), end(d2), begin(h1));
 	   d2[42] = 42.f;
+	}
+	SECTION("void memory allocator"){
+		REQUIRE_THROWS([&](){
+			auto d_array = vuh::Array<float, vuh::arr::AllocDevice<void>>(device, arr_size);
+		}());
 	}
 }

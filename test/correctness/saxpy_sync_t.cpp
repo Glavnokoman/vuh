@@ -10,7 +10,7 @@
 
 using test::approx;
 
-TEST_CASE("saxpy_once_1D", "[correctness]"){
+TEST_CASE("saxpy_once_1D", "[program][correctness]"){
 	auto y = std::vector<float>(128, 1.0f);
 	auto x = std::vector<float>(128, 2.0f);
 	const auto a = 0.1f; // saxpy scaling constant

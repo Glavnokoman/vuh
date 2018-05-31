@@ -27,10 +27,15 @@ public:
 	   : vk::Buffer(Alloc::makeBuffer(device, size_bytes, descriptor_class | usage))
 	   , _dev(device)
    {
-		auto alloc = Alloc();
-		_mem = alloc.allocMemory(device, *this, properties);
-		_flags = alloc.memoryProperties(device);
-		_dev.bindBufferMemory(*this, _mem, 0);
+      try{
+         auto alloc = Alloc();
+         _mem = alloc.allocMemory(device, *this, properties);
+         _flags = alloc.memoryProperties(device);
+         _dev.bindBufferMemory(*this, _mem, 0);
+      } catch(std::runtime_error&){ // destroy buffer if memory allocation was not successful
+         release();
+         throw;
+      }
 	}
 
 	/// Release resources associated with current object.

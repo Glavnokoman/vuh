@@ -29,7 +29,9 @@ public:
 
 	///
 	auto allocMemory(vuh::Device& device, vk::Buffer buffer
-	                 , vk::MemoryPropertyFlags flags_memory={})-> vk::DeviceMemory {
+	                 , vk::MemoryPropertyFlags flags_memory={}
+	                 )-> vk::DeviceMemory 
+	{
 		_memid = findMemory(device, buffer, flags_memory);
 		auto mem = vk::DeviceMemory{};
 		try{
@@ -77,15 +79,36 @@ private: // data
 template<>
 class AllocDevice<void>{
 public:
+	using properties_t = void;
+	
+	///
 	auto allocMemory(vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags)-> vk::DeviceMemory {
 		throw std::runtime_error("failed to allocate memory for buffer");
 	}
 	
+	///
 	static auto findMemory(const vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags)-> uint32_t {
 		throw std::runtime_error("no suitable memory found");
 	}
+
+	/// Create buffer. Normally this should only be called in tests.
+	static auto makeBuffer(vuh::Device& device
+	                      , uint32_t size_bytes
+	                      , vk::BufferUsageFlags flags ///< additional buffer usage flags
+	                      )-> vk::Buffer
+	{
+		return device.createBuffer({ {}, size_bytes, flags});
+	}
 	
-	auto memId() const-> uint32_t { assert(false); }
+	auto memoryProperties(vuh::Device&) const-> vk::MemoryPropertyFlags {
+		assert(false);
+		throw std::runtime_error("this should never happen");
+	}
+	
+	auto memId() const-> uint32_t { 
+		assert(false);
+		throw std::runtime_error("this should never happen");
+	}
 };
 
 } // namespace arr
