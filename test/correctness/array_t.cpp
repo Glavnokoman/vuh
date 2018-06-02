@@ -8,61 +8,72 @@
 using std::begin;
 using std::end;
 
-TEST_CASE("array_alloc_basic", "[array][correctness]"){
+TEST_CASE("array with memory directly allocated from device", "[array][correctness]"){
 	constexpr auto arr_size = size_t(128);
-	const auto h0 = std::vector<float>(arr_size, 3.14f);
+	const auto host_data = std::vector<float>(arr_size, 3.14f);
+	const auto host_data_doubled = [&]{
+		auto r = host_data;
+		for(auto& x: r){ x *= 2.f; }
+		return r;
+	}();
 
 	auto instance = vuh::Instance();
 	auto device = instance.devices().at(0);
 
 	SECTION("device-only memory"){
-		auto d0 = vuh::Array<float, vuh::mem::DeviceOnly>(device, arr_size);
-		REQUIRE(d0.size_bytes() == arr_size*sizeof(float));
+		auto array = vuh::Array<float, vuh::mem::DeviceOnly>(device, arr_size);
+		REQUIRE(array.size_bytes() == arr_size*sizeof(float));
 	}
-	SECTION("device memory"){
-		SECTION("size constructor + fromHost() data transfer"){
-			auto d1 = vuh::Array<float, vuh::mem::Device>(device, arr_size);
-			REQUIRE(d1.size() == arr_size);
+	SECTION("device-local memory"){
+		SECTION("size constructor"){
+			auto array = vuh::Array<float, vuh::mem::Device>(device, arr_size);
+			REQUIRE(array.size() == arr_size);
+			REQUIRE(array.size_bytes() == arr_size*sizeof(float));
 
-			d1.fromHost(begin(h0), end(h0));
-			auto h1 = std::vector<float>(arr_size, 0.f);
-			d1.toHost(begin(h1));
-			REQUIRE(h0 == h1);
+			auto array_int = vuh::Array<int32_t, vuh::mem::Device>(device, arr_size);
+			REQUIRE(array.size() == arr_size);
+			REQUIRE(array.size_bytes() == arr_size*sizeof(int32_t));
 		}
-		SECTION("construct from iterable + toHost with lambda"){
-			auto d4 = vuh::Array<float, vuh::mem::Device>(device, h0);
-			REQUIRE(d4.size() == h0.size());
-
-			auto h4_tst = std::vector<float>(arr_size, 0.f);
-			d4.toHost(begin(h4_tst), [](auto x){return 2.f*x;});
-			auto h4_ref = h0;
-			for(auto& x: h4_ref){ x *= 2.f; }
-			REQUIRE(h4_tst == h4_ref);
+		SECTION("construct from range"){
+			auto array = vuh::Array<float, vuh::mem::Device>(device, begin(host_data), end(host_data));
+			REQUIRE(array.toHost<std::vector<float>>() == host_data);
 		}
-		SECTION("construct from range + toHost with size and lambda"){
-			auto d6 = vuh::Array<float, vuh::mem::Device>(device, begin(h0), end(h0));
-			REQUIRE(d6.size() == h0.size());
-
-			auto h6_tst = std::vector<float>(arr_size, 0.f);
-			d6.toHost(begin(h6_tst), arr_size/2, [](auto x){return 3.f*x;});
-			d6.toHost(begin(h6_tst) + arr_size/2, arr_size/2, [](auto x){return 4.f*x;});
-			auto h6_ref = h0;
-			for(size_t i = 0; i < arr_size; ++i){
-				h6_ref[i] *= (i < arr_size/2 ? 3.f : 4.f);
-			}
-			REQUIRE(h6_tst == h6_ref);
+		SECTION("contruct from iterable"){
+			auto array = vuh::Array<float, vuh::mem::Device>(device, host_data);
+			REQUIRE(array.toHost<std::vector<float>>() == host_data);
 		}
-		SECTION("size and lambda constructor + toHost by value"){
-			auto d3 = vuh::Array<float, vuh::mem::Device>(device, arr_size,
-		                                                 [&](size_t i){return h0[i];});
-			REQUIRE(d3.size() == arr_size);
-
-			auto h3_tst = d3.toHost<std::vector<float>>();
-			REQUIRE(h3_tst == h0);
+		SECTION("size + index based lambda constructor"){
+			auto array = vuh::Array<float, vuh::mem::Device>(device, arr_size
+			                                                 , [&](size_t i){return host_data[i];});
+			REQUIRE(array.toHost<std::vector<float>>() == host_data);
+		}
+		SECTION("data transfer from host range"){
+			auto array = vuh::Array<float, vuh::mem::Device>(device, arr_size);
+			array.fromHost(begin(host_data), end(host_data));
+			REQUIRE(array.toHost<std::vector<float>>() == host_data);
+		}
+		SECTION("transfer whole array to host with transform"){
+			auto array = vuh::Array<float, vuh::mem::Device>(device, host_data);
+			auto host_dst = std::vector<float>(arr_size, 0.f);
+			array.toHost(begin(host_dst), [](auto x){ return 2.f*x;});
+			REQUIRE(host_dst == host_data_doubled);
+		}
+		SECTION("transfer n values to host with transform"){
+			auto array = vuh::Array<float, vuh::mem::Device>(device, host_data);
+			auto host_dst = std::vector<float>(arr_size, 0.f);
+			array.toHost(begin(host_dst), arr_size/2, [](auto x){ return 2.f*x;});
+			REQUIRE_FALSE(host_dst == host_data_doubled);
+			array.toHost(begin(host_dst), arr_size, [](auto x){ return 2.f*x;});
+			REQUIRE(host_dst == host_data_doubled);
+		}
+		// this one is deliberately same as construct from iterable
+		SECTION("transfer whole array to newly created host std::vector"){
+			auto array = vuh::Array<float, vuh::mem::Device>(device, host_data);
+			REQUIRE(array.toHost<std::vector<float>>() == host_data);
 		}
 		// auto d7 = vuh::Array<float, vuh::pool::Device>(pool, arr_size);
 	}
-	SECTION("unified memory"){
+	SECTION("device-local host-visible memory"){
 		try{
 			auto d1 = vuh::Array<float, vuh::mem::Unified>(device, arr_size);
 		} catch (...){
@@ -71,24 +82,24 @@ TEST_CASE("array_alloc_basic", "[array][correctness]"){
 		}
 
 		auto d2 = vuh::Array<float, vuh::mem::Unified>(device, arr_size, 2.71f);
-		auto d6 = vuh::Array<float, vuh::mem::Unified>(device, begin(h0), end(h0));
+		auto d6 = vuh::Array<float, vuh::mem::Unified>(device, begin(host_data), end(host_data));
 
 	   // random-access iterable
 		auto h1 = std::vector<float>(arr_size, 0.f);
 	   std::copy(begin(d2), end(d2), begin(h1));
 	   d6[42] = 42.f;
 	}
-	SECTION("host mappable memory"){
+	SECTION("host-visible memory"){
 		auto d1 = vuh::Array<float, vuh::mem::Host>(device, arr_size);
 	   auto d2 = vuh::Array<float, vuh::mem::Host>(device, arr_size, 2.71f);
-	   auto d6 = vuh::Array<float, vuh::mem::Host>(device, begin(h0), end(h0));
+	   auto d6 = vuh::Array<float, vuh::mem::Host>(device, begin(host_data), end(host_data));
 
 	   // random access iterable
 		auto h1 = std::vector<float>(arr_size, 0.f);
 	   std::copy(begin(d2), end(d2), begin(h1));
 	   d2[42] = 42.f;
 	}
-	SECTION("void memory allocator"){
+	SECTION("void memory allocator should throw"){
 		REQUIRE_THROWS([&](){
 			auto d_array = vuh::Array<float, vuh::arr::AllocDevice<void>>(device, arr_size);
 		}());
