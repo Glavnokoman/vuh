@@ -38,7 +38,7 @@ before_install:
   - pip install --user cget
   - export CGET_PREFIX=${DEPS_DIR}
 
-  - export CMAKE_PREFIX_PATH="$DEPS_DIR:$CMAKE_PREFIX_PATH"
+  - export CMAKE_PREFIX_PATH="${DEPS_DIR}:${CMAKE_PREFIX_PATH}"
   - bash ./config/install_dependencies.sh
 
 before_script:

@@ -6,7 +6,10 @@ cget init --std=c++14
 
 cget install KhronosGroup/Vulkan-Headers
 
-git clone --recurse-submodules https://github.com/KhronosGroup/Vulkan-Loader ${CGET_PREFIX}/src/vulkan-loader
+https://github.com/Glavnokoman/Vulkan-Loader.git
+
+git clone --recurse-submodules -b fix_find_vulkan_headers https://github.com/Glavnokoman/Vulkan-Loader.git ${CGET_PREFIX}/src/vulkan-loader
+# git clone --recurse-submodules https://github.com/KhronosGroup/Vulkan-Loader ${CGET_PREFIX}/src/vulkan-loader
 cget install ${CGET_PREFIX}/src/vulkan-loader -DBUILD_WSI_WAYLAND_SUPPORT=OFF -DBUILD_TESTS=OFF
 
 git clone --recurse-submodules https://github.com/KhronosGroup/glslang.git ${CGET_PREFIX}/src/glslang
