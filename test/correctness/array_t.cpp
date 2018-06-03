@@ -77,27 +77,68 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 		try{
 			auto d1 = vuh::Array<float, vuh::mem::Unified>(device, arr_size);
 		} catch (...){
-			std::cerr << "unified memory allocation failed, but that might be OK..." "\n";
+			std::cerr << "skipping unified memory array tests..." "\n";
 			return;
 		}
 
-		auto d2 = vuh::Array<float, vuh::mem::Unified>(device, arr_size, 2.71f);
-		auto d6 = vuh::Array<float, vuh::mem::Unified>(device, begin(host_data), end(host_data));
-
-	   // random-access iterable
-		auto h1 = std::vector<float>(arr_size, 0.f);
-	   std::copy(begin(d2), end(d2), begin(h1));
-	   d6[42] = 42.f;
+		SECTION("size constructor"){
+			auto array = vuh::Array<float, vuh::mem::Unified>(device, arr_size);
+			REQUIRE(array.size() == arr_size);
+			REQUIRE(array.size_bytes() == arr_size*sizeof(float));
+		}
+		SECTION("size constructor with value initialization"){
+			auto array = vuh::Array<float, vuh::mem::Unified>(device, arr_size, 3.14f);
+			REQUIRE(array.size() == arr_size);
+			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data);
+		}
+		SECTION("construct from range"){
+			auto array = vuh::Array<float, vuh::mem::Unified>(device, begin(host_data), end(host_data));
+			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data);
+		}
+		SECTION("random access with operator []"){
+			auto array = vuh::Array<float, vuh::mem::Unified>(device, arr_size, 3.14f);
+			REQUIRE(array[arr_size/2] == Approx(3.14f));
+			array[arr_size/2] = 2.71f;
+			REQUIRE(array[arr_size/2] == Approx(2.71f));
+		}
+		SECTION("begin() and end() iterators"){
+			auto array = vuh::Array<float, vuh::mem::Unified>(device, arr_size, 3.14f);
+			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data);
+			for(auto& x: array){
+				x *= 2.f;
+			}
+			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data_doubled);
+		}
 	}
 	SECTION("host-visible memory"){
-		auto d1 = vuh::Array<float, vuh::mem::Host>(device, arr_size);
-	   auto d2 = vuh::Array<float, vuh::mem::Host>(device, arr_size, 2.71f);
-	   auto d6 = vuh::Array<float, vuh::mem::Host>(device, begin(host_data), end(host_data));
-
-	   // random access iterable
-		auto h1 = std::vector<float>(arr_size, 0.f);
-	   std::copy(begin(d2), end(d2), begin(h1));
-	   d2[42] = 42.f;
+		SECTION("size constructor"){
+			auto array = vuh::Array<float, vuh::mem::Host>(device, arr_size);
+			REQUIRE(array.size() == arr_size);
+			REQUIRE(array.size_bytes() == arr_size*sizeof(float));
+		}
+		SECTION("size constructor with value initialization"){
+			auto array = vuh::Array<float, vuh::mem::Host>(device, arr_size, 3.14f);
+			REQUIRE(array.size() == arr_size);
+			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data);
+		}
+		SECTION("construct from range"){
+			auto array = vuh::Array<float, vuh::mem::Host>(device, begin(host_data), end(host_data));
+			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data);
+		}
+		SECTION("random access with operator []"){
+			auto array = vuh::Array<float, vuh::mem::Host>(device, arr_size, 3.14f);
+			REQUIRE(array[arr_size/2] == Approx(3.14f));
+			array[arr_size/2] = 2.71f;
+			REQUIRE(array[arr_size/2] == Approx(2.71f));
+		}
+		SECTION("begin() and end() iterators"){
+			auto array = vuh::Array<float, vuh::mem::Host>(device, arr_size, 3.14f);
+			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data);
+			for(auto& x: array){
+				x *= 2.f;
+			}
+			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data_doubled);
+		}
 	}
 	SECTION("void memory allocator should throw"){
 		REQUIRE_THROWS([&](){
