@@ -7,7 +7,6 @@
 namespace {
 	/// Create logical device.
 	auto createDevice(const vk::PhysicalDevice& physicalDevice
-	                  , const std::vector<const char*>& layers
 	                  , uint32_t compute_family_id
 	                  , uint32_t transfer_family_id
 	                  )-> vk::Device
@@ -23,8 +22,7 @@ namespace {
 			                                        , transfer_family_id, 1, &p);
 			n_queues += 1;
 		}
-		auto devCI = vk::DeviceCreateInfo(vk::DeviceCreateFlags(), n_queues, queueCIs.data()
-		                                  , ARR_VIEW(layers));
+		auto devCI = vk::DeviceCreateInfo(vk::DeviceCreateFlags(), n_queues, queueCIs.data());
 
 		return physicalDevice.createDevice(devCI, nullptr);
 	}
@@ -64,25 +62,25 @@ namespace {
 
 namespace vuh {
 	///
-	Device::Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers)
-	   : Device(physdevice, layers, physdevice.getQueueFamilyProperties())
+	Device::Device(Instance& instance, vk::PhysicalDevice physdevice)
+	   : Device(instance, physdevice, physdevice.getQueueFamilyProperties())
 	{}
 
 	/// helper constructor
-	Device::Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
+	Device::Device(Instance& instance, vk::PhysicalDevice physdevice
 	              , const std::vector<vk::QueueFamilyProperties>& familyProperties
 	              )
-	   : Device(physdevice, layers, getFamilyID(familyProperties, vk::QueueFlagBits::eCompute)
+	   : Device(instance, physdevice, getFamilyID(familyProperties, vk::QueueFlagBits::eCompute)
 	            , getFamilyID(familyProperties, vk::QueueFlagBits::eTransfer))
 	{}
 
 	/// helper constructor
-	Device::Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
+	Device::Device(Instance& instance, vk::PhysicalDevice physdevice
 	               , uint32_t computeFamilyId, uint32_t transferFamilyId
 	               )
-	  : vk::Device(createDevice(physdevice, layers, computeFamilyId, transferFamilyId))
+	  : vk::Device(createDevice(physdevice, computeFamilyId, transferFamilyId))
+	  , _instance(instance)
 	  , _physdev(physdevice)
-	  , _layers(layers)
 	  , _cmp_family_id(computeFamilyId)
 	  , _tfr_family_id(transferFamilyId)
 	{
@@ -114,7 +112,7 @@ namespace vuh {
 
 	/// Copy constructor. Creates new handle to the same physical device, and recreates associated pools
 	Device::Device(const Device& other)
-	   : Device(other._physdev, other._layers, other._cmp_family_id, other._tfr_family_id)
+	   : Device(other._instance, other._physdev, other._cmp_family_id, other._tfr_family_id)
 	{}
 
 	/// Copy assignment.
@@ -126,12 +124,12 @@ namespace vuh {
 	/// Move constructor.
 	Device::Device(Device&& other) noexcept
 	   : vk::Device(std::move(other))
+	   , _instance(other._instance)
 	   , _physdev(other._physdev)
 	   , _cmdpool_compute(other._cmdpool_compute)
 	   , _cmdbuf_compute(other._cmdbuf_compute)
 	   , _cmdpool_transfer(other._cmdpool_transfer)
 	   , _cmdbuf_transfer(other._cmdbuf_transfer)
-	   , _layers(std::move(other._layers))
 	   , _cmp_family_id(other._cmp_family_id)
 	   , _tfr_family_id(other._tfr_family_id)
 	{
@@ -153,7 +151,6 @@ namespace vuh {
 		swap(d1._cmdbuf_compute  , d2._cmdbuf_compute  );
 		swap(d1._cmdpool_transfer, d2._cmdpool_transfer);
 		swap(d1._cmdbuf_transfer , d2._cmdbuf_transfer );
-		swap(d1._layers	       , d2._layers          );
 		swap(d1._cmp_family_id   , d2._cmp_family_id   );
 		swap(d1._tfr_family_id   , d2._tfr_family_id   );
 	}

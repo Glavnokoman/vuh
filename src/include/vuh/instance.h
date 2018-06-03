@@ -29,6 +29,8 @@ namespace vuh {
 		auto operator= (Instance&&) noexcept-> Instance&;
 
 		auto devices()-> std::vector<vuh::Device>;
+		auto report(const char* prefix, const char* message
+		            , VkDebugReportFlagsEXT flags=VK_DEBUG_REPORT_INFORMATION_BIT_EXT) const-> void;
 	private: // helpers
 		auto clear() noexcept-> void;
 	private: // data

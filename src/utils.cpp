@@ -1,5 +1,6 @@
-#include "vuh/utils.h"
-#include "vuh/arr/arrayUtils.h"
+#include <vuh/utils.h>
+#include <vuh/error.h>
+#include <vuh/arr/arrayUtils.h>
 
 #include <fstream>
 
@@ -9,7 +10,7 @@ namespace vuh {
 	auto read_spirv(const char* filename)-> std::vector<char> {
 		auto fin = std::ifstream(filename, std::ios::binary);
 		if(!fin.is_open()){
-			throw std::runtime_error(std::string("could not open file ") + filename);
+			throw FileReadFailure(std::string("could not open file ") + filename + " for reading");
 		}
 		auto ret = std::vector<char>(std::istreambuf_iterator<char>(fin), std::istreambuf_iterator<char>());
 

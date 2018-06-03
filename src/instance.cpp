@@ -154,7 +154,8 @@ namespace vuh {
 		if(_instance){
 			if(_reporter){// unregister callback.
 				auto destroyFn = PFN_vkDestroyDebugReportCallbackEXT(
-				                     vkGetInstanceProcAddr(_instance, "vkDestroyDebugReportCallbackEXT"));
+				                    vkGetInstanceProcAddr(_instance, "vkDestroyDebugReportCallbackEXT")
+				                    );
 				if(destroyFn){
 					destroyFn(_instance, _reporter, nullptr);
 				}
@@ -169,8 +170,19 @@ namespace vuh {
 		auto physdevs = _instance.enumeratePhysicalDevices();
 		auto r = std::vector<Device>{};
 		for(auto pd: physdevs){
-			r.emplace_back(pd, _layers);
+			r.emplace_back(*this, pd);
 		}
 		return r;
+	}
+
+	///
+	auto Instance::report(const char* prefix, const char* message
+	                      , VkDebugReportFlagsEXT flags
+	                      ) const-> void
+	{
+		auto reporter = PFN_vkDebugReportMessageEXT(
+		                   vkGetInstanceProcAddr(_instance, "vkDebugReportMessageEXT"));
+		reporter(_instance, flags, VkDebugReportObjectTypeEXT{}, 0, 0, 0
+		         , prefix, message);
 	}
 } // namespace vuh

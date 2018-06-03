@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vuh/device.h>
+#include <vuh/error.h>
+#include <vuh/instance.h>
 
 #include <vulkan/vulkan.hpp>
 
@@ -36,9 +38,10 @@ public:
 		auto mem = vk::DeviceMemory{};
 		try{
 			mem = device.allocateMemory({device.getBufferMemoryRequirements(buffer).size, _memid});
-		} catch (vk::Error&){
-//			std::cerr << "forward the error message here" << "\n";
+		} catch (vk::Error& e){
 			auto allocFallback = AllocFallback{};
+			device.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
+			                         , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 			mem = allocFallback.allocMemory(device, buffer, flags_memory);
 			_memid = allocFallback.memId();
 		}
@@ -67,7 +70,8 @@ public:
 		if(memid != uint32_t(-1)){
 			return memid;
 		}
- //		std::cerr << "no memory with desired (" << Props::memory << ") properties found. Trying the fallback"; // TODO: add error reporting
+		device.instance().report("AllocDevice could not find desired memory type, using fallback", " "
+		                         , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		return AllocFallback::findMemory(device, buffer, flags_memory);
 	}
 private: // data
@@ -83,12 +87,16 @@ public:
 	
 	///
 	auto allocMemory(vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags)-> vk::DeviceMemory {
-		throw std::runtime_error("failed to allocate memory for buffer");
+		throw vk::OutOfDeviceMemoryError("failed to allocate device memory"
+		                                 " and no fallback available");
 	}
 	
 	///
-	static auto findMemory(const vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags)-> uint32_t {
-		throw std::runtime_error("no suitable memory found");
+	static auto findMemory(const vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags flags
+	                       )-> uint32_t
+	{
+		throw NoSuitableMemoryFound("no memory with flags " + std::to_string(uint32_t(flags))
+		                            + " could be found and not fallback available");
 	}
 
 	/// Create buffer. Normally this should only be called in tests.
@@ -101,13 +109,11 @@ public:
 	}
 	
 	auto memoryProperties(vuh::Device&) const-> vk::MemoryPropertyFlags {
-		assert(false);
-		throw std::runtime_error("this should never happen");
+		throw std::logic_error("this functions is not supposed to be called");
 	}
-	
+
 	auto memId() const-> uint32_t { 
-		assert(false);
-		throw std::runtime_error("this should never happen");
+		throw std::logic_error("this function is not supposed to be called");
 	}
 };
 

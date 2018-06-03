@@ -10,7 +10,7 @@ namespace vuh {
 	/// Logical device packed with associated command pools and buffers.
 	class Device: public vk::Device {
 	public:
-		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers={});
+		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice);
 		~Device() noexcept;
 
 		Device(const Device&);
@@ -24,6 +24,7 @@ namespace vuh {
 		auto numTransferQueues() const-> uint32_t { return 1u;}
 		auto memoryProperties(uint32_t id) const-> vk::MemoryPropertyFlags;
 		auto selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties) const-> uint32_t;
+		auto instance() const-> const vuh::Instance& {return _instance;}
 
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
@@ -38,21 +39,22 @@ namespace vuh {
 		                    , const vk::PipelineShaderStageCreateInfo& shader_stage_info
 		                    , vk::PipelineCreateFlags flags={}
 		                    )-> vk::Pipeline;
+		auto instance()-> vuh::Instance& { return _instance; }
 		
 	private: // helpers
-		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
+		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice
 		                , const std::vector<vk::QueueFamilyProperties>& families);
-		explicit Device(vk::PhysicalDevice physdevice, std::vector<const char*> layers
+		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice
 	                   , uint32_t computeFamilyId, uint32_t transferFamilyId);
 		auto release() noexcept-> void;
 	private: // data
-		vk::PhysicalDevice _physdev;               ///< handle to associated physical device
-		vk::CommandPool    _cmdpool_compute;       ///< handle to command pool for compute commands
-		vk::CommandBuffer  _cmdbuf_compute;        ///< primary command buffer associated with the compute command pool
-		vk::CommandPool    _cmdpool_transfer;      ///< handle to command pool for transfer instructions. Initialized on first trasnfer request.
-		vk::CommandBuffer  _cmdbuf_transfer;       ///< primary command buffer associated with transfer command pool. Initialized on first transfer request.
-		std::vector<const char*> _layers;          ///< layers activated on device
-		uint32_t _cmp_family_id = uint32_t(-1);  ///< compute queue family id. -1 if device does not have compute-capable queues.
+		vuh::Instance&     _instance;           ///< refer to Instance object used to create device
+		vk::PhysicalDevice _physdev;            ///< handle to associated physical device
+		vk::CommandPool    _cmdpool_compute;    ///< handle to command pool for compute commands
+		vk::CommandBuffer  _cmdbuf_compute;     ///< primary command buffer associated with the compute command pool
+		vk::CommandPool    _cmdpool_transfer;   ///< handle to command pool for transfer instructions. Initialized on first trasnfer request.
+		vk::CommandBuffer  _cmdbuf_transfer;    ///< primary command buffer associated with transfer command pool. Initialized on first transfer request.
+		uint32_t _cmp_family_id = uint32_t(-1); ///< compute queue family id. -1 if device does not have compute-capable queues.
 		uint32_t _tfr_family_id = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
 	}; // class Device
 }
