@@ -4,10 +4,6 @@
 #include "arr/deviceArray.hpp"
 #include "arr/hostArray.hpp"
 
-#include <vulkan/vulkan.hpp>
-
-#include <cassert>
-
 namespace vuh {
 namespace detail {
 
