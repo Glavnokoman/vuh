@@ -73,7 +73,7 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 		}
 		// auto d7 = vuh::Array<float, vuh::pool::Device>(pool, arr_size);
 	}
-	SECTION("device-local host-visible memory"){
+	SECTION("device-local host-visible (unified) memory"){
 		try{
 			auto d1 = vuh::Array<float, vuh::mem::Unified>(device, arr_size);
 		} catch (...){
@@ -110,7 +110,7 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data_doubled);
 		}
 	}
-	SECTION("host-visible memory"){
+	SECTION("host pinned memory"){
 		SECTION("size constructor"){
 			auto array = vuh::Array<float, vuh::mem::Host>(device, arr_size);
 			REQUIRE(array.size() == arr_size);

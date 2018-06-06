@@ -4,7 +4,7 @@ if(NOT GlslangValidator)
    message(FATAL_ERROR "failed to find glslangValidator")
 endif()
 
-function(compile_shader)
+function(vuh_compile_shader)
    set(OneValueArgs SOURCE TARGET)
    cmake_parse_arguments(COMPILE_SHADER "" "${OneValueArgs}" "" ${ARGN})
 

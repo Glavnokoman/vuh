@@ -24,21 +24,6 @@ install(EXPORT VuhTargets
 
 install(FILES
    ${PROJECT_SOURCE_DIR}/config/VuhConfig.cmake
-   ${PROJECT_SOURCE_DIR}/config/CompileShader.cmake
+   ${PROJECT_SOURCE_DIR}/config/VuhCompileShader.cmake
    DESTINATION lib/cmake/vuh
 )
-
-# https://github.com/pabloariasal/modern-cmake-sample/blob/master/libjsonutils/CMakeLists.txt
-
-# configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/cmake/JSONUtilsConfig.cmake.in
-#     ${CMAKE_CURRENT_BINARY_DIR}/JSONUtilsConfig.cmake
-#     INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
-# )
-#
-# #Install the config, configversion and custom find modules
-# install(FILES
-#     ${CMAKE_CURRENT_LIST_DIR}/cmake/FindRapidJSON.cmake
-#     ${CMAKE_CURRENT_BINARY_DIR}/JSONUtilsConfig.cmake
-#     ${CMAKE_CURRENT_BINARY_DIR}/JSONUtilsConfigVersion.cmake
-#     DESTINATION ${INSTALL_CONFIGDIR}
-# )
