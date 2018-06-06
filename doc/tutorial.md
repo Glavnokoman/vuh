@@ -1,4 +1,4 @@
-- [CMake project setup](cmake_project_setup.md)
+- [Project setup](project_setup.md)
 - [Basic program structure](basic_program_structure.md)
 - [Arrays usage](array_usage.md)
 - [Kernels usage](kernels.md)
