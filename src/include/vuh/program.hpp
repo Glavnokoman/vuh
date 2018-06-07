@@ -19,6 +19,10 @@ namespace vuh {
 			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
 		};
 
+		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::HostArray<T, Alloc>>{
+			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
+		};
+	
 		// @return tuple element offset
 		template<size_t Idx, class T>
 		constexpr auto tuple_element_offset(const T& tup)-> std::size_t {

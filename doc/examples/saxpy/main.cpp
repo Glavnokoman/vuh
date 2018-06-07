@@ -1,6 +1,6 @@
-#include <vector>
-#include <vuh/vuh.h>
 #include <vuh/array.hpp>
+#include <vuh/vuh.h>
+#include <vector>
 
 auto main()-> int {
    auto y = std::vector<float>(128, 1.0f);

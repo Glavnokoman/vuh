@@ -92,4 +92,4 @@ Should be similar to above.
 
 # Use
 - [Tutorial](doc/tutorial.md)
-- [Examples](doc/examples.md)
+- [Examples](doc/examples/examples.md)

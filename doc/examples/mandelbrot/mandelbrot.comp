@@ -1,0 +1,42 @@
+#version 440
+// This code is shamelessly borrowed from
+// https://github.com/Erkaman/vulkan_minimal_compute/blob/master/shaders/shader.comp
+// It has been modified a bit but is supposed to do exactly same thing.
+
+layout(local_size_x_id = 0, local_size_y_id = 1) in; // workgroup dimensions specialization constants
+layout(push_constant) uniform Parameters {
+   uint width;
+   uint height;
+} p;
+layout(std430, binding = 0) buffer buf { ivec4 array_out[]; };
+
+void main() {
+   if(p.width <= gl_GlobalInvocationID.x || p.height <= gl_GlobalInvocationID.y){
+      return;
+   }
+
+   float x = float(gl_GlobalInvocationID.x)/float(p.width);  // x \in [0, 1)
+   float y = float(gl_GlobalInvocationID.y)/float(p.height); // y \in [0, 1)
+
+   // render the mandelbrot set.
+   vec2 uv = vec2(x,y);
+   vec2 c = vec2(-.445, 0.0) + (uv - 0.5)*(2.0 + 1.7*0.2);
+   vec2 z = vec2(0.0);
+   int i = 0;
+   const int M = 128;
+   while(i < M){
+      z = vec2(z.x*z.x - z.y*z.y, 2.*z.x*z.y) + c;
+      if(dot(z, z) > 2) break;
+      i++;
+   }
+
+   // simple cosine palette to colorize http://iquilezles.org/www/articles/palettes/palettes.htm
+   float t = float(i)/float(M);
+   vec3 d = vec3(0.3, 0.3, 0.5);
+   vec3 e = vec3(-0.2, -0.3, -0.5);
+   vec3 f = vec3(2.1, 2.0, 3.0);
+   vec3 g = vec3(0.0, 0.1, 0.0);
+   vec4 color = 255.f*vec4(d + e*cos(6.28318*(f*t+g)), 1.0);
+
+   array_out[p.width*gl_GlobalInvocationID.y + gl_GlobalInvocationID.x] = ivec4(color);
+}
