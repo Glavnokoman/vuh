@@ -1,13 +1,13 @@
 if(NOT VUH_BUILD_BENCHMARKS)
-   return()
+	return()
 endif()
 
 add_custom_command(
-   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shaders
-   COMMAND ${CMAKE_COMMAND}
-   ARGS -E create_symlink ${PROJECT_SOURCE_DIR}/src/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
-   # DEPENDS example_filter
-   COMMENT "link shaders to build tests folder"
+	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shaders
+	COMMAND ${CMAKE_COMMAND}
+	ARGS -E create_symlink ${PROJECT_SOURCE_DIR}/src/shaders ${CMAKE_CURRENT_BINARY_DIR}/shaders
+	# DEPENDS example_filter
+	COMMENT "link shaders to build tests folder"
 )
 add_custom_target(link_shaders_bench DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 

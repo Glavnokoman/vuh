@@ -22,7 +22,7 @@ namespace vuh {
 		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::HostArray<T, Alloc>>{
 			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
 		};
-	
+
 		// @return tuple element offset
 		template<size_t Idx, class T>
 		constexpr auto tuple_element_offset(const T& tup)-> std::size_t {
@@ -78,7 +78,7 @@ namespace vuh {
 		}
 	} // namespace detail
 
-	
+
 	/// Program base class for 'code reuse via inheritance' :).
 	/// It keeps all (almost) state variables, and handles most of array arguments bindings.
 	class ProgramBase {
@@ -100,7 +100,7 @@ namespace vuh {
 		ProgramBase(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
 			: ProgramBase(device, read_spirv(filepath), flags)
 		{}
-		
+
 		ProgramBase(vuh::Device& device, const std::vector<char>& code
 		            , vk::ShaderModuleCreateFlags flags={}
 		            )
@@ -137,7 +137,7 @@ namespace vuh {
 			o._shader = nullptr;
 			return *this;
 		}
-		
+
 		/// Release resources associated with current Program.
 		auto release() noexcept-> void {
 			if(_shader){
@@ -149,7 +149,7 @@ namespace vuh {
 				_device.destroyPipelineLayout(_pipelayout);
 			}
 		}
-		
+
 		///
 		template<size_t N, class... Arrs>
 		auto init_pipelayout(const std::array<vk::PushConstantRange, N>& psrange, Arrs&...)-> void {
@@ -163,7 +163,7 @@ namespace vuh {
 			_pipelayout = _device.createPipelineLayout(
 			        {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N), psrange.data()});
 		}
-		
+
 		///
 		template<class... Arrs>
 		auto alloc_descriptor_sets(Arrs&...)-> void {
@@ -206,7 +206,7 @@ namespace vuh {
 			cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, _pipelayout
 			                          , 0, {_dscset}, {});
 		}
-		
+
 		///
 		auto command_buffer_end()-> void {
 			auto cmdbuf = _device.computeCmdBuffer();
@@ -231,19 +231,19 @@ namespace vuh {
 	/// (between its set by Program::spec() call and actually communicated to device).
 	/// Does the pipeline init.
 	template<class Specs> class SpecsBase;
-	
-	/// Non-empty specialization constants interface
+
+	/// Explicit specialization for non-empty specialization constants interface
 	template<template<class...> class Specs, class... Spec_Ts>
 	class SpecsBase<Specs<Spec_Ts...>>: public ProgramBase {
 	protected:
 		SpecsBase(Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
 		   : ProgramBase(device, filepath, flags)
 		{}
-		
+
 		SpecsBase(Device& device, const std::vector<char>& code, vk::ShaderModuleCreateFlags f={})
 		   : ProgramBase(device, code, f)
 		{}
-		
+
 		///
 		auto init_pipeline()-> void {
 			auto specEntries = detail::specs2mapentries(_specs);
@@ -260,8 +260,8 @@ namespace vuh {
 		std::tuple<Spec_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
 	};
 
-	
-	/// Empty specialization constants interface
+
+	/// Explicit specialization for empty specialization constants interface.
 	template<>
 	class SpecsBase<typelist<>>: public ProgramBase{
 	protected:
@@ -312,13 +312,13 @@ namespace vuh {
 			Base::_batch = {x, y, z};
 			return *this;
 		}
-		
+
 		/// Specify values of specification constants.
 		auto spec(Specs_Ts... specs)-> Program& {
 			Base::_specs = std::make_tuple(specs...);
 			return *this;
 		}
-		
+
 		/// Associate buffers to binding points, and pushes the push constants.
 		/// Does most of setup here. Program is ready to be run.
 		/// @pre Specs and batch sizes should be specified before calling this.

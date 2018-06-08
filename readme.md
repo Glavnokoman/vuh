@@ -50,46 +50,21 @@ void main(){
 }
 ```
 
-# Features (so far)
-- device arrays, sync data exchange with host
-- specialization constants (to set workgroup dimensions, etc...)
-- push-constants (to pass small data (<= 128 Bytes), like task dimensions etc...)
-- layout bindings (to pass array parameters)
-- sync kernel execution
+# Features
+- device arrays
+   + storage buffers of GPU-supported types
+   + allocated in device-local, host-visible or both (uniform) memories
+   + sync data exchange with host
+- kernels
+   + bind buffers (passing arbitrary number of array parameters)
+   + specialization constants (to set workgroup dimensions, etc...)
+   + push-constants (to pass small data (<= 128 Bytes), like task dimensions etc...)
+   + sync kernel execution
+- multiple device support
+- [yet to come...](doc/features_to_come.md)
 
-# Build & Install
-## Dependencies
-- C++14 compliant compiler
-- [CMake](https://cmake.org/download/) (build-only)
-- [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers)
-- [Vulkan-Loader](https://github.com/KhronosGroup/Vulkan-Loader)
-- [Glslang](https://github.com/KhronosGroup/glslang) (optional, build-only)
-- [Catch2](https://github.com/catchorg/Catch2) (optional, build-only)
-- [sltbench](https://github.com/ivafanas/sltbench) (optional, build-only)
 
-## Compile with dependencies already in place
-This assumes required dependencies are already present on your system and findable by ```cmake```.
-Replace ```VUH_SOURCE_DIR``` by the path to vuh sources on your setup and build out-of-source.
-```bash
-cmake ${VUH_SOURCE_DIR}
-cmake --build . --target install
-```
-
-## Install dependencies & compile
-### Linux & Unix-like OSes
-Install script depends on ```cmake``` and ```cget``` (```pip install cget```) to be available.
-Replace ```VUH_SOURCE_DIR``` and ```DEPENDENCIES_INSTALL_DIR``` by their values on your system.
-Build out of source.
- ```bash
-export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
-${VUH_SOURCE_DIR}/config/install_dependencies.sh
-cmake ${VUH_SOURCE_DIR} -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR}
-cmake --build . --target install
-```
-### Windows
-TBD.
-Should be similar to above.
-
-# Use
+# Use it
+- [Build & Install](doc/build_install.md)
 - [Tutorial](doc/tutorial.md)
 - [Examples](doc/examples/examples.md)
