@@ -51,15 +51,14 @@ void main(){
 ```
 
 # Features
-- device arrays
-   + storage buffers of GPU-supported types
-   + allocated in device-local, host-visible or both (uniform) memories
+- storage buffers as vuh::Array<T>
+   + allocated in device-local, host-visible or device-local-host-visible memories
    + sync data exchange with host
-- kernels
+- compute shaders as vuh::Program
    + bind buffers (passing arbitrary number of array parameters)
    + specialization constants (to set workgroup dimensions, etc...)
    + push-constants (to pass small data (<= 128 Bytes), like task dimensions etc...)
-   + sync kernel execution
+   + sync execution
 - multiple device support
 - [yet to come...](doc/features_to_come.md)
 
