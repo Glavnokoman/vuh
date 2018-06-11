@@ -51,10 +51,10 @@ void main(){
 ```
 
 # Features
-- storage buffers as vuh::Array<T>
+- storage buffers as ```vuh::Array<T>```
    + allocated in device-local, host-visible or device-local-host-visible memories
    + sync data exchange with host
-- compute shaders as vuh::Program
+- compute shaders as ```vuh::Program```
    + bind buffers (passing arbitrary number of array parameters)
    + specialization constants (to set workgroup dimensions, etc...)
    + push-constants (to pass small data (<= 128 Bytes), like task dimensions etc...)
