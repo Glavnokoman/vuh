@@ -64,7 +64,7 @@ void main(){
 - [yet to come...](doc/features_to_come.md)
 
 
-# Use it
+# Usage
 - [Build & Install](doc/build_install.md)
 - [Tutorial](doc/tutorial.md)
 - [Examples](doc/examples/examples.md)
