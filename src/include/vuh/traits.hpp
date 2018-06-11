@@ -25,10 +25,12 @@ namespace traits {
 		               , std::true_type{});
 	} // namespace detail
 	
-	/// concept to check if given type provides begin(), end(), op++(), and * operators
+	/// Concept to check if given type is iterable
+	/// (provides begin(), end(), op++(), and * operators).
 	template<class T> using is_iterable = decltype(detail::is_iterable_impl<T>(0));
 	
-	///
+	/// Concept to check if given container is contiguously iterable
+	/// (provides data(), size() and * operator)
 	template<class T> using is_contiguous_iterable = decltype(detail::is_contiguous_iterable_impl<T>(0));
 } // namespace traits
 } // namespace vuh

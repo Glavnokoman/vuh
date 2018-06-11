@@ -19,11 +19,13 @@ namespace vuh {
 	}
 
 namespace arr {
-	/// Copy device buffers using the transient command pool.
+	/// Copy data between device buffers using the device transfer command pool and queue.
+	/// Source and destination buffers are supposed to be allocated on the same device.
 	/// Fully sync, no latency hiding whatsoever.
-	auto copyBuf(vuh::Device& device
-	             , vk::Buffer src, vk::Buffer dst
-	             , uint32_t size  ///< size of memory chunk to copy in bytes
+	auto copyBuf(vuh::Device& device ///< device where buffers are allocated
+	             , vk::Buffer src    ///< source buffer
+	             , vk::Buffer dst    ///< destination buffer
+	             , uint32_t size     ///< size of memory chunk to copy in bytes
 	             )-> void
 	{
 		auto cmd_buf = device.transferCmdBuffer();

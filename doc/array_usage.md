@@ -26,22 +26,24 @@ Its construction and data transfer interface enables efficient data handling wit
 to avoid extra (staging) copy, handle big transfers in smaller chunks and partial latency hiding.
 ### Construction and data transfer from hostk
 ```cpp
-const auto ha = std::vector<float>(1024, 3.14f);                              // host array to initialize from
-auto array_0 = vuh::Array<float, vuh::mem::Device>(device, 1024);             // create array of 1024 float in device local memory
-auto array_1 = vuh::Array<float>(device, 1024);                               // same. vuh::mem::Device is the default allocator
-array_1.fromHost(begin(ha), end(ha));                                         // copy data from host range
-auto array_2 = vuh::Array<float>(device, ha);                                 // create array of floats and copy data from host iterable
-auto array_3 = vuh::Array<float>(device, begin(ha), end(ha));                 // same in stl range style
-auto array_4 = vuh::Array<float>(device, 1024, [&](size_t i){return ha[i];}); // create + index-based transform
+const auto ha = std::vector<float>(1024, 3.14f);     // host array to initialize from
+using Array = vuh::Array<float>;                     // = vuh::Array<float, vuh::mem::Device>;
+
+auto array_0 = Array(device, 1024);                  // create array of 1024 float in device local memory
+array_0.fromHost(begin(ha), end(ha));                // copy data from host range
+auto array_1 = Array(device, ha);                    // create array of floats and copy data from host iterable
+auto array_2 = Array(device, begin(ha), end(ha));    // same in stl range style
+auto array_3 = Array(device, 1024, [&](size_t i){return ha[i];}); // create + index-based transform
 ```
 ### Transfer data to host
 ```cpp
-auto array = vuh::Array<float>(device, 1024);        // device array to copy data from
 auto ha = std::vector<float>(1024, 3.14f);           // host iterable to copy data to
+auto array = vuh::Array<float>(device, 1024);        // device array to copy data from
+
 array.toHost(begin(ha));                             // copy the whole device array to iterable defined by its begin location
 array.toHost(begin(ha), [](auto x){return x;});      // copy-transform the whole device array to an iterable
 array.toHost(begin(ha), 512, [](auto x){return x;}); // copy-transforn part the device array to an iterable
-auto ha_2 = array.toHost<std::vector<float>>();      // copy the whole device array into a newly created host itreable
+ha = array.toHost<std::vector<float>>();             // copy the whole device array to host
 ```
 
 ## Device-Only (```vuh::mem::DeviceOnly```)
@@ -72,13 +74,15 @@ With an important difference that while it provides random access with operator 
 the iterators fall into 'mutable forward' category.
 ### Construction and data exchange interface
 ```cpp
-auto ha = std::vector<float>(1024, 3.14f);                                     // host array to initialize from
-auto array = vuh::Array<float, vuh::mem::Host>(device, 1024);               // construct array of given size, memory uninitialized
-auto array = vuh::Array<float, vuh::mem::Host>(device, 1024, 3.14f);        // construct array of given size, initialize memory to a value
-auto array = vuh::Array<float, vuh::mem::Host>(device, begin(ha), end(ha)); // construct array from host range
+auto ha = std::vector<float>(1024, 3.14f);      // host array to initialize from
+using Array = vuh::Array<float, vuh::mem::Host>;
 
-array[42] = 6.28f;                           // random access with []
-std::copy(begin(ha), end(ha), begin(array)); // forward-iterable
+auto array = Array(device, 1024);               // construct array of given size, memory uninitialized
+auto array = Array(device, 1024, 3.14f);        // construct array of given size, initialize memory to a value
+auto array = Array(device, begin(ha), end(ha)); // construct array from host range
+
+array[42] = 6.28f;                              // random access with []
+std::copy(begin(ha), end(ha), begin(array));    // forward-iterable
 ```
 
 ## Unified (```vuh::mem::Unified```)

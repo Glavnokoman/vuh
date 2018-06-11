@@ -13,6 +13,7 @@
 
 namespace vuh {
 	namespace detail {
+		/// Traits to map array type to descriptor type
 		template<class T> struct DictTypeToDsc;
 
 		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::DeviceArray<T, Alloc>>{
@@ -23,14 +24,14 @@ namespace vuh {
 			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
 		};
 
-		// @return tuple element offset
+		/// @return tuple element offset
 		template<size_t Idx, class T>
 		constexpr auto tuple_element_offset(const T& tup)-> std::size_t {
 			return size_t(reinterpret_cast<const char*>(&std::get<Idx>(tup))
 		                 - reinterpret_cast<const char*>(&tup));
 		}
 
-		//
+		// helper
 		template<class T, size_t... I>
 		constexpr auto spec2entries(const T& specs, std::index_sequence<I...>
 		                            )-> std::array<vk::SpecializationMapEntry, sizeof...(I)>
@@ -41,7 +42,7 @@ namespace vuh {
 			          }... }};
 		}
 
-		/// doc me
+		// helper
 		template<class... Ts>
 		auto typesToDscTypes()->std::array<vk::DescriptorType, sizeof...(Ts)> {
 			return {detail::DictTypeToDsc<Ts>::value...};
@@ -65,7 +66,7 @@ namespace vuh {
 			return spec2entries(specs, std::make_index_sequence<sizeof...(Ts)>{});
 		}
 
-		/// doc me
+		// helper
 		template<class T, size_t... I>
 		auto dscinfos2writesets(vk::DescriptorSet dscset, const T& infos
 		                        , std::index_sequence<I...>
@@ -78,9 +79,8 @@ namespace vuh {
 		}
 	} // namespace detail
 
-
-	/// Program base class for 'code reuse via inheritance' :).
-	/// It keeps all (almost) state variables, and handles most of array arguments bindings.
+	/// Program base functionality.
+	/// Initializes and keeps most state variables, and array argument handling building blocks.
 	class ProgramBase {
 	public:
 		/// Run the Program object on previously bound parameters, wait for completion.
@@ -97,18 +97,27 @@ namespace vuh {
 			_device.destroyFence(fence);
 		}
 	protected:
-		ProgramBase(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
+		/// Construct object using given a vuh::Device and path to SPIR-V shader code.
+		ProgramBase(vuh::Device& device        ///< device used to run the code
+		            , const char* filepath     ///< file path to SPIR-V shader code
+		            , vk::ShaderModuleCreateFlags flags={}
+		            )
 			: ProgramBase(device, read_spirv(filepath), flags)
 		{}
 
-		ProgramBase(vuh::Device& device, const std::vector<char>& code
+		/// Construct object using given a vuh::Device a SPIR-V shader code.
+		ProgramBase(vuh::Device& device              ///< device used to run the code
+		            , const std::vector<char>& code  ///< actual binary SPIR-V shader code
 		            , vk::ShaderModuleCreateFlags flags={}
 		            )
 		   : _device(device)
 		{
-			_shader = device.createShaderModule(code, flags);
+			_shader = device.createShaderModule({ flags, uint32_t(code.size())
+			                                    , reinterpret_cast<const uint32_t*>(code.data())
+			                                    });
 		}
 
+		/// Destroy the object and release associated resources.
 		~ProgramBase() noexcept {
 			release();
 		}
@@ -138,7 +147,7 @@ namespace vuh {
 			return *this;
 		}
 
-		/// Release resources associated with current Program.
+		/// Release resources associated with current object.
 		auto release() noexcept-> void {
 			if(_shader){
 				_device.destroyShaderModule(_shader);
@@ -150,7 +159,8 @@ namespace vuh {
 			}
 		}
 
-		///
+		/// Initialize the pipeline.
+		/// Creates descriptor set layout, pipeline cache and the pipeline layout.
 		template<size_t N, class... Arrs>
 		auto init_pipelayout(const std::array<vk::PushConstantRange, N>& psrange, Arrs&...)-> void {
 			auto dscTypes = detail::typesToDscTypes<Arrs...>();
@@ -164,15 +174,10 @@ namespace vuh {
 			        {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N), psrange.data()});
 		}
 
-		///
+		/// Allocates descriptors sets
 		template<class... Arrs>
 		auto alloc_descriptor_sets(Arrs&...)-> void {
 			assert(_dsclayout);
-//			if(_dscpool){ // unbind previously bound descriptor sets if any
-//				_device.destroyDescriptorPool(_dscpool);
-//				_device.resetCommandPool(_device.computeCmdPool(), vk::CommandPoolResetFlags());
-//			}
-
 			auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
 			                                                   , sizeof...(Arrs));
 			auto descriptor_sizes = std::array<vk::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
@@ -183,7 +188,7 @@ namespace vuh {
 			_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
 		}
 
-		///
+		/// Starts writing the command buffer, binds a pipeline and a descriptor set.
 		template<class... Arrs>
 		auto command_buffer_begin(Arrs&... arrs)-> void {
 			assert(_pipeline); /// pipeline supposed to be initialized before this
@@ -201,29 +206,28 @@ namespace vuh {
 			cmdbuf.begin(beginInfo);
 
 			// Before dispatch bind a pipeline, AND a descriptor set.
-			// The validation layer will NOT give warnings if you forget those.
 			cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, _pipeline);
 			cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, _pipelayout
 			                          , 0, {_dscset}, {});
 		}
 
-		///
+		/// Ends command buffer creation. Writes dispatch info and signals end of commands recording.
 		auto command_buffer_end()-> void {
 			auto cmdbuf = _device.computeCmdBuffer();
 			cmdbuf.dispatch(_batch[0], _batch[1], _batch[2]); // start compute pipeline, execute the shader
 			cmdbuf.end(); // end recording commands
 		}
 	protected: // data
-		vk::ShaderModule _shader;
-		vk::DescriptorSetLayout _dsclayout;
-		vk::DescriptorPool _dscpool;
-		vk::DescriptorSet _dscset;
-		vk::PipelineCache _pipecache;
-		vk::PipelineLayout _pipelayout;
-		mutable vk::Pipeline _pipeline;
+		vk::ShaderModule _shader;            ///< compute shader to execute
+		vk::DescriptorSetLayout _dsclayout;  ///< descriptor set layout. This defines the kernel's array parameters interface.
+		vk::DescriptorPool _dscpool;         ///< descitptor ses pool. Descriptors are allocated on this pool.
+		vk::DescriptorSet _dscset;           ///< descriptors set
+		vk::PipelineCache _pipecache;        ///< pipeline cache
+		vk::PipelineLayout _pipelayout;      ///< pipeline layout
+		mutable vk::Pipeline _pipeline;      ///< pipeline itself
 
-		vuh::Device& _device;
-		std::array<uint32_t, 3> _batch={0, 0, 0};
+		vuh::Device& _device;                ///< refer to device to run shader on
+		std::array<uint32_t, 3> _batch={0, 0, 0}; ///< 3D evaluation grid dimensions (number of workgroups to run)
 	}; // class ProgramBase
 
 	/// Specialization constants dependent part of Program.

@@ -26,8 +26,7 @@ target_link_libraries(vuh_example PUBLIC vuh::vuh)
 add_dependencies(vuh_example example_shader)
 ```
 This assumes the includes are scoped like ```#include <vuh/vuh.h>``` in the code
-and ```Glslang``` compiler findable by ```CMake```.
-For a complete buildable example look in ```doc/examples/```.
+and ```Glslang``` compiler findable by ```CMake```. For a complete buildable example look in ```doc/examples/```.
 
 ## Not using CMake
 You will need to link ```${VUH_INSTALL_PATH}/lib/libvuh.so``` (or its equivalent for your OS)

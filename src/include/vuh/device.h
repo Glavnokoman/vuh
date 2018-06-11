@@ -8,6 +8,7 @@ namespace vuh {
 	class Instance;
 
 	/// Logical device packed with associated command pools and buffers.
+	/// A drop-in replacement for vk::Device.
 	class Device: public vk::Device {
 	public:
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice);
@@ -32,8 +33,6 @@ namespace vuh {
 		auto computeCmdPool()-> vk::CommandPool {return _cmdpool_compute;}
 		auto computeCmdBuffer()-> vk::CommandBuffer& {return _cmdbuf_compute;}
 		auto transferCmdBuffer()-> vk::CommandBuffer&;
-		auto createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags={}
-		                        )-> vk::ShaderModule;
 		auto createPipeline(vk::PipelineLayout pipe_layout
 		                    , vk::PipelineCache pipe_cache
 		                    , const vk::PipelineShaderStageCreateInfo& shader_stage_info

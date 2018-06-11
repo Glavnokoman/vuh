@@ -3,7 +3,8 @@
 #include <vulkan/vulkan.hpp>
 
 namespace vuh {
-	/// Exception indicating that memory with requested properties has not been found on a device.
+	/// Exception indicating that memory with requested properties
+	/// has not been found on a device.
 	class NoSuitableMemoryFound: public vk::OutOfDeviceMemoryError {
 	public:
 		NoSuitableMemoryFound(const std::string& message);

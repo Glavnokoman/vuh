@@ -9,22 +9,30 @@ using std::begin; using std::end;
 #define ARR_VIEW(x) uint32_t(x.size()), x.data()
 
 namespace {
-	static const char* debug_layers[] = {"VK_LAYER_LUNARG_standard_validation"};
-	static const char* debug_extensions[] = {VK_EXT_DEBUG_REPORT_EXTENSION_NAME};
+#ifndef NDEBUG
+	static const char* default_layers[] = {"VK_LAYER_LUNARG_standard_validation"};
+	static const char* default_extensions[] = {VK_EXT_DEBUG_REPORT_EXTENSION_NAME};
+#else
+	static const char* default_layers[] = {};
+	static const char* default_extensions[] = {};
+#endif
 
-	//
+	/// @return true if value x can be extracted from an array with a given function
 	template<class U, class F>
 	auto contains(const char* x, const std::vector<U>& array, F&& fun)-> bool {
 		return end(array) != std::find_if(ALL(array), [&](auto& r){return 0 == std::strcmp(x, fun(r));});
 	}
 
-	//
+	/// Extend vector of string literals by candidate values that have a macth in a reference set.
 	template<class U, class T, class F>
-	auto filter_list(std::vector<const char*> old_values
-	                 , const U& tst_values, const T& ref_values, F&& ffield
-	                 , vuh::debug_reporter_t report_cbk=nullptr
-	                 , const char*  layer_msg=nullptr
-	                 )-> std::vector<const char*> {
+	auto filter_list(std::vector<const char*> old_values ///< array to extend
+	                 , const U& tst_values               ///< candidate values
+	                 , const T& ref_values               ///< reference values
+	                 , F&& ffield                        ///< maps reference values to candidate values manifold
+	                 , vuh::debug_reporter_t report_cbk=nullptr ///< error reporter
+	                 , const char* layer_msg=nullptr     ///< base part of the log message about unsuccessful candidate value
+	                 )-> std::vector<const char*>
+	{
 		using std::begin;
 		for(const auto& l: tst_values){
 			if(contains(l, ref_values, ffield)){
@@ -39,33 +47,29 @@ namespace {
 		return old_values;
 	}
 
-	// Filter requested layers, throw away those not present on particular instance.
-	// Add default validation layers to debug build.
+	/// Filter requested layers, throw away those not present on particular instance.
+	/// Add default validation layers to debug build.
 	auto filter_layers(const std::vector<const char*>& layers) {
 		const auto avail_layers = vk::enumerateInstanceLayerProperties();
 		auto r = filter_list({}, layers, avail_layers
 		                     , [](const auto& l){return l.layerName;});
-		#ifndef NDEBUG
-		r = filter_list(std::move(r), debug_layers, avail_layers
+		r = filter_list(std::move(r), default_layers, avail_layers
 		                , [](const auto& l){return l.layerName;});
-		#endif //NDEBUG
 		return r;
 	}
 
-	// Filter requested extensions, throw away those not present on particular instance.
-	// Add default debug extensions to debug build.
+	/// Filter requested extensions, throw away those not present on particular instance.
+	/// Add default debug extensions to debug build.
 	auto filter_extensions(const std::vector<const char*>& extensions) {
 		const auto avail_extensions = vk::enumerateInstanceExtensionProperties();
 		auto r = filter_list({}, extensions, avail_extensions
 		                     , [](const auto& l){return l.extensionName;});
-		#ifndef NDEBUG
-		r = filter_list(std::move(r), debug_extensions, avail_extensions
+		r = filter_list(std::move(r), default_extensions, avail_extensions
 		                , [](const auto& l){return l.extensionName;});
-		#endif //NDEBUG
 		return r;
 	}
 
-	// Default debug reporter used when user did not care to provide his own.
+	/// Default debug reporter used when user did not care to provide his own.
 	static auto debugReporter(
 	      VkDebugReportFlagsEXT , VkDebugReportObjectTypeEXT, uint64_t, size_t, int32_t
 	      , const char*                pLayerPrefix
@@ -130,7 +134,7 @@ namespace vuh {
 		clear();
 	}
 
-	/// move constructor
+	/// Move constructor
 	Instance::Instance(Instance&& o) noexcept
 	   : _instance(o._instance)
 	   , _reporter(o._reporter)
@@ -139,7 +143,7 @@ namespace vuh {
 		o._instance = nullptr;
 	}
 
-	/// move assignment
+	/// Move assignment
 	auto Instance::operator=(Instance&& o) noexcept-> Instance& {
 		using std::swap;
 		swap(_instance, o._instance);
@@ -165,7 +169,7 @@ namespace vuh {
 		}
 	}
 
-	/// list of local compute-capable devices
+	/// @return vector of available vulkan devices
 	auto Instance::devices()-> std::vector<Device> {
 		auto physdevs = _instance.enumeratePhysicalDevices();
 		auto r = std::vector<Device>{};
@@ -175,9 +179,11 @@ namespace vuh {
 		return r;
 	}
 
-	///
-	auto Instance::report(const char* prefix, const char* message
-	                      , VkDebugReportFlagsEXT flags
+	/// Log message using the reporter callback registered with the Vulkan instance.
+	/// Default callback sends all messages to std::cerr
+	auto Instance::report(const char* prefix    ///< prefix part of message. may contain component name, etc.
+	                      , const char* message ///< message itself
+	                      , VkDebugReportFlagsEXT flags ///< flags indicating message severity
 	                      ) const-> void
 	{
 		auto reporter = PFN_vkDebugReportMessageEXT(

@@ -2,13 +2,13 @@
 
 #include <cassert>
 #include <limits>
-#define ARR_VIEW(x) uint32_t(x.size()), x.data()
 
 namespace {
 	/// Create logical device.
-	auto createDevice(const vk::PhysicalDevice& physicalDevice
-	                  , uint32_t compute_family_id
-	                  , uint32_t transfer_family_id
+	/// Compute and transport queue family id may point to the same queue.
+	auto createDevice(const vk::PhysicalDevice& physicalDevice ///< physical device to wrap
+	                  , uint32_t compute_family_id             ///< index of queue family supporting compute operations
+	                  , uint32_t transfer_family_id            ///< index of queue family supporting transfer operations
 	                  )-> vk::Device
 	{
 		// When creating the device specify what queues it has
@@ -28,8 +28,10 @@ namespace {
 	}
 
 	/// @return preffered family id for the desired queue flags combination, or -1 if none is found.
-	auto getFamilyID(const std::vector<vk::QueueFamilyProperties>& queue_families
-	                 , vk::QueueFlags tgtFlag
+	/// If several queues matching required flags combination is available
+	/// selects the one with minimal numeric value of its flags combination.
+	auto getFamilyID(const std::vector<vk::QueueFamilyProperties>& queue_families ///< array of queue family properties
+	                 , vk::QueueFlags tgtFlag                                     ///< target flags combination
 	                 )-> uint32_t
 	{
 		auto r = uint32_t(-1);
@@ -50,8 +52,9 @@ namespace {
 		return r;
 	}
 
-	///
-	auto allocCmdBuffer(vk::Device device, vk::CommandPool pool
+	/// Allocate command buffer
+	auto allocCmdBuffer(vk::Device device
+	                    , vk::CommandPool pool
 	                    , vk::CommandBufferLevel level=vk::CommandBufferLevel::ePrimary
 	                    )-> vk::CommandBuffer
 	{
@@ -61,9 +64,9 @@ namespace {
 } // namespace
 
 namespace vuh {
-	///
-	Device::Device(Instance& instance, vk::PhysicalDevice physdevice)
-	   : Device(instance, physdevice, physdevice.getQueueFamilyProperties())
+	/// Constructs logical device wrapping the physical device of the given instance.
+	Device::Device(Instance& instance, vk::PhysicalDevice physical_device)
+	   : Device(instance, physical_device, physical_device.getQueueFamilyProperties())
 	{}
 
 	/// helper constructor
@@ -115,7 +118,7 @@ namespace vuh {
 	   : Device(other._instance, other._physdev, other._cmp_family_id, other._tfr_family_id)
 	{}
 
-	/// Copy assignment.
+	/// Copy assignment. Created new handle to the same physical device and recreates associated pools.
 	auto Device::operator=(Device other)-> Device& {
 		swap(*this, other);
 		return *this;
@@ -182,18 +185,9 @@ namespace vuh {
 		return uint32_t(-1);
 	}
 
-	///
+	/// @return id of the queue family supporting compute operations
 	auto Device::computeQueue(uint32_t i)-> vk::Queue {
 		return getQueue(_cmp_family_id, i);
-	}
-
-	/// Create shader module from binary shader code.
-	/// @todo remove
-	auto Device::createShaderModule(const std::vector<char>& code, vk::ShaderModuleCreateFlags flags
-	                                )-> vk::ShaderModule
-	{
-		return vk::Device::createShaderModule({flags, code.size()
-		                                , reinterpret_cast<const uint32_t*>(code.data())});
 	}
 
 	/// Create compute pipeline with a given layout.
@@ -215,7 +209,7 @@ namespace vuh {
 		return getQueue(_tfr_family_id, i);
 	}
 
-	/// Allocate device memory for the buffer on the heap with given id.
+	/// Allocate device memory for the buffer in the memory with given id.
 	auto Device::alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory {
 	   auto memoryReqs = getBufferMemoryRequirements(buf);
 	   auto allocInfo = vk::MemoryAllocateInfo(memoryReqs.size, memory_id);
