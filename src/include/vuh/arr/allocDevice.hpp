@@ -21,7 +21,7 @@ public:
 
 	///
 	static auto makeBuffer(vuh::Device& device
-	                      , uint32_t size_bytes
+	                      , size_t size_bytes
 	                      , vk::BufferUsageFlags flags ///< additional buffer usage flags
 	                      )-> vk::Buffer
 	{
@@ -101,7 +101,7 @@ public:
 
 	/// Create buffer. Normally this should only be called in tests.
 	static auto makeBuffer(vuh::Device& device
-	                      , uint32_t size_bytes
+	                      , size_t size_bytes
 	                      , vk::BufferUsageFlags flags ///< additional buffer usage flags
 	                      )-> vk::Buffer
 	{

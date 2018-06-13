@@ -20,7 +20,7 @@ public:
 
 	/// Construct SBO array of given size in device memory
 	BasicArray(vuh::Device& device                     ///< device to allocate array
-	           , uint32_t size_bytes                   ///< desired size in bytes
+	           , size_t size_bytes                     ///< desired size in bytes
 	           , vk::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
 	           , vk::BufferUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
 	           )

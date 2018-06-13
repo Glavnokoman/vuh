@@ -7,3 +7,4 @@ include(${PROJECT_SOURCE_DIR}/config/VuhCompileShader.cmake)
 
 add_subdirectory(saxpy)
 add_subdirectory(mandelbrot)
+add_subdirectory(spdlog)
