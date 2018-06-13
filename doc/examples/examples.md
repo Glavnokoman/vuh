@@ -1,5 +1,5 @@
 # vuh examples
-## Mandelbrot (```doc/examples/mandelbrot/```)
+- Mandelbrot (```doc/examples/mandelbrot/```).
 Render the Mandelbrot set and write it to an (ppm) image.
 This is the literal translation of [Vulkan Minimal Compute](https://github.com/Erkaman/vulkan_minimal_compute) example.
 With the original source spanning over ~800 lines...
@@ -29,8 +29,10 @@ Set is rendered in 2D workgroups of (32, 32) and corresponding 2D grid to cover 
 And then the data is dumped to disk as a ppm file.
 Note that ```write_ppm``` accepts just normal ```uint32_t*``` pointer.
 
-## saxpy (```doc/examples/saxpy/```)
-Calculate 1D scaled vector addition.
+- saxpy (```doc/examples/saxpy/```).
+Calculate [generalized vector addition](https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms#Level_1).
 Classical example to demonstrate computational frameworks/libraries.
 
-## using  custom logger
+- using  custom logger (```doc/examples/spdlog```).
+Demonstrates using custom logger for Vulkan instance diagnostic messages.
+This example requires ```spdlog``` library to build.
