@@ -4,7 +4,7 @@ project(vuh_example_spdlog)
 find_package(Vuh REQUIRED)
 
 find_package(spdlog)
-if(spdlog)
+if(TARGET spdlog::spdlog)
    find_package(Threads REQUIRED)
 
    add_executable(vuh_example_spdlog main.cpp)

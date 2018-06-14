@@ -169,6 +169,7 @@ namespace vuh {
 	}
 
 	/// Find first memory matching desired properties.
+	/// Does NOT check for free space availability, only matches the properties.
 	/// @return id of the suitable memory, -1 if no suitable memory found.
 	auto Device::selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties
 	                          ) const-> uint32_t

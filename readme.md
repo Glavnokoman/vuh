@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/Glavnokoman/vuh.svg?branch=master)](https://travis-ci.org/Glavnokoman/vuh)
 
 Vulkan is the most widely supported GPU programming API on modern hardware/OS.
-It allows you to write truly portable and performant GPU accelerated code that would run on iOS, Android, Linux, Windows, macOS... NVidia, AMD, Intel, Adreno, Mali... whatever.
+It allows to write truly portable and performant GPU accelerated code that would run on iOS, Android, Linux, Windows, macOS... NVidia, AMD, Intel, Adreno, Mali... whatever.
 At the price of ridiculous amount of boilerplate.
 Vuh aims to reduce the boilerplate to (a reasonable) minimum in most common GPGPU computing scenarios.
 The ultimate goal is to beat OpenCL in usability, portability and performance.

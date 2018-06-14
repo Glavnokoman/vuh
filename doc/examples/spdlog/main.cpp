@@ -12,7 +12,7 @@ using std::begin;
 
 static auto logger = spd::basic_logger_st("logger", "vuh.log");
 
-/// this will print messages to colorful console using spdlog
+/// this will print messages using spdlog logger
 auto report_callback( VkDebugReportFlagsEXT flags
                     , VkDebugReportObjectTypeEXT /*objtype*/
                     , uint64_t    /*object*/
@@ -50,7 +50,7 @@ auto main()-> int {
 	try{
 		auto a = vuh::Array<float>(device, size_t(-1));
 	} catch (vk::OutOfDeviceMemoryError& err) {
-		instance.report("explicit message log", "not enough device memory", VK_DEBUG_REPORT_ERROR_BIT_EXT);
+		instance.report("explicit message log", err.what(), VK_DEBUG_REPORT_ERROR_BIT_EXT);
 	}
 
    return 0;
