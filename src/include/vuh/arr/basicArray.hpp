@@ -11,8 +11,8 @@
 namespace vuh {
 namespace arr {
 
-/// Base class for arrays wrapping the SBO buffer.
-/// Keeps the data, handles initialization, copy/move, common interface, etc...
+/// Covers basic array functionality. Wraps the SBO buffer.
+/// Keeps the data, handles initialization, copy/move, common interface, binding memory to buffer objects, etc...
 template<class Alloc>
 class BasicArray: public vk::Buffer {
 public:
