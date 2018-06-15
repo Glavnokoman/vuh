@@ -11,7 +11,7 @@
 namespace vuh {
 namespace arr {
 
-/// Helper class to allocate memory directlry from a device memory (incl. host-visible space)
+/// Helper class to allocate memory directly from a device memory (incl. host-visible space)
 /// (as opposed to allocating from a pool) and initialize the buffer.
 /// Binding between memory and buffer is done elsewhere.
 template<class Props>
