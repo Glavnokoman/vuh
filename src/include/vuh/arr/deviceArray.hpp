@@ -23,6 +23,7 @@ class DeviceOnlyArray: public BasicArray<Alloc> {
 public:
 	using value_type = T;
    /// Constructs object of the class on given device.
+   /// Memory is left unintitialized.
    DeviceOnlyArray( vuh::Device& device  ///< deice to create array on
 	               , size_t n_elements    ///< number of elements
 	               , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags

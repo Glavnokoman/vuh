@@ -9,10 +9,12 @@ namespace vuh {
 
 	using debug_reporter_t = PFN_vkDebugReportCallbackEXT;
 
-	/// Mostly RAII wrapper over Vulkan instance.
-	/// Defines layers and extensions in use and can enumerate present compute-capable devices.
+	/// Working with vuh starts from creating an object of this class.
+	/// Its main responsibility is listing the available devices and handling extensions and layers.
+	/// It is also responsible for logging vuh and vulkan messages.
 	/// In debug builds adds default validation layer/extension.
-	/// Default debug reporter spits messages to std::cerr.
+	/// Default debug reporter sends messages to std::cerr.
+	/// Reentrant.
 	class Instance {
 	public:
 		explicit Instance(const std::vector<const char*>& layers={}

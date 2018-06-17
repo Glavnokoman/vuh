@@ -1,16 +1,15 @@
 # Project setup
 A project using ```vuh``` consists of a standard ```C++``` code and ```SPIR-V``` precompiled
 compute shader.
-Connection between the two is made in the code.
-It has no special requirements to ```C++``` compiler used apart from supported standard (```c++14```).
-At the moment the easiest way to get a ```SPIR-V``` file is to compile ```GLSL```
-compute shader using Glslang.
-However it does not really matter where the ```SPIR-V``` binary comes from as long as it works
-(some people enjoy writing it by hands).
-```Vuh``` provides ```CMake``` helper function to do the ```GLSL``` to ```SPIR-V``` compilation.
+Connection between the two is made in the ```C++``` code.
+At the moment the easiest way to get a ```SPIR-V``` file is to compile a
+compute shader using [Glslang](https://github.com/KhronosGroup/glslang).
+At that the shader should be written in a [vulkan dialect](https://github.com/KhronosGroup/GLSL/blob/master/extensions/khr/GL_KHR_vulkan_glsl.txt)
+of ```GLSL``` language.
+```Vuh``` provides ```CMake``` helpers to handle the ```GLSL``` to ```SPIR-V``` compilation.
 
 ## Using CMake
-Minimal CMake project using vuh library looks like this:
+Minimal CMake project using vuh library and including shader compilation looks like this:
 ```cmake
 cmake_minimum_required (VERSION 3.8)
 project(vuh_example)
