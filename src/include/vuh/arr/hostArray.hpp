@@ -51,7 +51,7 @@ public:
 	         )
 	   : HostArray(device, std::distance(begin, end), flags_memory, flags_buffer)
 	{
-		std::copy(begin, end, begin());
+		std::copy(begin, end, this->begin());
 	}
 
    /// Move constructor.
