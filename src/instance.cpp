@@ -125,8 +125,7 @@ namespace vuh {
 	                   , debug_reporter_t report_callback
 	                   )
 	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
-	   , _reporter(registerReporter(_instance, report_callback ? report_callback : debugReporter))
-	   , _layers(filter_layers(layers)) // @todo: fix layers filtered twice.
+	   , _reporter_cbk(registerReporter(_instance, report_callback ? report_callback : debugReporter))
 	{}
 
 	/// Clean instance resources.
@@ -138,7 +137,7 @@ namespace vuh {
 	Instance::Instance(Instance&& o) noexcept
 	   : _instance(o._instance)
 	   , _reporter(o._reporter)
-	   , _layers(std::move(o._layers))
+	   , _reporter_cbk(o._reporter_cbk)
 	{
 		o._instance = nullptr;
 	}
@@ -148,7 +147,7 @@ namespace vuh {
 		using std::swap;
 		swap(_instance, o._instance);
 		swap(_reporter, o._reporter);
-		swap(_layers, o._layers);
+		swap(_reporter_cbk, o._reporter_cbk);
 		return *this;
 	}
 
@@ -156,12 +155,12 @@ namespace vuh {
 	/// All resources associated with it, should be released before that.
 	auto Instance::clear() noexcept-> void {
 		if(_instance){
-			if(_reporter){// unregister callback.
+			if(_reporter_cbk){// unregister callback.
 				auto destroyFn = PFN_vkDestroyDebugReportCallbackEXT(
 				                    vkGetInstanceProcAddr(_instance, "vkDestroyDebugReportCallbackEXT")
 				                    );
 				if(destroyFn){
-					destroyFn(_instance, _reporter, nullptr);
+					destroyFn(_instance, _reporter_cbk, nullptr);
 				}
 			}
 
@@ -186,9 +185,6 @@ namespace vuh {
 	                      , VkDebugReportFlagsEXT flags ///< flags indicating message severity
 	                      ) const-> void
 	{
-		auto reporter = PFN_vkDebugReportMessageEXT(
-		                   vkGetInstanceProcAddr(_instance, "vkDebugReportMessageEXT"));
-		reporter(_instance, flags, VkDebugReportObjectTypeEXT{}, 0, 0, 0
-		         , prefix, message);
+		_reporter(flags, VkDebugReportObjectTypeEXT{}, 0, 0, 0 , prefix, message, nullptr);
 	}
 } // namespace vuh
