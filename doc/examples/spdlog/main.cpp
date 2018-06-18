@@ -10,7 +10,7 @@ namespace spd = spdlog;
 
 using std::begin;
 
-static auto logger = spd::basic_logger_st("logger", "vuh.log");
+static auto logger = spd::basic_logger_mt("logger", "vuh.log");
 
 /// this will print messages using spdlog logger
 auto report_callback( VkDebugReportFlagsEXT flags
@@ -23,25 +23,26 @@ auto report_callback( VkDebugReportFlagsEXT flags
                     , void*       /*pUserData*/
                     )-> uint32_t 
 {
-   switch(flags){
-   case VK_DEBUG_REPORT_INFORMATION_BIT_EXT:
-      logger->info("{}:{}", pLayerPrefix, pMessage);
-      break;
-   case VK_DEBUG_REPORT_WARNING_BIT_EXT:
-   case VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT:
-      logger->warn("{}:{}", pLayerPrefix, pMessage);
-      break;
-   case VK_DEBUG_REPORT_ERROR_BIT_EXT:
-      logger->error("{}:{}", pLayerPrefix, pMessage);
-      break;
-   case VK_DEBUG_REPORT_DEBUG_BIT_EXT:
-      logger->debug("{}:{}", pLayerPrefix, pMessage);
-      break;
-   default:
-      logger->info("{}:{}", pLayerPrefix, pMessage);
-   }
-   return 0;
+	switch(flags){
+		case VK_DEBUG_REPORT_INFORMATION_BIT_EXT:
+			logger->info("{}:{}", pLayerPrefix, pMessage);
+			break;
+		case VK_DEBUG_REPORT_WARNING_BIT_EXT:
+		case VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT:
+			logger->warn("{}:{}", pLayerPrefix, pMessage);
+			break;
+		case VK_DEBUG_REPORT_ERROR_BIT_EXT:
+			logger->error("{}:{}", pLayerPrefix, pMessage);
+			break;
+		case VK_DEBUG_REPORT_DEBUG_BIT_EXT:
+			logger->debug("{}:{}", pLayerPrefix, pMessage);
+			break;
+		default:
+			logger->info("{}:{}", pLayerPrefix, pMessage);
+	}
+	return 0;
 }
+
 
 auto main()-> int {
 	auto instance = vuh::Instance({}, {}, {nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}, report_callback);

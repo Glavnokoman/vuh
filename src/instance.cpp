@@ -125,7 +125,8 @@ namespace vuh {
 	                   , debug_reporter_t report_callback
 	                   )
 	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
-	   , _reporter_cbk(registerReporter(_instance, report_callback ? report_callback : debugReporter))
+	   , _reporter(report_callback ? report_callback : debugReporter)
+	   , _reporter_cbk(registerReporter(_instance, _reporter))
 	{}
 
 	/// Clean instance resources.
