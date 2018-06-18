@@ -85,7 +85,7 @@ Kernels are executed on 3-dimensional grids each grid-cell constituting a 3-dime
 The size of a workgroup is set up in the shader code, but can be set up from the host by
 means of specification constants.
 Size of the grid is then chosen such that the whole array (in all dimensions) is covered
-possibly overshooting the boundaries of data (which should be handled in the shader code).  
+possibly overshooting the boundaries of data (which should be handled in the shader code).
 To pass small data to the kernel the so-called push constants are used.
 To summarize ```vuh::Program``` interface mirroring that of a shader is combined by the
 set of specification constants, push constants and array parameters.
@@ -125,18 +125,18 @@ At the moment errors are signaled by throwing exceptions (Other options may be p
 in the future).
 Exception are derived from ```vk::Error``` class, and most of them are native ```vk::```
 exceptions.
-All ```vuh``` classes are supposed to behave and release associated resources
-when stuck is unwound.
-So the possible way to write structure a program would be
+All ```vuh``` classes are built to behave and release associated resources
+when stack is unwound.
+So one possible way to structure a program would be
 ```cpp
 try{
    // do the vuh stuff
 } catch (vk::Error& err){
    // handle vuh exceptions
 } catch (...){
-   // non-vuh stuff here, f.e. std::out_of_range from instance.devices().at(0)
+   // non-vuh exception here, f.e. std::out_of_range from instance.devices().at(0)
 }
 ```
 Certainly more granular approach is possible and welcome.
-When exception is thrown there may also be a corresponding error report message written
+When exception is thrown there may also be a corresponding error message reported
 to the log associated with underlying Instance object.
