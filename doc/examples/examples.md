@@ -1,5 +1,5 @@
 # vuh examples
-- Mandelbrot (```doc/examples/mandelbrot/```).
+- Mandelbrot ([doc/examples/mandelbrot/](/mandelbrot))
 Render the Mandelbrot set and write it to an (ppm) image.
 This is the literal translation of [Vulkan Minimal Compute](https://github.com/Erkaman/vulkan_minimal_compute) example.
 With the original source spanning over ~800 lines...
@@ -24,15 +24,16 @@ auto main()-> int {
    return 0;
 }
 ```
-Each pixel value here is only accessed once by the kernel so it makes sense to allocate output array directly on host.
-Set is rendered in 2D workgroups of (32, 32) and corresponding 2D grid to cover the complete image.
-And then the data is dumped to disk as a ppm file.
+Each pixel value here is only accessed once by the kernel so it makes sense to allocate output array directly in host-visible memory.
+Set is rendered in 2D workgroups of size 32x32 and the corresponding 2D grid dimensioned to cover the complete image.
+In the end the data is dumped to disk as a ppm file.
 Note that ```write_ppm``` accepts just normal ```uint32_t*``` pointer.
 
-- saxpy (```doc/examples/saxpy/```).
+- saxpy ([doc/examples/saxpy/](/saxpy))
 Calculate [generalized vector addition](https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms#Level_1).
 Classical example to demonstrate computational frameworks/libraries.
+Using arrays in device-local memory (needless in this particular example) and performs calculation on a 1D grid with 1D workgroups.
 
-- using  custom logger (```doc/examples/spdlog```).
+- using  custom logger ([doc/examples/spdlog](/spdlog))
 Demonstrates using custom logger for Vulkan instance diagnostic messages.
 This example requires ```spdlog``` library to build.
