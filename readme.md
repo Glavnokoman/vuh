@@ -61,7 +61,7 @@ void main(){
    + sync execution
 - multiple device support
 - [yet to come...](doc/features_to_come.md)
-
+- [not ever coming...](doc/features_not_to_come.md)
 
 # Usage
 - [Build & Install](doc/build_install.md)

@@ -8,7 +8,7 @@ Features listed are in no particular order.
 - memory pooling
 - async data-transfer/execution
 - using multiple queues on a single device
-- pipelines creation
+- pipelining kernels and data transfers to skip returning control to CPU
 - option to use in no-exception environments
 - latency hiding, patch-wise execution primitives
 - header generation from shaders
