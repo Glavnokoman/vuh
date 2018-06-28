@@ -1,103 +1,104 @@
 #include <sltbench/Bench.h>
 
-#include <example_filter.h>
-#include <vulkan_helpers.hpp>
+#include <vuh/array.hpp>
+#include <vuh/vuh.h>
 
 #include <memory>
 #include <vector>
 
 namespace {
 
-struct Params{
-   uint32_t width;
-   uint32_t height;
-   float a;
-   
-   auto operator== (const Params& other) const-> bool {
-      return width == other.width && height == other.height && a == other.a;
-   }
-   auto operator!= (const Params& other) const-> bool { return !(*this == other); }
-   
-   friend auto operator<< (std::ostream& s, const Params& p)-> std::ostream& {
-      s << "{" << p.width << ", " << p.height << ", " << p.a << "}";
-      return s;
-   }
-};
+	/// Push-parameters to the kernel + some aux functions
+	struct Params{
+		uint32_t size; ///< size of a vector
+		float a;       ///< saxpy scaling parameter
 
-struct DataFixFull {
-   ExampleFilter f{"shaders/saxpy.spv"};
-   Params p;
-   std::vector<float> y;
-   std::vector<float> x;
-};
+		auto operator== (const Params& other) const-> bool {return size == other.size && a == other.a;}
+		auto operator!= (const Params& other) const-> bool {return !(*this == other);}
 
-struct FixSaxpyFull: private DataFixFull {
-   using Type = DataFixFull;
-   
-   auto SetUp(const Params& p)-> Type& {
-      if(p != this->p) {
-         this->p = p;
-         y = std::vector<float>(p.width*p.height, 3.1f);
-         x = std::vector<float>(p.width*p.height, 1.9f);
-      }
-      return *this;
-   }
-   
-   auto TearDown()-> void {}
-}; // class FixSaxpyFull
+		friend auto operator<< (std::ostream& s, const Params& p)-> std::ostream& {
+			return s << "{" << p.size << ", " << p.a << "}";
+		}
+	};
 
-struct FixShaderOnly: private DataFixFull {
-   using Type = ExampleFilter;
-   
-   struct DeviceData{
-      explicit DeviceData(const DataFixFull& d)
-         : d_y{vuh::Array<float>::fromHost(d.y, d.f.device, d.f.physDevice)}
-         , d_x{vuh::Array<float>::fromHost(d.x, d.f.device, d.f.physDevice)}
-      {}
-      
-      vuh::Array<float> d_y;
-      vuh::Array<float> d_x;
-   };
-   
-   
-   auto SetUp(const Params& p)-> Type& {
-      if(p != this->p){
-         this->p = p;
-         y = std::vector<float>(p.width*p.height, 3.1f);
-         x = std::vector<float>(p.width*p.height, 1.9f);
-         
-         f.unbindParameters();
-         _dev_data = std::make_unique<DeviceData>(static_cast<const DataFixFull&>(*this));
-         f.bindParameters(_dev_data->d_y, _dev_data->d_x, {p.width, p.height, p.a});
-      }
-      return f;
-   }
-   
-   auto TearDown()-> void {}
-   
-private:
-   std::unique_ptr<DeviceData> _dev_data;
-}; // struct FixShaderOnly
+	using Program = vuh::Program<vuh::typelist<uint32_t>, Params>;
 
-/// Copy arrays data to gpu device, setup the kernel and run it.
-auto saxpy(DataFixFull& fix, const Params& p)-> void {
-   auto d_y = vuh::Array<float>::fromHost(fix.y, fix.f.device, fix.f.physDevice);
-   auto d_x = vuh::Array<float>::fromHost(fix.x, fix.f.device, fix.f.physDevice);
-   
-   fix.f(d_y, d_x, {fix.p.width, fix.p.height, fix.p.a});
-}
+	auto instance = vuh::Instance();
+	vuh::Device device = instance.devices().at(0);             ///< gpu device
+	Program program = Program(device, "../shaders/saxpy.spv"); ///< kernel to run
 
-/// Just run the kernel, assumes the data has been copied and shader is all set up.
-auto saxpy(ExampleFilter& f, const Params& p)-> void {
-   f.run();
-}
+	///
+	struct HostData {
+		Params p;
+		std::vector<float> y;
+		std::vector<float> x;
+	};
 
-static const auto params = std::vector<Params>({{32u, 32u, 2.f}, {128, 128, 2.f}, {1024, 1024, 3.f}});
+	/// Fixture to just create and keep the host data
+	struct FixCreateHostData: private HostData {
+		using Type = HostData;
 
+		auto SetUp(const Params& p)-> Type& {
+			if(p != this->p) {
+				this->p = p;
+				this->y = std::vector<float>(p.size, 3.14f);
+				this->x = std::vector<float>(p.size, 6.28f);
+			}
+			return *this;
+		}
+
+		auto TearDown()-> void {}
+	}; // class FixSaxpyFull
+
+	/// Fixture copying data to device-local memory and binding all parameters to the kernel.
+	struct FixCopyDataBindAll: private HostData {
+		using Type = Program;
+		static constexpr auto workgroup_size = 128u;
+
+		auto SetUp(const Params& p)-> Type& {
+			if(p != this->p){
+				this->p = p;
+				this->y = std::vector<float>(p.size, 3.14f);
+				this->x = std::vector<float>(p.size, 6.28f);
+
+				d_y = vuh::Array<float>(device, this->y);
+				d_x = vuh::Array<float>(device, this->x);
+				program.grid(p.size/workgroup_size)
+				       .spec(workgroup_size)
+				       .bind(p, d_y, d_x);
+			}
+			return program;
+		}
+
+		auto TearDown()-> void {}
+
+	private:
+		vuh::Array<float> d_y = vuh::Array<float>(device, 64);
+		vuh::Array<float> d_x = vuh::Array<float>(device, 64);
+	}; // struct FixCopyDataBindAll
+
+	/// Benchmarked function.
+	/// Copy host data to device-local memory, bind parameters and run the kernel.
+	/// This is assumed to work with FixCreateHostData fixture.
+	auto saxpy(HostData& data, const Params& /*params*/)-> void {
+		auto d_y = vuh::Array<float>(device, data.y);
+		auto d_x = vuh::Array<float>(device, data.x);
+
+		program(data.p, d_y, d_x);
+	}
+
+	/// Benchmarked function.
+	/// Just run the kernel, assumes the data copied and kernel all set up.
+	/// This is supposed to be combined with FixCopyDataBindAll fixture.
+	auto saxpy(Program& program, const Params& p)-> void {
+		program.run();
+	}
+
+	/// Set of parameters to run benchmakrs on.
+	static const auto params = std::vector<Params>({{32u, 2.f}, {128u, 2.f}, {1024u, 3.f}});
 } // namespace
 
-
-SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixSaxpyFull, params);
-SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixShaderOnly, params);
+SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixCreateHostData, params);
+SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixCopyDataBindAll, params);
 
 SLTBENCH_MAIN();
