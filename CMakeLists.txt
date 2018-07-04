@@ -1,10 +1,10 @@
 cmake_minimum_required (VERSION 3.8)
-project(vuh)
+project(vuh VERSION 1.0.0)
 
 option(VUH_BUILD_BENCHMARKS "Build benchmarks for vuh library" OFF)
-option(VUH_BUILD_DOCS "Build doxygen documentation for vuh" ON)
-option(VUH_BUILD_EXAMPLES "Build examples of using vuh" ON)
-option(VUH_BUILD_TESTS "Build tests for vuh library" ON)
+option(VUH_BUILD_DOCS "Build doxygen documentation for vuh" OFF)
+option(VUH_BUILD_EXAMPLES "Build examples of using vuh" OFF)
+option(VUH_BUILD_TESTS "Build tests for vuh library" OFF)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
