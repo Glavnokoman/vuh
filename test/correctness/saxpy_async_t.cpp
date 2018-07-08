@@ -9,7 +9,7 @@
 
 using test::approx;
 
-TEST_CASE("interleave data transfer and computation in saxpy. sync host side", "[correctness][async]"){
+TEST_CASE("data transfer and computation interleaved. sync host side.", "[correctness][async]"){
 	constexpr auto VEC_LEN = 128;
 	auto y = std::vector<float>(VEC_LEN, 1.0f);
 	auto x = std::vector<float>(VEC_LEN, 2.0f);
