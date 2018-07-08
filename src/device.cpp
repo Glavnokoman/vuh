@@ -186,6 +186,11 @@ namespace vuh {
 		return uint32_t(-1);
 	}
 
+	/// @return true if compute queues family is different from that for transfer queues
+	auto Device::hasSeparateQueues() const-> bool {
+		throw "not implemented";
+	}
+
 	/// @return id of the queue family supporting compute operations
 	auto Device::computeQueue(uint32_t i)-> vk::Queue {
 		return getQueue(_cmp_family_id, i);

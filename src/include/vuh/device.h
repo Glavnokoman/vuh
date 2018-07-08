@@ -26,6 +26,7 @@ namespace vuh {
 		auto memoryProperties(uint32_t id) const-> vk::MemoryPropertyFlags;
 		auto selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties) const-> uint32_t;
 		auto instance() const-> const vuh::Instance& {return _instance;}
+		auto hasSeparateQueues() const-> bool;
 
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
