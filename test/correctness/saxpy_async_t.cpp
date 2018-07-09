@@ -2,6 +2,7 @@
 #include "approx.hpp"
 
 #include <vuh/vuh.h>
+#include <vuh/arr/copy_async.hpp>
 #include <vuh/array.hpp>
 
 #include <vector>
