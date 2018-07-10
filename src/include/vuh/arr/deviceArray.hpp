@@ -4,6 +4,7 @@
 #include "arrayUtils.h"
 #include "allocDevice.hpp"
 #include "basicArray.hpp"
+#include "deviceArrayIter.hpp"
 #include "hostArray.hpp"
 
 #include <vuh/traits.hpp>
@@ -177,6 +178,14 @@ public:
 	/// @return size of a memory chunk occupied by array elements
 	/// (not the size of actually allocated chunk, which may be a bit bigger).
 	auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
+
+	auto begin()-> DeviceArrayIter<DeviceArray> {
+		return DeviceArrayIter<DeviceArray>(*this, 0);
+	}
+
+	auto end()-> DeviceArrayIter<DeviceArray> {
+		return begin() + _size;
+	}
 private: // helpers
 	auto memoryHostVisible() const-> bool {
 		return bool(Base::_flags & vk::MemoryPropertyFlagBits::eHostVisible);
