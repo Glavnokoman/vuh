@@ -1,6 +1,6 @@
 #pragma once
 
-#include "fence.hpp"
+#include <vuh/program.hpp>
 
 namespace vuh {
 

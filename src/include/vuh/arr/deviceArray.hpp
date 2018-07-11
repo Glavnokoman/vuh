@@ -63,11 +63,12 @@ public:
 	/// Create an instance of DeviceArray and initialize memory by content of some host iterable.
 	template<class C, class=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
 	DeviceArray(vuh::Device& device  ///< device to create array on
-	           , const C& c         ///< iterable to initialize from
+	           , const C& c          ///< iterable to initialize from
 	           , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
 	           , vk::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
 	   : DeviceArray(device, c.size(), flags_memory, flags_buffer)
 	{
+		using std::begin; using std::end;
 		fromHost(begin(c), end(c));
 	}
 
