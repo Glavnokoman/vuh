@@ -179,10 +179,12 @@ public:
 	/// (not the size of actually allocated chunk, which may be a bit bigger).
 	auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
 
+	/// doc me
 	auto begin()-> DeviceArrayIter<DeviceArray> {
 		return DeviceArrayIter<DeviceArray>(*this, 0);
 	}
 
+	/// doc me
 	auto end()-> DeviceArrayIter<DeviceArray> {
 		return begin() + _size;
 	}
@@ -203,5 +205,18 @@ private: // helpers
 private: // data
 	size_t _size; ///< number of elements. Actual allocated memory may be a bit bigger than necessary.
 }; // class DeviceArray
+
+/// doc me
+template<class T, class Alloc>
+auto begin(DeviceArray<T, Alloc>& array)-> DeviceArrayIter<DeviceArray<T, Alloc>> {
+	return array.begin();
+}
+
+/// doc me
+template<class T, class Alloc>
+auto end(DeviceArray<T, Alloc>& array)-> DeviceArrayIter<DeviceArray<T, Alloc>> {
+	return array.end();
+}
+
 } // namespace arr
 } // namespace vuh
