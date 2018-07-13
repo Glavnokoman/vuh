@@ -1,10 +1,10 @@
 #pragma once
 
 #include "arrayProperties.h"
+#include "arrayIter.hpp"
 #include "arrayUtils.h"
 #include "allocDevice.hpp"
 #include "basicArray.hpp"
-#include "deviceArrayIter.hpp"
 #include "hostArray.hpp"
 
 #include <vuh/traits.hpp>
@@ -181,12 +181,12 @@ public:
 	auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
 
 	/// doc me
-	auto begin()-> DeviceArrayIter<DeviceArray> {
-		return DeviceArrayIter<DeviceArray>(*this, 0);
+	auto begin()-> ArrayIter<DeviceArray> {
+		return ArrayIter<DeviceArray>(*this, 0);
 	}
 
 	/// doc me
-	auto end()-> DeviceArrayIter<DeviceArray> {
+	auto end()-> ArrayIter<DeviceArray> {
 		return begin() + _size;
 	}
 private: // helpers
@@ -209,13 +209,13 @@ private: // data
 
 /// doc me
 template<class T, class Alloc>
-auto begin(DeviceArray<T, Alloc>& array)-> DeviceArrayIter<DeviceArray<T, Alloc>> {
+auto begin(DeviceArray<T, Alloc>& array)-> ArrayIter<DeviceArray<T, Alloc>> {
 	return array.begin();
 }
 
 /// doc me
 template<class T, class Alloc>
-auto end(DeviceArray<T, Alloc>& array)-> DeviceArrayIter<DeviceArray<T, Alloc>> {
+auto end(DeviceArray<T, Alloc>& array)-> ArrayIter<DeviceArray<T, Alloc>> {
 	return array.end();
 }
 
