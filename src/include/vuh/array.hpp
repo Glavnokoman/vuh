@@ -1,8 +1,8 @@
 #pragma once
 
 #include "arr/arrayProperties.h"
+#include "arr/arrayIter.hpp"
 #include "arr/deviceArray.hpp"
-#include "arr/deviceArrayIter.hpp"
 #include "arr/hostArray.hpp"
 
 namespace vuh {
