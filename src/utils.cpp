@@ -25,12 +25,12 @@ namespace arr {
 	auto copyBuf(vuh::Device& device ///< device where buffers are allocated
 	             , vk::Buffer src    ///< source buffer
 	             , vk::Buffer dst    ///< destination buffer
-	             , uint32_t size     ///< size of memory chunk to copy in bytes
+	             , size_t size       ///< size of memory chunk to copy in bytes
 	             )-> void
 	{
 		auto cmd_buf = device.transferCmdBuffer();
 		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-		auto region = vk::BufferCopy(0, 0, size);
+		auto region = vk::BufferCopy(0, 0, size); // src_offset, dst_offset, size
 		cmd_buf.copyBuffer(src, dst, 1, &region);
 		cmd_buf.end();
 		auto queue = device.transferQueue();

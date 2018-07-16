@@ -51,6 +51,9 @@ public:
 		static_cast<vk::Buffer&>(other) = nullptr;
 	}
 
+	/// @return reference to device on which underlying buffer is allocated
+	auto device()-> vuh::Device& { return _dev; }
+
 	/// Move assignment. Resources associated with current array are released immidiately and not when moved from
 	/// object goes out of scope.
 	auto operator= (BasicArray&& other) noexcept-> BasicArray& {

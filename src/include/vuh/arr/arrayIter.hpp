@@ -1,5 +1,9 @@
 #pragma once
 
+#include <vuh/device.h>
+
+#include <vulkan/vulkan.hpp>
+
 #include <cassert>
 #include <cstdint>
 
@@ -9,10 +13,18 @@ namespace vuh {
 	template<class Array>
 	class ArrayIter {
 		using value_type = typename Array::value_type;
+		using array_type = Array;
 	public:
 		explicit ArrayIter(Array& array, std::size_t offset)
 		   : _array(array), _offset(offset)
 		{}
+
+		/// doc me
+		auto device()-> vuh::Device& { return _array.device(); }
+
+		auto buffer()-> vk::Buffer& { return _array; }
+
+		auto offset() const-> size_t { return _offset; }
 
 		auto operator += (std::size_t offset)-> ArrayIter& {
 			_offset += offset;
