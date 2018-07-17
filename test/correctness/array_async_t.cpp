@@ -16,7 +16,7 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 	auto instance = vuh::Instance();
 	auto device = instance.devices().at(0);
 
-	SECTION("device-local memory"){
+	SECTION("device-local memory to/from host"){
 		SECTION("data transfer from host"){
 			auto array = vuh::Array<float, vuh::mem::Device>(device, arr_size);
 			auto fence = vuh::copy_async(begin(host_data), end(host_data), begin(array));
@@ -66,6 +66,9 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 			}
 			REQUIRE(host_data_tst == host_data);
 		}
+	}
+	SECTION("device-local memory to/from host-visible"){
+
 	}
 //	SECTION("device-local host-visible (unified) memory"){
 //		}

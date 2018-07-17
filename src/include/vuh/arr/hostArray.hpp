@@ -1,6 +1,7 @@
 #pragma once
 
 #include "basicArray.hpp"
+#include "hostArrayIterator.hpp"
 
 #include <algorithm>
 
