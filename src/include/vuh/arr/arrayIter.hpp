@@ -15,14 +15,22 @@ namespace vuh {
 		using value_type = typename Array::value_type;
 		using array_type = Array;
 	public:
+		/// doc me
 		explicit ArrayIter(Array& array, std::size_t offset)
-		   : _array(array), _offset(offset)
+		   : _array(&array), _offset(offset)
 		{}
 
 		/// doc me
-		auto device()-> vuh::Device& { return _array.device(); }
+		auto swap(ArrayIter& other)-> void {
+			using std::swap;
+			swap(_array, other._array);
+			swap(_offset, other._offset);
+		}
 
-		auto buffer()-> vk::Buffer& { return _array; }
+		/// doc me
+		auto device()-> vuh::Device& { return _array->device(); }
+
+		auto buffer()-> vk::Buffer& { return *_array; }
 
 		auto offset() const-> size_t { return _offset; }
 
@@ -37,7 +45,7 @@ namespace vuh {
 			return *this;
 		}
 		auto operator == (const ArrayIter& other)-> bool {
-			assert(&_array == &other._array); // iterators should belong to same array to be comparable
+			assert(_array == other._array); // iterators should belong to same array to be comparable
 			_offset == other._offset;
 		}
 		auto operator != (const ArrayIter& other)-> bool {return !(*this == other);}
@@ -50,7 +58,7 @@ namespace vuh {
 			return iter -= offset;
 		}
 	private: // data
-		Array& _array;
-		std::size_t _offset;
+		Array* _array;       ///< doc me
+		std::size_t _offset; ///< doc me
 	}; // class DeviceArrayIter
 } // namespace vuh
