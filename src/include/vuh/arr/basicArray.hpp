@@ -66,7 +66,7 @@ public:
 	/// swap the guts of two basic arrays
 	friend auto swap(BasicArray& a1, BasicArray& a2) noexcept-> void {
 		using std::swap;
-		swap(a1, static_cast<vk::Buffer&>(a2));
+		swap(static_cast<vk::Buffer&>(a1), static_cast<vk::Buffer&>(a2));
 		swap(a1._mem, a2._mem);
 		swap(a1._flags, a2._flags);
 		swap(a1._dev, a2._dev);

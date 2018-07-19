@@ -63,6 +63,7 @@ public:
       swap(*this, static_cast<Base&>(o));
       swap(_ptr, o._ptr);
       swap(_size, o._size);
+		return *this;
    }
    
    /// Destroy array, and release all associated resources.

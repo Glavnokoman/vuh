@@ -32,7 +32,6 @@ namespace arr {
 		auto operator[](size_t) const-> value_type;
 		auto operator[](size_t)-> value_type&;
 		auto operator<(const HostArrayIterator&)-> bool;
-		auto operator>(const HostArrayIterator&)-> bool;
 	private: // data
 		array_type* _array;
 		size_t _offset;
