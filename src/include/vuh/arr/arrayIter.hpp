@@ -46,7 +46,7 @@ namespace vuh {
 		}
 		auto operator == (const ArrayIter& other)-> bool {
 			assert(_array == other._array); // iterators should belong to same array to be comparable
-			_offset == other._offset;
+			return _offset == other._offset;
 		}
 		auto operator != (const ArrayIter& other)-> bool {return !(*this == other);}
 

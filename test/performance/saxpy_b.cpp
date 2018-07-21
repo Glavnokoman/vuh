@@ -28,15 +28,15 @@ namespace {
 	Program program = Program(device, "../shaders/saxpy.spv"); ///< kernel to run
 
 	///
-	struct HostData {
+	struct DataHostVisible {
 		Params p;
 		std::vector<float> y;
 		std::vector<float> x;
 	};
 
 	/// Fixture to just create and keep the host data
-	struct FixCreateHostData: private HostData {
-		using Type = HostData;
+	struct FixDataHostVisible: private DataHostVisible {
+		using Type = DataHostVisible;
 
 		auto SetUp(const Params& p)-> Type& {
 			if(p != this->p) {
@@ -51,7 +51,7 @@ namespace {
 	}; // class FixSaxpyFull
 
 	/// Fixture copying data to device-local memory and binding all parameters to the kernel.
-	struct FixCopyDataBindAll: private HostData {
+	struct FixCopyDataBindAll: private DataHostVisible {
 		using Type = Program;
 		static constexpr auto workgroup_size = 128u;
 
@@ -80,7 +80,7 @@ namespace {
 	/// Benchmarked function.
 	/// Copy host data to device-local memory, bind parameters and run the kernel.
 	/// This is assumed to work with FixCreateHostData fixture.
-	auto saxpy(HostData& data, const Params& /*params*/)-> void {
+	auto saxpy(DataHostVisible& data, const Params& /*params*/)-> void {
 		auto d_y = vuh::Array<float>(device, data.y);
 		auto d_x = vuh::Array<float>(device, data.x);
 
@@ -98,7 +98,7 @@ namespace {
 	static const auto params = std::vector<Params>({{32u, 2.f}, {128u, 2.f}, {1024u, 3.f}});
 } // namespace
 
-SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixCreateHostData, params);
+SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixDataHostVisible, params);
 SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixCopyDataBindAll, params);
 
 SLTBENCH_MAIN();
