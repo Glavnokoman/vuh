@@ -18,6 +18,7 @@ template<class T, class Alloc>
 class HostArray: public BasicArray<Alloc> {
 	using Base = BasicArray<Alloc>;
 public:
+	using value_type = T;
 	/// Construct object of the class on given device.
 	/// Memory is not initialized with any data.
 	HostArray(vuh::Device& device  ///< device to create array on
@@ -74,13 +75,20 @@ public:
    }
    
    /// Iterator (forward) to start of array values.
-   auto begin()-> T* { return _ptr; }
-   auto begin() const-> const T* { return _ptr;}
+	auto begin()-> HostArrayIterator<HostArray> { return HostArrayIterator<HostArray>(*this); }
+	auto begin() const-> HostArrayIterator<const HostArray> {
+		return HostArrayIterator<const HostArray>(*this);
+	}
    
+	auto data()-> T* {return _ptr;}
+	auto data() const-> const T* {return _ptr;}
+
    /// Iterator to the end (one past the last element) of array values.
-   auto end()-> T* { return begin() + size(); }
-   auto end() const-> const T* { return begin() + size();}
-   
+	auto end()-> HostArrayIterator<HostArray> { return begin() + size(); }
+	auto end() const-> HostArrayIterator<const HostArray> {
+		return begin() + size();
+	}
+
    /// Element access operator.
    auto operator[](size_t i)-> T& { return *(begin() + i);}
    auto operator[](size_t i) const-> T { return *(begin() + i);}

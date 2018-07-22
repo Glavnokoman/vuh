@@ -12,9 +12,10 @@ namespace vuh {
 	/// not really an iterator. no dereferencing, just an offset
 	template<class Array>
 	class ArrayIter {
-		using value_type = typename Array::value_type;
-		using array_type = Array;
 	public:
+		using array_type = Array;
+		using value_type = typename Array::value_type;
+
 		/// doc me
 		explicit ArrayIter(Array& array, std::size_t offset)
 		   : _array(&array), _offset(offset)
