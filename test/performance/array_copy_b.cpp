@@ -93,7 +93,7 @@ namespace {
 	}
 
 	/// Set of parameters to run benchmakrs on.
-	static const auto params = std::vector<Params>({{1024u}, {1u<<19}, {1u<<20}, {1u<<29}});
+	static const auto params = std::vector<Params>({{1024u}, {1u<<19}, {1u<<20}/*, {1u<<29}*/});
 } // namespace
 
 SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(copy_host_to_host_visible, FixDataHostVisible, params)
