@@ -36,7 +36,7 @@ namespace {
 	///
 	struct DataHostVisibleCached {
 		std::vector<float> host_array;
-		vuh::Array<float, vuh::mem::HostCached> device_array{device, 0};
+		vuh::Array<float, vuh::mem::HostCached> device_array{device, 64};
 	};
 
 	/// Fixture to just create and keep the host data
