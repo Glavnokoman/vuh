@@ -1,7 +1,6 @@
 #pragma once
 
 #include "basicArray.hpp"
-#include "hostArrayIterator.hpp"
 
 #include <algorithm>
 
@@ -25,9 +24,9 @@ public:
 	          , size_t n_elements  ///< number of elements
 	          , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
 	          , vk::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
-	                                                                                     )
+	          )
 	   : BasicArray<Alloc>(device, n_elements*sizeof(T), flags_memory, flags_buffer)
-	   , _ptr(static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T))))
+	   , _data(static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T))))
 	   , _size(n_elements)
 	{}
 
@@ -57,37 +56,33 @@ public:
 	}
 
    /// Move constructor.
-   HostArray(HostArray&& o): Base(std::move(o)), _ptr(o._ptr), _size(o._size) {o._ptr = nullptr;}
+   HostArray(HostArray&& o): Base(std::move(o)), _data(o._data), _size(o._size) {o._data = nullptr;}
 	/// Move operator.
    auto operator=(HostArray&& o)-> HostArray& {
       using std::swap;
       swap(*this, static_cast<Base&>(o));
-      swap(_ptr, o._ptr);
+      swap(_data, o._data);
       swap(_size, o._size);
 		return *this;
    }
    
    /// Destroy array, and release all associated resources.
    ~HostArray() noexcept {
-      if(_ptr) {
+      if(_data) {
          Base::_dev.unmapMemory(Base::_mem);
       }
    }
    
    /// Iterator (forward) to start of array values.
-	auto begin()-> HostArrayIterator<HostArray> { return HostArrayIterator<HostArray>(*this); }
-	auto begin() const-> HostArrayIterator<const HostArray> {
-		return HostArrayIterator<const HostArray>(*this);
-	}
+	auto begin()-> value_type* { return _data; }
+	auto begin() const-> const value_type* { return _data; }
    
-	auto data()-> T* {return _ptr;}
-	auto data() const-> const T* {return _ptr;}
+	auto data()-> T* {return _data;}
+	auto data() const-> const T* {return _data;}
 
    /// Iterator to the end (one past the last element) of array values.
-	auto end()-> HostArrayIterator<HostArray> { return begin() + size(); }
-	auto end() const-> HostArrayIterator<const HostArray> {
-		return begin() + size();
-	}
+	auto end()-> value_type* { return begin() + size(); }
+	auto end() const-> const value_type* { return begin() + size(); }
 
    /// Element access operator.
    auto operator[](size_t i)-> T& { return *(begin() + i);}
@@ -100,7 +95,7 @@ public:
    /// (not the size of actually allocated chunk, which may be a bit bigger).
    auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
 private: // data
-   T* _ptr;       ///< host accessible pointer to the beginning of corresponding memory chunk.
+   T* _data;       ///< host accessible pointer to the beginning of corresponding memory chunk.
    size_t _size;  ///< Number of elements. Actual allocated memory may be a bit bigger then necessary.
 }; // class HostArray
 } // namespace arr

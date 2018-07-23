@@ -8,8 +8,8 @@
 #include <cstdint>
 
 namespace vuh {
-	/// doc me
-	/// not really an iterator. no dereferencing, just an offset
+	/// Iterator to use in device-side copying and kernel calls.
+	/// Not suitable for host-side algorithms, dereferencing, etc...
 	template<class Array>
 	class ArrayIter {
 	public:
