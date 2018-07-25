@@ -1,6 +1,7 @@
 #pragma once
 
 #include "basicArray.hpp"
+#include "arrayIter.hpp"
 
 #include <algorithm>
 
@@ -73,18 +74,27 @@ public:
       }
    }
    
-   /// Iterator (forward) to start of array values.
+   /// Host-accesible iterator to beginning of array data
 	auto begin()-> value_type* { return _data; }
 	auto begin() const-> const value_type* { return _data; }
    
+	/// Pointer (host) to beginning of array data
 	auto data()-> T* {return _data;}
 	auto data() const-> const T* {return _data;}
 
-   /// Iterator to the end (one past the last element) of array values.
+   /// Host-accessible iterator to the end (one past the last element) of array data.
 	auto end()-> value_type* { return begin() + size(); }
 	auto end() const-> const value_type* { return begin() + size(); }
 
-   /// Element access operator.
+	///
+	auto device_begin()-> ArrayIter<HostArray> { return ArrayIter<HostArray>(*this, 0);}
+	auto device_begin() const-> ArrayIter<HostArray> { return ArrayIter<HostArray>(*this, 0);}
+
+	///
+	auto device_end()-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, _size);}
+	auto device_end() const-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, _size);}
+
+   /// Element access operator (host-side).
    auto operator[](size_t i)-> T& { return *(begin() + i);}
    auto operator[](size_t i) const-> T { return *(begin() + i);}
    

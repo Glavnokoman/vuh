@@ -105,8 +105,8 @@ public:
 	/// Copy data from host range to array memory.
 	template<class It1, class It2>
 	auto fromHost(It1 begin, It2 end)-> void {
-		if(memoryHostVisible()){
-			std::copy(begin, end, host_ptr());
+		if(isHostVisible()){
+			std::copy(begin, end, host_data());
 			Base::_dev.unmapMemory(Base::_mem);
 		} else { // memory is not host visible, use staging buffer
 			auto stage_buf = HostArray<T, AllocDevice<properties::HostStage>>(Base::_dev, begin, end);
@@ -118,8 +118,8 @@ public:
 	/// The whole array data is copied over.
    template<class It>
    auto toHost(It copy_to) const-> void {
-      if(memoryHostVisible()){
-         std::copy_n(host_ptr(), size(), copy_to);
+      if(isHostVisible()){
+         std::copy_n(host_data(), size(), copy_to);
          Base::_dev.unmapMemory(Base::_mem);
       } else {
          using std::begin; using std::end;
@@ -133,8 +133,8 @@ public:
 	/// The whole array data is transformed.
    template<class It, class F>
    auto toHost(It copy_to, F&& fun) const-> void {
-      if(memoryHostVisible()){
-         auto copy_from = host_ptr();
+      if(isHostVisible()){
+         auto copy_from = host_data();
          std::transform(copy_from, copy_from + size(), copy_to, std::forward<F>(fun));
          Base::_dev.unmapMemory(Base::_mem);
       } else {
@@ -152,8 +152,8 @@ public:
 	           , F&& fun     ///< transform function
 	           ) const-> void
 	{
-		if(memoryHostVisible()){
-			auto copy_from = host_ptr();
+		if(isHostVisible()){
+			auto copy_from = host_data();
 			std::transform(copy_from, copy_from + size, copy_to, std::forward<F>(fun));
 			Base::_dev.unmapMemory(Base::_mem);
 		} else {
@@ -181,26 +181,24 @@ public:
 	auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
 
 	/// doc me
-	auto begin()-> ArrayIter<DeviceArray> {
-		return ArrayIter<DeviceArray>(*this, 0);
-	}
+	auto device_begin()-> ArrayIter<DeviceArray> { return ArrayIter<DeviceArray>(*this, 0); }
+	auto device_begin() const-> ArrayIter<DeviceArray> { return ArrayIter<DeviceArray>(*this, 0); }
 
 	/// doc me
-	auto end()-> ArrayIter<DeviceArray> {
-		return begin() + _size;
-	}
+	auto device_end()-> ArrayIter<DeviceArray> {return ArrayIter<DeviceArray>(*this, _size);}
+	auto device_end() const-> ArrayIter<DeviceArray> {return ArrayIter<DeviceArray>(*this, _size);}
 private: // helpers
-	auto memoryHostVisible() const-> bool {
+	auto isHostVisible() const-> bool {
 		return bool(Base::_flags & vk::MemoryPropertyFlagBits::eHostVisible);
 	}
 
-	auto host_ptr()-> T* {
-		assert(memoryHostVisible());
+	auto host_data()-> T* {
+		assert(isHostVisible());
 		return static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
 	}
 
-	auto host_ptr() const-> const T* {
-		assert(memoryHostVisible());
+	auto host_data() const-> const T* {
+		assert(isHostVisible());
 		return static_cast<const T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
 	}
 private: // data
