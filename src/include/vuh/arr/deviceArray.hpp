@@ -207,14 +207,14 @@ private: // data
 
 /// doc me
 template<class T, class Alloc>
-auto begin(DeviceArray<T, Alloc>& array)-> ArrayIter<DeviceArray<T, Alloc>> {
-	return array.begin();
+auto device_begin(DeviceArray<T, Alloc>& array)-> ArrayIter<DeviceArray<T, Alloc>> {
+	return array.device_begin();
 }
 
 /// doc me
 template<class T, class Alloc>
-auto end(DeviceArray<T, Alloc>& array)-> ArrayIter<DeviceArray<T, Alloc>> {
-	return array.end();
+auto device_end(DeviceArray<T, Alloc>& array)-> ArrayIter<DeviceArray<T, Alloc>> {
+	return array.device_end();
 }
 
 } // namespace arr
