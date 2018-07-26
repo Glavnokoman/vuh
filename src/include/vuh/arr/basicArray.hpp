@@ -54,6 +54,11 @@ public:
 	/// @return reference to device on which underlying buffer is allocated
 	auto device()-> vuh::Device& { return _dev; }
 
+	/// doc me
+	auto isHostVisible() const-> bool {
+		return bool(_flags & vk::MemoryPropertyFlagBits::eHostVisible);
+	}
+
 	/// Move assignment. Resources associated with current array are released immidiately and not when moved from
 	/// object goes out of scope.
 	auto operator= (BasicArray&& other) noexcept-> BasicArray& {

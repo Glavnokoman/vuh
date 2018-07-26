@@ -188,7 +188,7 @@ namespace vuh {
 
 	/// @return true if compute queues family is different from that for transfer queues
 	auto Device::hasSeparateQueues() const-> bool {
-		throw "not implemented";
+		return _cmp_family_id == _tfr_family_id;
 	}
 
 	/// @return id of the queue family supporting compute operations
