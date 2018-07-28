@@ -60,10 +60,7 @@ public:
    HostArray(HostArray&& o): Base(std::move(o)), _data(o._data), _size(o._size) {o._data = nullptr;}
 	/// Move operator.
    auto operator=(HostArray&& o)-> HostArray& {
-      using std::swap;
-      swap(*this, static_cast<Base&>(o));
-      swap(_data, o._data);
-      swap(_size, o._size);
+		this->swap(o);
 		return *this;
    }
    
@@ -73,6 +70,14 @@ public:
          Base::_dev.unmapMemory(Base::_mem);
       }
    }
+
+	/// doc me
+	auto swap(HostArray& o) noexcept-> void {
+		using std::swap;
+		swap(static_cast<Base&>(*this), static_cast<Base&>(o));
+      swap(_data, o._data);
+      swap(_size, o._size);
+	}
    
    /// Host-accesible iterator to beginning of array data
 	auto begin()-> value_type* { return _data; }
