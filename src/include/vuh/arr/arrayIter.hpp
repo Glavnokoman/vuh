@@ -40,6 +40,10 @@ namespace vuh {
 			return *this;
 		}
 
+		/// @return reference to undelying array
+		auto array() const-> const Array& { return *_array; }
+
+		///
 		auto operator -= (std::size_t offset)-> ArrayIter& {
 			assert(offset <= _offset);
 			_offset -= offset;
