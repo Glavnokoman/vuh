@@ -10,6 +10,9 @@ namespace vuh {
 	class Fence: public vk::Fence {
 	public:
 		///
+		Fence(): _device(nullptr) {}
+
+		///
 		explicit Fence(vk::Fence fence, vuh::Device& device)
 		   : vk::Fence(fence) , _device(&device)
 		{}
@@ -45,9 +48,11 @@ namespace vuh {
 			swap(this->_device, other._device);
 		}
 
+		/// doc me
 		auto wait(size_t period=size_t(-1))-> void {
-			assert(_device != nullptr);
-			_device->waitForFences({*this}, true, period);
+			if(_device){
+				_device->waitForFences({*this}, true, period);
+			}
 		}
 	private: // data
 		vuh::Device* _device;

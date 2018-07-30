@@ -1,7 +1,7 @@
 #pragma once
 
-//#include <vuh/program.hpp>
 #include "arrayIter.hpp"
+#include <vuh/fence.hpp>
 
 namespace vuh {
 	/// async between the host-visible and device-local arrays
@@ -19,12 +19,13 @@ namespace vuh {
 		auto region = vk::BufferCopy(src_begin.offset(), dst_begin.offset(), src_end - src_begin); // src_offset, dst_offset, size
 		cmd_buf.copyBuffer(src_begin.array(), dst_begin.offset(), 1, &region);
 		cmd_buf.end();
-		auto queue = device.transferQueue();
-		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
-		queue.submit({submit_info}, nullptr);
-//		queue.waitIdle();
 
-		throw "not implemented";
+		auto queue = src_device.transferQueue();
+		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
+		auto fence = src_device.createFence(vk::FenceCreateInfo());
+		queue.submit({submit_info}, fence);
+
+		return vuh::Fence(fence, src_device);
 	}
 
 	/// async copy data from host to device
@@ -33,7 +34,8 @@ namespace vuh {
 		auto cmd_buf = dst_begin.device().transferCmdBuffer();
 		const auto& array = dst_begin.array();
 		if(array.isHostVisible()){ // normal copy, the function blocks till the copying is complete
-			throw "not implemented";
+//			std::copy(src_begin, src_end, /*???*/);
+			return Fence();
 		} else { // copy first to staging buffer and then async copy from staging buffer to device
 			throw "not implemented";
 		}
