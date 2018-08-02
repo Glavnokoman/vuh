@@ -114,6 +114,18 @@ public:
 		}
 	}
    
+	/// Copy data from host range to array memory with offset
+	template<class It1, class It2>
+	auto fromHost(It1 begin, It2 end, size_t offset)-> void {
+		if(Base::isHostVisible()){
+			std::copy(begin, end, host_data() + offset);
+			Base::_dev.unmapMemory(Base::_mem);
+		} else { // memory is not host visible, use staging buffer
+			auto stage_buf = HostArray<T, AllocDevice<properties::HostStage>>(Base::_dev, begin, end);
+			copyBuf(Base::_dev, stage_buf, *this, size_bytes(), 0u, offset*sizeof(T));
+		}
+	}
+
    /// Copy data from array memory to host location indicated by iterator.
 	/// The whole array data is copied over.
    template<class It>

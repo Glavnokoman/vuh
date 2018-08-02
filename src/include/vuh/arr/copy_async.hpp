@@ -4,7 +4,7 @@
 #include <vuh/fence.hpp>
 
 namespace vuh {
-	/// async between the host-visible and device-local arrays
+	/// async copy between the device arrays
 	template<class Array1, class Array2>
 	auto copy_async(ArrayIter<Array1> src_begin, ArrayIter<Array1> src_end
 	                , ArrayIter<Array2> dst_begin
@@ -29,12 +29,15 @@ namespace vuh {
 	}
 
 	/// async copy data from host to device
-	template<class SrcIter1, class SrcIter2, class Array>
-	auto copy_async(SrcIter1 src_begin, SrcIter2 src_end, vuh::ArrayIter<Array> dst_begin)-> vuh::Fence {
+	template<class SrcIter1, class SrcIter2, class T, class Alloc>
+	auto copy_async(SrcIter1 src_begin, SrcIter2 src_end
+	                , vuh::ArrayIter<arr::DeviceArray<T, Alloc>> dst_begin
+	                )-> vuh::Fence
+	{
 		auto cmd_buf = dst_begin.device().transferCmdBuffer();
-		const auto& array = dst_begin.array();
+		auto& array = dst_begin.array();
 		if(array.isHostVisible()){ // normal copy, the function blocks till the copying is complete
-//			std::copy(src_begin, src_end, /*???*/);
+			array.fromHost(src_begin, src_end, dst_begin.offset());
 			return Fence();
 		} else { // copy first to staging buffer and then async copy from staging buffer to device
 			throw "not implemented";

@@ -42,6 +42,7 @@ namespace vuh {
 
 		/// @return reference to undelying array
 		auto array() const-> const Array& { return *_array; }
+		auto array()-> Array& {return *_array;}
 
 		///
 		auto operator -= (std::size_t offset)-> ArrayIter& {
