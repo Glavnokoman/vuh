@@ -94,10 +94,12 @@ public:
 	///
 	auto device_begin()-> ArrayIter<HostArray> { return ArrayIter<HostArray>(*this, 0);}
 	auto device_begin() const-> ArrayIter<HostArray> { return ArrayIter<HostArray>(*this, 0);}
-
+	friend auto device_begin(HostArray& a)-> ArrayIter<HostArray> {return a.device_begin();}
+	
 	///
 	auto device_end()-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, _size);}
 	auto device_end() const-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, _size);}
+	friend auto device_end(HostArray& a)-> ArrayIter<HostArray> {return a.device_end();}
 
    /// Element access operator (host-side).
    auto operator[](size_t i)-> T& { return *(begin() + i);}

@@ -63,6 +63,11 @@ namespace vuh {
 		friend auto operator-(ArrayIter iter, std::size_t offset)-> ArrayIter {
 			return iter -= offset;
 		}
+		
+		friend auto operator-(const ArrayIter& it1, const ArrayIter& it2)-> size_t {
+			assert(it2.offset() <= it1.offset());
+			return it1.offset() - it2.offset();
+		}
 	private: // data
 		Array* _array;       ///< doc me
 		std::size_t _offset; ///< doc me

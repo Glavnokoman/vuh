@@ -201,12 +201,12 @@ public:
 	auto device_end() const-> ArrayIter<DeviceArray> {return ArrayIter<DeviceArray>(*this, _size);}
 private: // helpers
 	auto host_data()-> T* {
-		assert(isHostVisible());
+		assert(Base::isHostVisible());
 		return static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
 	}
 
 	auto host_data() const-> const T* {
-		assert(isHostVisible());
+		assert(Base::isHostVisible());
 		return static_cast<const T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
 	}
 private: // data
