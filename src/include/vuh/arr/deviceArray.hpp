@@ -94,7 +94,7 @@ public:
 	   : DeviceArray(device, n_elements, flags_memory, flags_buffer)
 	{
 		using std::begin;
-		auto stage_buffer = HostArray<T, AllocDevice<properties::HostStage>>(Base::_dev, n_elements);
+		auto stage_buffer = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, n_elements);
 		auto stage_it = begin(stage_buffer);
 		for(size_t i = 0; i < n_elements; ++i, ++stage_it){
 			*stage_it = fun(i);
@@ -109,7 +109,7 @@ public:
 			std::copy(begin, end, host_data());
 			Base::_dev.unmapMemory(Base::_mem);
 		} else { // memory is not host visible, use staging buffer
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostStage>>(Base::_dev, begin, end);
+			auto stage_buf = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, begin, end);
 			copyBuf(Base::_dev, stage_buf, *this, size_bytes());
 		}
 	}
@@ -121,7 +121,7 @@ public:
 			std::copy(begin, end, host_data() + offset);
 			Base::_dev.unmapMemory(Base::_mem);
 		} else { // memory is not host visible, use staging buffer
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostStage>>(Base::_dev, begin, end);
+			auto stage_buf = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, begin, end);
 			copyBuf(Base::_dev, stage_buf, *this, size_bytes(), 0u, offset*sizeof(T));
 		}
 	}

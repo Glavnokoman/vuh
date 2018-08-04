@@ -6,55 +6,59 @@
 #include <cassert>
 
 namespace vuh {
-	///
-	class Fence: public vk::Fence {
+	namespace detail{
+		struct Noop{ auto operator()() const noexcept-> void{}; };
+	}
+
+	/// Action delayed by vulkan fence.
+	/// If no action specified just wait till the unerlying fence is signalled.
+	template<class Action=detail::Noop>
+	class Delayed: public vk::Fence, private Action {
 	public:
-		///
-		Fence(): _device(nullptr) {}
-
-		///
-		explicit Fence(vk::Fence fence, vuh::Device& device)
-		   : vk::Fence(fence) , _device(&device)
+		explicit Delayed(): _device{nullptr}{}
+		explicit Delayed(vk::Fence fence, vuh::Device& device, Action action={})
+		   :vk::Fence(fence), Action(action), _device(&device)
 		{}
+		explicit Delayed(Delayed<>&& noop, Action action={})
+		   : vk::Fence(noop), Action(action), _device(noop._device)
+		{
+			noop._device = nullptr;
+		}
 
-		Fence(const Fence&) = delete;
+		~Delayed(){ wait(); }
+
+		Delayed(const Delayed&) = delete;
 		auto operator= (const Fence&)-> Fence& = delete;
 
 		///
-		Fence(Fence&& other) noexcept
-		   : vk::Fence(other), _device(other._device)
+		Delayed(Delayed&& other) noexcept
+		   : vk::Fence(std::move(other)), Action{std::move(other)}, _device(other._device)
 		{
 			other._device = nullptr;
 		}
 
-		///
-		auto operator= (Fence&& other) noexcept-> Fence& {
+		auto operator= (Delayed&& other) noexcept-> Delayed& {
 			this->swap(other);
 			return *this;
 		}
-
-		///
-		~Fence() noexcept {
-			if(_device){
-				_device->waitForFences({*this}, true, uint64_t(-1)); // wait forever
-				_device->destroyFence(*this);
-			}
-		}
-
-		/// member-wise swap
-		auto swap(Fence& other) noexcept-> void{
+		auto swap(Delayed& other) noexcept-> void {
 			using std::swap;
 			swap(static_cast<vk::Fence&>(*this), static_cast<vk::Fence&>(other));
+			swap(static_cast<Action&>(*this), static_cast<Action&>(other));
 			swap(this->_device, other._device);
 		}
 
-		/// doc me
 		auto wait(size_t period=size_t(-1))-> void {
 			if(_device){
 				_device->waitForFences({*this}, true, period);
+				_device->destroyFence(*this);
+				_device = nullptr;
+				static_cast<Action&>(*this)(); /// exercise action
 			}
 		}
 	private: // data
 		vuh::Device* _device;
-	}; // class Fence
+	}; // class Delayed
+
+	using Fence = Delayed<>;
 } // namespace vuh
