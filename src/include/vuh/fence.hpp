@@ -8,24 +8,50 @@
 namespace vuh {
 	namespace detail{
 		struct Noop{ auto operator()() const noexcept-> void{}; };
+		
+		template<class T>
+		struct ExecutionCounter{
+			auto setExecuted()-> void { _flag = true;}
+			auto isExecuted() const-> bool {return _flag;}
+		private:
+			bool _flag = false;
+		};
+		
+		template<>
+		struct ExecutionCounter<Noop> {
+			static constexpr auto setExecuted()-> void {}
+			static constexpr auto isExecuted() -> bool {return true;}
+		};
 	}
 
 	/// Action delayed by vulkan fence.
 	/// If no action specified just wait till the unerlying fence is signalled.
 	template<class Action=detail::Noop>
-	class Delayed: public vk::Fence, private Action {
+	class Delayed: public vk::Fence, private Action, private detail::ExecutionCounter<Action> {
+		template<class> friend class Delayed;
 	public:
-		explicit Delayed(): _device{nullptr}{}
+		explicit Delayed(): detail::ExecutionCounter<Action>(), _device{nullptr} {}
 		explicit Delayed(vk::Fence fence, vuh::Device& device, Action action={})
-		   :vk::Fence(fence), Action(action), _device(&device)
+		   : vk::Fence(fence)
+		   , Action(action)
+		   , detail::ExecutionCounter<Action>()
+		   , _device(&device)
 		{}
 		explicit Delayed(Delayed<>&& noop, Action action={})
-		   : vk::Fence(noop), Action(action), _device(noop._device)
+		   : vk::Fence(std::move(noop)), Action(std::move(action)), _device(noop._device)
 		{
 			noop._device = nullptr;
 		}
 
-		~Delayed(){ wait(); }
+		~Delayed(){ 
+			if(_device){
+				_device->waitForFences({*this}, true, size_t(-1));
+				_device->destroyFence(*this);
+			}
+			if(!detail::ExecutionCounter<Action>::isExecuted()){
+				static_cast<Action&>(*this)(); /// exercise action
+			}
+		}
 
 		Delayed(const Delayed&) = delete;
 		auto operator= (const Fence&)-> Fence& = delete;
@@ -51,10 +77,9 @@ namespace vuh {
 		auto wait(size_t period=size_t(-1))-> void {
 			if(_device){
 				_device->waitForFences({*this}, true, period);
-				_device->destroyFence(*this);
-				_device = nullptr;
-				static_cast<Action&>(*this)(); /// exercise action
 			}
+			static_cast<Action&>(*this)(); /// exercise action
+			detail::ExecutionCounter<Action>::setExecuted();
 		}
 	private: // data
 		vuh::Device* _device;

@@ -97,6 +97,45 @@ namespace vuh {
 			std::copy(begin(array), end(array), dst_begin);
 		}
 	}; // struct StagedCopy
+	
+	template<class T, class IterDst>
+	struct StdCopy {
+		const T* src_begin;
+		const T* src_end;
+		IterDst dst_begin;
+		
+		auto operator()() const-> void { std::copy(src_begin, src_end, dst_begin); }
+	}; // struct StdCopy
+	
+	
+	class IDelayedCopy{
+	public:
+		virtual auto operator()()const-> void = 0;
+		virtual ~IDelayedCopy() = default;
+	};
+	
+	template<class T>
+	class DelayedCopyWrapper: public IDelayedCopy, private T {
+	public:
+		auto operator()() const-> void override { return T::operator()();}
+		~DelayedCopyWrapper() override = default;
+	};
+
+	class DelayedCopy {
+	public:
+		template<class T>
+		explicit DelayedCopy(T copy_instance)
+		   : _obj{std::make_unique<IDelayedCopy>(DelayedCopyWrapper<T>(std::move(copy_instance)))}
+		{}
+		
+		auto operator()() const-> void {
+			assert(_obj);
+			(*_obj)();
+		}
+	private:
+		std::unique_ptr<IDelayedCopy> _obj;
+	};
+	
 
 	/// Async copy data from device-local array to host.
 	template<class T, class Alloc, class DstIter>
@@ -110,9 +149,13 @@ namespace vuh {
 		auto cmd_buf = src_begin.device().transferCmdBuffer();
 		auto& array = src_begin.array();
 		if(!array.isHostVisible()){ // device array is not host-visible
-	      auto stagedCopy = StagedCopy<T, DstIter>(array.device(), src_end - src_begin, dst_begin);
-			// iwashere
+			auto stagedCopy = StagedCopy<T, DstIter>(array.device(), src_end - src_begin, dst_begin);
+			auto fence = copy_async(src_begin, src_end, device_begin(stagedCopy.array));
+			return Delayed<StagedCopy<T, DstIter>>(std::move(fence), std::move(stagedCopy));
+		} else { // array is host visible
+			
 		}
+	                                                                          
 		throw "not implemented";
 	}
 
