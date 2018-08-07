@@ -104,29 +104,31 @@ namespace vuh {
 		const T* src_end;
 		IterDst dst_begin;
 		
+		StdCopy(const T* src_begin, const T* src_end, IterDst dst_begin)
+		   : src_begin(src_begin), src_end(src_end), dst_begin(dst_begin)
+		{}
+		
 		auto operator()() const-> void { std::copy(src_begin, src_end, dst_begin); }
 	}; // struct StdCopy
 	
 	
 	class IDelayedCopy{
 	public:
-		virtual auto operator()()const-> void = 0;
+		virtual auto operator()() const-> void = 0;
 		virtual ~IDelayedCopy() = default;
 	};
 	
 	template<class T>
 	class DelayedCopyWrapper: public IDelayedCopy, private T {
 	public:
+		DelayedCopyWrapper(T&& t): T(std::move(t)) {}
 		auto operator()() const-> void override { return T::operator()();}
 		~DelayedCopyWrapper() override = default;
 	};
 
 	class DelayedCopy {
 	public:
-		template<class T>
-		explicit DelayedCopy(T copy_instance)
-		   : _obj{std::make_unique<IDelayedCopy>(DelayedCopyWrapper<T>(std::move(copy_instance)))}
-		{}
+		explicit DelayedCopy(std::unique_ptr<IDelayedCopy>&& ptr): _obj(std::move(ptr)) {}
 		
 		auto operator()() const-> void {
 			assert(_obj);
@@ -136,6 +138,10 @@ namespace vuh {
 		std::unique_ptr<IDelayedCopy> _obj;
 	};
 	
+	template<class T>
+	auto make_delayed(T&& t)-> DelayedCopy {
+		return DelayedCopy(std::make_unique<DelayedCopyWrapper<T>>(std::move(t)));
+	}
 
 	/// Async copy data from device-local array to host.
 	template<class T, class Alloc, class DstIter>
@@ -143,7 +149,7 @@ namespace vuh {
 	               , ArrayIter<arr::DeviceArray<T, Alloc>> src_end
 	               , DstIter dst_begin
 	               )-> std::enable_if_t<detail::is_host_iterator<DstIter>::value
-	                                   , vuh::Delayed<StagedCopy<T, DstIter>>
+	                                   , vuh::Delayed<DelayedCopy>
 	                                   >
 	{
 		auto cmd_buf = src_begin.device().transferCmdBuffer();
@@ -151,12 +157,11 @@ namespace vuh {
 		if(!array.isHostVisible()){ // device array is not host-visible
 			auto stagedCopy = StagedCopy<T, DstIter>(array.device(), src_end - src_begin, dst_begin);
 			auto fence = copy_async(src_begin, src_end, device_begin(stagedCopy.array));
-			return Delayed<StagedCopy<T, DstIter>>(std::move(fence), std::move(stagedCopy));
+			return Delayed<DelayedCopy>{std::move(fence)
+				                        , make_delayed<StagedCopy<T, DstIter>>(std::move(stagedCopy))};
 		} else { // array is host visible
-			
+			throw "not implemented";
 		}
-	                                                                          
-		throw "not implemented";
 	}
 
 } // namespace vuh
