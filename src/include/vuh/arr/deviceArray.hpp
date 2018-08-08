@@ -179,7 +179,17 @@ public:
 	/// Copy range of values from device to host memory.
 	template<class DstIter>
 	auto rangeToHost(size_t offset_begin, size_t offset_end, DstIter dst_begin) const-> void {
-		throw "not implemented";
+		if(Base::isHostVisible()){
+			auto copy_from = host_data();
+			std::copy(copy_from + offset_begin, copy_from + offset_end, dst_begin);
+			Base::_dev.unmapMemory(Base::_mem);
+		} else {
+			using std::begin; using std::end;
+			auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev
+			                                                          , offset_end - offset_begin);
+			copyBuf(Base::_dev, *this, stage_buf, size_bytes(), offset_begin, 0u);
+			std::copy(begin(stage_buf), end(stage_buf), dst_begin);
+		}
 	}
 	
 	/// @return host container with a copy of array data.
