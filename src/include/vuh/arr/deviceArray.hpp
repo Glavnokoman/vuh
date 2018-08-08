@@ -176,6 +176,12 @@ public:
 		}
 	}
 
+	/// Copy range of values from device to host memory.
+	template<class DstIter>
+	auto rangeToHost(size_t offset_begin, size_t offset_end, DstIter dst_begin) const-> void {
+		throw "not implemented";
+	}
+	
 	/// @return host container with a copy of array data.
 	template<class C, typename=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
 	auto toHost() const-> C {

@@ -1,7 +1,9 @@
 #include <vuh/device.h>
 
 #include <cassert>
+#include <cstdint>
 #include <limits>
+
 
 namespace {
 	/// Create logical device.

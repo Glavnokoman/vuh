@@ -30,8 +30,8 @@ namespace vuh {
 	class Delayed: public vk::Fence, private Action, private detail::ExecutionCounter<Action> {
 		template<class> friend class Delayed;
 	public:
-		explicit Delayed(): detail::ExecutionCounter<Action>(), _device{nullptr} {}
-		explicit Delayed(vk::Fence fence, vuh::Device& device, Action action={})
+		Delayed(): detail::ExecutionCounter<Action>(), _device{nullptr} {}
+		Delayed(vk::Fence fence, vuh::Device& device, Action action={})
 		   : vk::Fence(fence)
 		   , Action(action)
 		   , detail::ExecutionCounter<Action>()
@@ -85,5 +85,5 @@ namespace vuh {
 		vuh::Device* _device;
 	}; // class Delayed
 
-	using Fence = Delayed<>;
+	using Fence = Delayed<detail::Noop>;
 } // namespace vuh
