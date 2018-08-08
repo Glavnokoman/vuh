@@ -42,8 +42,7 @@ namespace vuh {
 	                )-> vuh::Fence
 	{
 		auto& src_device = src_begin.array().device();
-		auto& dst_device = dst_begin.array().device();
-		assert(src_device == dst_device);
+		assert(src_device == dst_begin.array().device());
 
 		auto cmd_buf = src_device.transferCmdBuffer();
 		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
@@ -70,7 +69,6 @@ namespace vuh {
 	                               , vuh::Fence
 	                               >
 	{
-		auto cmd_buf = dst_begin.device().transferCmdBuffer();
 		auto& array = dst_begin.array();
 		if(array.isHostVisible()){ // normal copy, the function blocks till the copying is complete
 			array.fromHost(src_begin, src_end, dst_begin.offset());
@@ -157,7 +155,6 @@ namespace vuh {
 	                                   , vuh::Delayed<Copy>
 	                                   >
 	{
-		auto cmd_buf = src_begin.device().transferCmdBuffer();
 		auto& array = src_begin.array();
 		if(!array.isHostVisible()){ // device array is not host-visible
 			auto stagedCopy = StagedCopy<T, DstIter>(array.device(), src_end - src_begin, dst_begin);

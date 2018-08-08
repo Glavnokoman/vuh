@@ -1,4 +1,4 @@
-#include <catch/catch.hpp>
+#include <catch2/catch.hpp>
 #include "approx.hpp"
 
 #include <vuh/vuh.h>
@@ -30,7 +30,7 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 	const auto grid_x = 32;
 	const auto tile_size = VEC_LEN/2;
 
-	auto cap = device.hasSeparateQueues(); // check if compute queues family is same as transfer queues
+//	auto cap = device.hasSeparateQueues(); // check if compute queues family is same as transfer queues
 	SECTION("3-phase saxpy. default queues. verbose."){
 
 		// phase 1. copy tiles to device
