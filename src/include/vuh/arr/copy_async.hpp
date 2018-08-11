@@ -35,29 +35,6 @@ namespace vuh {
 		template<class T> using is_host_iterator = decltype(_is_host_iterator<T>(0));
 	} // namespace detail
 
-	/// Async copy between vuh arrays allocated on the same device
-	template<class Array1, class Array2>
-	auto copy_async(ArrayIter<Array1> src_begin, ArrayIter<Array1> src_end
-	                , ArrayIter<Array2> dst_begin
-	                )-> vuh::Fence
-	{
-		auto& src_device = src_begin.array().device();
-		assert(src_device == dst_begin.array().device());
-
-		auto cmd_buf = src_device.transferCmdBuffer();
-		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-		auto region = vk::BufferCopy(src_begin.offset(), dst_begin.offset(), src_end - src_begin); // src_offset, dst_offset, size
-		cmd_buf.copyBuffer(src_begin.array(), dst_begin.array(), 1, &region);
-		cmd_buf.end();
-
-		auto queue = src_device.transferQueue();
-		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
-		auto fence = src_device.createFence(vk::FenceCreateInfo());
-		queue.submit({submit_info}, fence);
-
-		return vuh::Fence(fence, src_device);
-	}
-
 	///
 	template<class T>
 	struct CopyStageFromHost {
@@ -137,6 +114,36 @@ namespace vuh {
 	private:
 		std::unique_ptr<ICopy> _obj;
 	};
+
+	/// Async copy between vuh arrays allocated on the same device
+	template<class Array1, class Array2>
+	auto copy_async(ArrayIter<Array1> src_begin, ArrayIter<Array1> src_end
+	                , ArrayIter<Array2> dst_begin
+	                )-> vuh::Delayed<>
+	{
+		using value_type_src = typename ArrayIter<Array1>::value_type;
+		using value_type_dst = typename ArrayIter<Array2>::value_type;
+		static_assert(std::is_same<value_type_src, value_type_dst>::value
+		              , "array value types should be the same");
+		static constexpr auto tsize = sizeof(value_type_src);
+
+		auto& src_device = src_begin.array().device();
+		assert(src_device == dst_begin.array().device());
+
+		auto cmd_buf = src_device.transferCmdBuffer();
+		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+		auto region = vk::BufferCopy(tsize*src_begin.offset(), tsize*dst_begin.offset()
+		                            , tsize*(src_end - src_begin));
+		cmd_buf.copyBuffer(src_begin.array(), dst_begin.array(), 1, &region);
+		cmd_buf.end();
+
+		auto queue = src_device.transferQueue();
+		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
+		auto fence = src_device.createFence(vk::FenceCreateInfo());
+		queue.submit({submit_info}, fence);
+
+		return vuh::Fence(fence, src_device);
+	}
 
 	/// Async copy data from host memory to device-local array.
 	/// Blocks while copying from host memory to host-visible staging array.
