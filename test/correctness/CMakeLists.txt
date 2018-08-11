@@ -14,8 +14,10 @@ function(add_catch_test arg_test_name)
 endfunction()
 
 add_catch_test(test_saxpy_sync
-	saxpy_async_t.cpp saxpy_sync_t.cpp
-	array_t.cpp array_async_t.cpp
+	array_async_t.cpp
+	array_t.cpp
+	# saxpy_async_t.cpp
+	saxpy_sync_t.cpp
 )
 target_link_libraries(test_saxpy_sync PRIVATE vuh)
 add_dependencies(test_saxpy_sync test_shaders)

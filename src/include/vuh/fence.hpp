@@ -37,7 +37,7 @@ namespace vuh {
 		   , detail::ExecutionCounter<Action>()
 		   , _device(&device)
 		{}
-		explicit Delayed(Delayed<>&& noop, Action action={})
+		explicit Delayed(Delayed<detail::Noop>&& noop, Action action={})
 		   : vk::Fence(std::move(noop)), Action(std::move(action)), _device(noop._device)
 		{
 			noop._device = nullptr;

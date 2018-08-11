@@ -58,35 +58,27 @@ namespace vuh {
 		return vuh::Fence(fence, src_device);
 	}
 
-	/// Async copy data from host memory to device-local array.
-	/// Blocks while copying from host memory to host-visible staging array.
-	/// Only the memory transfer between staging buffer and device memory is actually async.
-	/// If device array is host-visible the operation is fully blocking.
-	template<class SrcIter1, class SrcIter2, class T, class Alloc>
-	auto copy_async(SrcIter1 src_begin, SrcIter2 src_end
-	           , vuh::ArrayIter<arr::DeviceArray<T, Alloc>> dst_begin
-	           )-> std::enable_if_t<detail::are_comparable_host_iterators<SrcIter1, SrcIter2>::value
-	                               , vuh::Fence
-	                               >
-	{
-		auto& array = dst_begin.array();
-		if(array.isHostVisible()){ // normal copy, the function blocks till the copying is complete
-			array.fromHost(src_begin, src_end, dst_begin.offset());
-			return Fence();
-		} else { // copy first to staging buffer and then async copy from staging buffer to device
-			using StageBuf = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCoherent>>;
-			auto staging = StageBuf(array.device(), src_begin, src_end); // this copy is blocking
-			return copy_async(device_begin(staging), device_end(staging), dst_begin);
-		}
-	}
+	///
+	template<class T>
+	struct CopyStageFromHost {
+		using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCoherent>>;
+		StageArray array; ///< staging buffer
 
+		template<class Iter1, class Iter2>
+		CopyStageFromHost(vuh::Device& device, Iter1 src_begin, Iter2 src_end)
+			: array(device, src_begin, src_end)
+		{}
+		auto operator()() const-> void {}
+	}; // struct CopyStageFromHost
+
+	///
 	template<class T, class IterDst>
-	struct StagedCopy{
+	struct CopyStageToHost{
 		using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCached>>;
 
 		StageArray array;      ///< staging buffer
 		IterDst    dst_begin;  ///< iterator to beginning of the host destination range
-		explicit StagedCopy(vuh::Device& device, std::size_t array_size, IterDst dst_begin)
+		explicit CopyStageToHost(vuh::Device& device, std::size_t array_size, IterDst dst_begin)
 		   : array(device, array_size), dst_begin(dst_begin)
 		{}
 
@@ -145,7 +137,29 @@ namespace vuh {
 	private:
 		std::unique_ptr<ICopy> _obj;
 	};
-	
+
+	/// Async copy data from host memory to device-local array.
+	/// Blocks while copying from host memory to host-visible staging array.
+	/// Only the memory transfer between staging buffer and device memory is actually async.
+	/// If device array is host-visible the operation is fully blocking.
+	template<class SrcIter1, class SrcIter2, class T, class Alloc>
+	auto copy_async(SrcIter1 src_begin, SrcIter2 src_end
+	           , vuh::ArrayIter<arr::DeviceArray<T, Alloc>> dst_begin
+	           )-> std::enable_if_t<detail::are_comparable_host_iterators<SrcIter1, SrcIter2>::value
+	                               , vuh::Delayed<Copy>
+	                               >
+	{
+		auto& array = dst_begin.array();
+		if(array.isHostVisible()){ // normal copy, the function blocks till the copying is complete
+			array.fromHost(src_begin, src_end, dst_begin.offset());
+			return Delayed<Copy>{Fence(), Copy::wrap(detail::Noop{})};
+		} else { // copy first to staging buffer and then async copy from staging buffer to device
+			auto stage = CopyStageFromHost<T>(array.device(), src_begin, src_end);
+			auto fence = copy_async(device_begin(stage.array), device_end(stage.array), dst_begin);
+			return Delayed<Copy>{std::move(fence), Copy::wrap(std::move(stage))};
+		}
+	}
+
 	/// Async copy data from device-local array to host.
 	template<class T, class Alloc, class DstIter>
 	auto copy_async(ArrayIter<arr::DeviceArray<T, Alloc>> src_begin
@@ -157,9 +171,9 @@ namespace vuh {
 	{
 		auto& array = src_begin.array();
 		if(!array.isHostVisible()){ // device array is not host-visible
-			auto stagedCopy = StagedCopy<T, DstIter>(array.device(), src_end - src_begin, dst_begin);
-			auto fence = copy_async(src_begin, src_end, device_begin(stagedCopy.array));
-			return Delayed<Copy>{std::move(fence), Copy::wrap(std::move(stagedCopy))};
+			auto stage = CopyStageToHost<T, DstIter>(array.device(), src_end - src_begin, dst_begin);
+			auto fence = copy_async(src_begin, src_end, device_begin(stage.array));
+			return Delayed<Copy>{std::move(fence), Copy::wrap(std::move(stage))};
 		} else { // array is host visible
 			using SrcIter = ArrayIter<arr::DeviceArray<T, Alloc>>;
 			return Delayed<Copy>{ Fence{}
