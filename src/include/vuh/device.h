@@ -33,6 +33,7 @@ namespace vuh {
 		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
 		auto computeCmdPool()-> vk::CommandPool {return _cmdpool_compute;}
 		auto computeCmdBuffer()-> vk::CommandBuffer& {return _cmdbuf_compute;}
+		auto transferCmdPool()-> vk::CommandPool;
 		auto transferCmdBuffer()-> vk::CommandBuffer&;
 		auto createPipeline(vk::PipelineLayout pipe_layout
 		                    , vk::PipelineCache pipe_cache

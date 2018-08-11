@@ -224,7 +224,12 @@ namespace vuh {
 		return allocateMemory(allocInfo);
 	}
 
-	/// @return handle to command buffer for transfer commands
+	/// @return handle to command pool for transfer command buffers
+	auto Device::transferCmdPool()-> vk::CommandPool {
+		throw "not implemented";
+	}
+
+	/// @return handle to command buffer for syncronous transfer commands
 	auto Device::transferCmdBuffer()-> vk::CommandBuffer& {
 		if(!_cmdbuf_transfer){
 			assert(!_cmdpool_transfer); // command buffer is supposed to be created together with the command pool
