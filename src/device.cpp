@@ -102,10 +102,15 @@ namespace vuh {
 	/// release resources associated with device
 	auto Device::release() noexcept-> void {
 		if(static_cast<vk::Device&>(*this)){
-			destroyCommandPool(_cmdpool_compute);
 			if(_tfr_family_id != _cmp_family_id){
+				freeCommandBuffers(_cmdpool_transfer, 1, &_cmdbuf_transfer);
 				destroyCommandPool(_cmdpool_transfer);
+			} else {
+				freeCommandBuffers(_cmdpool_compute, 1, &_cmdbuf_transfer);
 			}
+			freeCommandBuffers(_cmdpool_compute, 1, &_cmdbuf_compute);
+			destroyCommandPool(_cmdpool_compute);
+
 			vk::Device::destroy();
 		}
 	}

@@ -36,6 +36,22 @@ namespace vuh {
 	} // namespace detail
 
 	///
+	struct CopyDevice {
+		CopyDevice(const CopyDevice&) = delete;
+		auto operator= (const CopyDevice&)-> CopyDevice& = delete;
+		CopyDevice(CopyDevice&&) = default;
+		auto operator= (CopyDevice&&)-> CopyDevice& = default;
+
+		CopyDevice(vuh::Device& device);
+		~CopyDevice(){
+			device.freeCommandBuffers(device.computeCmdPool(), 1, &cmd_buffer);
+		}
+
+		vk::CommandBuffer cmd_buffer;
+		vuh::Device& device;
+	}; // struct CopyDevice
+
+	///
 	template<class T>
 	struct CopyStageFromHost {
 		using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCoherent>>;
