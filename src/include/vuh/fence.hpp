@@ -33,7 +33,7 @@ namespace vuh {
 		Delayed(): detail::ExecutionCounter<Action>(), _device{nullptr} {}
 		Delayed(vk::Fence fence, vuh::Device& device, Action action={})
 		   : vk::Fence(fence)
-		   , Action(action)
+		   , Action(std::move(action))
 		   , detail::ExecutionCounter<Action>()
 		   , _device(&device)
 		{}

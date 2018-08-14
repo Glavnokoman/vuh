@@ -35,16 +35,52 @@ namespace vuh {
 		template<class T> using is_host_iterator = decltype(_is_host_iterator<T>(0));
 	} // namespace detail
 
-	///
+	/// RAII wraper around transfer command buffer to use for async copy operation.
+	/// Satisfies Copy strategy with noop operator() for delayed action.
 	struct CopyDevice {
 		CopyDevice(const CopyDevice&) = delete;
 		auto operator= (const CopyDevice&)-> CopyDevice& = delete;
 		CopyDevice(CopyDevice&&) = default;
 		auto operator= (CopyDevice&&)-> CopyDevice& = default;
 
-		CopyDevice(vuh::Device& device);
+		///
+		CopyDevice(vuh::Device& device): device(device){
+			auto bufferAI = vk::CommandBufferAllocateInfo(device.transferCmdPool()
+			                                              , vk::CommandBufferLevel::ePrimary, 1);
+			cmd_buffer = device.allocateCommandBuffers(bufferAI)[0];
+		}
+
 		~CopyDevice(){
-			device.freeCommandBuffers(device.computeCmdPool(), 1, &cmd_buffer);
+			device.freeCommandBuffers(device.transferCmdPool(), 1, &cmd_buffer);
+		}
+
+		/// delayed operation is a noop
+		constexpr auto operator()() const-> void {}
+
+		template<class Array1, class Array2>
+		auto copy_async(ArrayIter<Array1> src_begin, ArrayIter<Array1> src_end
+		                , ArrayIter<Array2> dst_begin
+		                )-> vk::Fence
+		{
+			assert(device == dst_begin.array().device());
+			using value_type_src = typename ArrayIter<Array1>::value_type;
+			using value_type_dst = typename ArrayIter<Array2>::value_type;
+			static_assert(std::is_same<value_type_src, value_type_dst>::value
+			              , "array value types should be the same");
+			static constexpr auto tsize = sizeof(value_type_src);
+
+			cmd_buffer.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+			auto region = vk::BufferCopy(tsize*src_begin.offset(), tsize*dst_begin.offset()
+			                            , tsize*(src_end - src_begin));
+			cmd_buffer.copyBuffer(src_begin.array(), dst_begin.array(), 1, &region);
+			cmd_buffer.end();
+
+			auto queue = device.transferQueue();
+			auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buffer);
+			auto fence = device.createFence(vk::FenceCreateInfo());
+			queue.submit({submit_info}, fence);
+
+			return fence;
 		}
 
 		vk::CommandBuffer cmd_buffer;
@@ -53,26 +89,25 @@ namespace vuh {
 
 	///
 	template<class T>
-	struct CopyStageFromHost {
+	struct CopyStageFromHost: public CopyDevice {
 		using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCoherent>>;
 		StageArray array; ///< staging buffer
 
 		template<class Iter1, class Iter2>
 		CopyStageFromHost(vuh::Device& device, Iter1 src_begin, Iter2 src_end)
-			: array(device, src_begin, src_end)
+			: CopyDevice(device), array(device, src_begin, src_end)
 		{}
-		auto operator()() const-> void {}
 	}; // struct CopyStageFromHost
 
 	///
 	template<class T, class IterDst>
-	struct CopyStageToHost{
+	struct CopyStageToHost: CopyDevice {
 		using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCached>>;
 
 		StageArray array;      ///< staging buffer
 		IterDst    dst_begin;  ///< iterator to beginning of the host destination range
 		explicit CopyStageToHost(vuh::Device& device, std::size_t array_size, IterDst dst_begin)
-		   : array(device, array_size), dst_begin(dst_begin)
+		   : CopyDevice(device), array(device, array_size), dst_begin(dst_begin)
 		{}
 
 		auto operator()() const-> void {
@@ -135,30 +170,14 @@ namespace vuh {
 	template<class Array1, class Array2>
 	auto copy_async(ArrayIter<Array1> src_begin, ArrayIter<Array1> src_end
 	                , ArrayIter<Array2> dst_begin
-	                )-> vuh::Delayed<>
+	                )-> vuh::Delayed<Copy>
 	{
-		using value_type_src = typename ArrayIter<Array1>::value_type;
-		using value_type_dst = typename ArrayIter<Array2>::value_type;
-		static_assert(std::is_same<value_type_src, value_type_dst>::value
-		              , "array value types should be the same");
-		static constexpr auto tsize = sizeof(value_type_src);
-
 		auto& src_device = src_begin.array().device();
-		assert(src_device == dst_begin.array().device());
 
-		auto cmd_buf = src_device.transferCmdBuffer();
-		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-		auto region = vk::BufferCopy(tsize*src_begin.offset(), tsize*dst_begin.offset()
-		                            , tsize*(src_end - src_begin));
-		cmd_buf.copyBuffer(src_begin.array(), dst_begin.array(), 1, &region);
-		cmd_buf.end();
+		auto copyDevice = CopyDevice(src_device);
 
-		auto queue = src_device.transferQueue();
-		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
-		auto fence = src_device.createFence(vk::FenceCreateInfo());
-		queue.submit({submit_info}, fence);
-
-		return vuh::Fence(fence, src_device);
+		return Delayed<Copy>{copyDevice.copy_async(src_begin, src_end, dst_begin)
+		                    , src_device, Copy::wrap(std::move(copyDevice))};
 	}
 
 	/// Async copy data from host memory to device-local array.
@@ -178,8 +197,8 @@ namespace vuh {
 			return Delayed<Copy>{Fence(), Copy::wrap(detail::Noop{})};
 		} else { // copy first to staging buffer and then async copy from staging buffer to device
 			auto stage = CopyStageFromHost<T>(array.device(), src_begin, src_end);
-			auto fence = copy_async(device_begin(stage.array), device_end(stage.array), dst_begin);
-			return Delayed<Copy>{std::move(fence), Copy::wrap(std::move(stage))};
+			return Delayed<Copy>{stage.copy_async(device_begin(stage.array), device_end(stage.array), dst_begin)
+			                    , stage.device, Copy::wrap(std::move(stage))};
 		}
 	}
 
@@ -195,12 +214,12 @@ namespace vuh {
 		auto& array = src_begin.array();
 		if(!array.isHostVisible()){ // device array is not host-visible
 			auto stage = CopyStageToHost<T, DstIter>(array.device(), src_end - src_begin, dst_begin);
-			auto fence = copy_async(src_begin, src_end, device_begin(stage.array));
-			return Delayed<Copy>{std::move(fence), Copy::wrap(std::move(stage))};
+			return Delayed<Copy>{stage.copy_async(src_begin, src_end, device_begin(stage.array))
+			                    , array.device(), Copy::wrap(std::move(stage))};
 		} else { // array is host visible
 			using SrcIter = ArrayIter<arr::DeviceArray<T, Alloc>>;
 			return Delayed<Copy>{ Fence{}
-				                , Copy::wrap(StdCopy<SrcIter, DstIter>(src_begin, src_end, dst_begin))};
+			                    , Copy::wrap(StdCopy<SrcIter, DstIter>(src_begin, src_end, dst_begin))};
 		}
 	}
 } // namespace vuh

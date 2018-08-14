@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <limits>
 
-
 namespace {
 	/// Create logical device.
 	/// Compute and transport queue family id may point to the same queue.
