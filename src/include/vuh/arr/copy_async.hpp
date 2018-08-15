@@ -87,7 +87,7 @@ namespace vuh {
 		vuh::Device& device;
 	}; // struct CopyDevice
 
-	///
+	/// 
 	template<class T>
 	struct CopyStageFromHost: public CopyDevice {
 		using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCoherent>>;
@@ -151,11 +151,14 @@ namespace vuh {
 	/// Type erasure over movable classes providing operator()(void) const-> void.
 	class Copy {
 	public:
+		/// Takes an object of some type T, creates a CopyWrapper<T> of it on the heap
+		/// and creates an object of Copy class on top of that.
 		template<class T> 
 		static auto wrap(T&& t)-> Copy {
 			return Copy(std::make_unique<CopyWrapper<T>>(std::move(t)));
 		}
 
+		/// runs the operator() of underlying type-erased object
 		auto operator()() const-> void {
 			assert(_obj);
 			(*_obj)();
@@ -163,7 +166,7 @@ namespace vuh {
 	private:
 		explicit Copy(std::unique_ptr<ICopy>&& ptr): _obj(std::move(ptr)) {}
 	private:
-		std::unique_ptr<ICopy> _obj;
+		std::unique_ptr<ICopy> _obj; ///< doc me
 	};
 
 	/// Async copy between vuh arrays allocated on the same device
@@ -173,9 +176,7 @@ namespace vuh {
 	                )-> vuh::Delayed<Copy>
 	{
 		auto& src_device = src_begin.array().device();
-
 		auto copyDevice = CopyDevice(src_device);
-
 		return Delayed<Copy>{copyDevice.copy_async(src_begin, src_end, dst_begin)
 		                    , src_device, Copy::wrap(std::move(copyDevice))};
 	}
@@ -197,8 +198,10 @@ namespace vuh {
 			return Delayed<Copy>{Fence(), Copy::wrap(detail::Noop{})};
 		} else { // copy first to staging buffer and then async copy from staging buffer to device
 			auto stage = CopyStageFromHost<T>(array.device(), src_begin, src_end);
-			return Delayed<Copy>{stage.copy_async(device_begin(stage.array), device_end(stage.array), dst_begin)
-			                    , stage.device, Copy::wrap(std::move(stage))};
+			return Delayed<Copy>{
+				         stage.copy_async(device_begin(stage.array), device_end(stage.array), dst_begin)
+			          , stage.device, Copy::wrap(std::move(stage))
+			};
 		}
 	}
 
@@ -214,7 +217,7 @@ namespace vuh {
 		auto& array = src_begin.array();
 		if(!array.isHostVisible()){ // device array is not host-visible
 			auto stage = CopyStageToHost<T, DstIter>(array.device(), src_end - src_begin, dst_begin);
-			return Delayed<Copy>{stage.copy_async(src_begin, src_end, device_begin(stage.array))
+			return Delayed<Copy>{ stage.copy_async(src_begin, src_end, device_begin(stage.array))
 			                    , array.device(), Copy::wrap(std::move(stage))};
 		} else { // array is host visible
 			using SrcIter = ArrayIter<arr::DeviceArray<T, Alloc>>;
