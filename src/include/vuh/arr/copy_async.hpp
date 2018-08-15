@@ -40,18 +40,25 @@ namespace vuh {
 	struct CopyDevice {
 		CopyDevice(const CopyDevice&) = delete;
 		auto operator= (const CopyDevice&)-> CopyDevice& = delete;
-		CopyDevice(CopyDevice&&) = default;
-		auto operator= (CopyDevice&&)-> CopyDevice& = default;
+		CopyDevice(CopyDevice&& other): cmd_buffer(other.cmd_buffer), device(other.device) {other.device = nullptr;}
+		auto operator= (CopyDevice&& other)-> CopyDevice& {
+			using std::swap;
+			swap(cmd_buffer, other.cmd_buffer);
+			swap(device, other.device);
+			return *this;
+		}
 
 		///
-		CopyDevice(vuh::Device& device): device(device){
+		CopyDevice(vuh::Device& device): device(&device){
 			auto bufferAI = vk::CommandBufferAllocateInfo(device.transferCmdPool()
 			                                              , vk::CommandBufferLevel::ePrimary, 1);
 			cmd_buffer = device.allocateCommandBuffers(bufferAI)[0];
 		}
 
 		~CopyDevice(){
-			device.freeCommandBuffers(device.transferCmdPool(), 1, &cmd_buffer);
+			if(device){
+				device->freeCommandBuffers(device->transferCmdPool(), 1, &cmd_buffer);
+			}
 		}
 
 		/// delayed operation is a noop
@@ -60,9 +67,10 @@ namespace vuh {
 		template<class Array1, class Array2>
 		auto copy_async(ArrayIter<Array1> src_begin, ArrayIter<Array1> src_end
 		                , ArrayIter<Array2> dst_begin
-		                )-> vk::Fence
+		                )-> Delayed<>
 		{
-			assert(device == dst_begin.array().device());
+			assert(device != nullptr);
+			assert(*device == dst_begin.array().device());
 			using value_type_src = typename ArrayIter<Array1>::value_type;
 			using value_type_dst = typename ArrayIter<Array2>::value_type;
 			static_assert(std::is_same<value_type_src, value_type_dst>::value
@@ -75,16 +83,17 @@ namespace vuh {
 			cmd_buffer.copyBuffer(src_begin.array(), dst_begin.array(), 1, &region);
 			cmd_buffer.end();
 
-			auto queue = device.transferQueue();
+			auto queue = device->transferQueue();
 			auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buffer);
-			auto fence = device.createFence(vk::FenceCreateInfo());
+			auto fence = device->createFence(vk::FenceCreateInfo());
 			queue.submit({submit_info}, fence);
 
-			return fence;
+			return Delayed<>{fence, *device};
 		}
 
+	private:
 		vk::CommandBuffer cmd_buffer;
-		vuh::Device& device;
+		vuh::Device* device;
 	}; // struct CopyDevice
 
 	/// 
@@ -178,7 +187,7 @@ namespace vuh {
 		auto& src_device = src_begin.array().device();
 		auto copyDevice = CopyDevice(src_device);
 		return Delayed<Copy>{copyDevice.copy_async(src_begin, src_end, dst_begin)
-		                    , src_device, Copy::wrap(std::move(copyDevice))};
+		                    , Copy::wrap(std::move(copyDevice))};
 	}
 
 	/// Async copy data from host memory to device-local array.
@@ -200,7 +209,7 @@ namespace vuh {
 			auto stage = CopyStageFromHost<T>(array.device(), src_begin, src_end);
 			return Delayed<Copy>{
 				         stage.copy_async(device_begin(stage.array), device_end(stage.array), dst_begin)
-			          , stage.device, Copy::wrap(std::move(stage))
+			          , Copy::wrap(std::move(stage))
 			};
 		}
 	}
@@ -218,7 +227,7 @@ namespace vuh {
 		if(!array.isHostVisible()){ // device array is not host-visible
 			auto stage = CopyStageToHost<T, DstIter>(array.device(), src_end - src_begin, dst_begin);
 			return Delayed<Copy>{ stage.copy_async(src_begin, src_end, device_begin(stage.array))
-			                    , array.device(), Copy::wrap(std::move(stage))};
+			                    , Copy::wrap(std::move(stage))};
 		} else { // array is host visible
 			using SrcIter = ArrayIter<arr::DeviceArray<T, Alloc>>;
 			return Delayed<Copy>{ Fence{}
