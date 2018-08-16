@@ -3,7 +3,7 @@
 #include "array.hpp"
 #include "device.h"
 #include "utils.h"
-#include "fence.hpp"
+#include "delayed.hpp"
 
 #include <vulkan/vulkan.hpp>
 

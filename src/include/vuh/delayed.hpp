@@ -85,5 +85,6 @@ namespace vuh {
 		vuh::Device* _device;
 	}; // class Delayed
 
+	///
 	using Fence = Delayed<detail::Noop>;
 } // namespace vuh
