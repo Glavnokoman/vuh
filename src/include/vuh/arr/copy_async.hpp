@@ -40,13 +40,8 @@ namespace vuh {
 	struct CopyDevice {
 		CopyDevice(const CopyDevice&) = delete;
 		auto operator= (const CopyDevice&)-> CopyDevice& = delete;
-		CopyDevice(CopyDevice&& other): cmd_buffer(other.cmd_buffer), device(other.device) {other.device = nullptr;}
-		auto operator= (CopyDevice&& other)-> CopyDevice& {
-			using std::swap;
-			swap(cmd_buffer, other.cmd_buffer);
-			swap(device, other.device);
-			return *this;
-		}
+		CopyDevice(CopyDevice&&) = default;
+		auto operator= (CopyDevice&&)-> CopyDevice& = default;
 
 		///
 		CopyDevice(vuh::Device& device): device(&device){
@@ -69,7 +64,7 @@ namespace vuh {
 		                , ArrayIter<Array2> dst_begin
 		                )-> Delayed<>
 		{
-			assert(device != nullptr);
+			assert(device);
 			assert(*device == dst_begin.array().device());
 			using value_type_src = typename ArrayIter<Array1>::value_type;
 			using value_type_dst = typename ArrayIter<Array2>::value_type;
@@ -91,9 +86,10 @@ namespace vuh {
 			return Delayed<>{fence, *device};
 		}
 
-	private:
+	private: // data
+		struct _noop { constexpr auto operator()(vuh::Device*) noexcept-> void {} };
 		vk::CommandBuffer cmd_buffer;
-		vuh::Device* device;
+		std::unique_ptr<vuh::Device, _noop> device;
 	}; // struct CopyDevice
 
 	/// 
