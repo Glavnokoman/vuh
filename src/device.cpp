@@ -1,6 +1,7 @@
 #include <vuh/device.h>
 
 #include <cassert>
+#include <cstdint>
 #include <limits>
 
 namespace {
@@ -69,7 +70,7 @@ namespace vuh {
 	   : Device(instance, physical_device, physical_device.getQueueFamilyProperties())
 	{}
 
-	/// helper constructor
+	/// Helper constructor.
 	Device::Device(Instance& instance, vk::PhysicalDevice physdevice
 	              , const std::vector<vk::QueueFamilyProperties>& familyProperties
 	              )
@@ -77,7 +78,7 @@ namespace vuh {
 	            , getFamilyID(familyProperties, vk::QueueFlagBits::eTransfer))
 	{}
 
-	/// helper constructor
+	/// Helper constructor
 	Device::Device(Instance& instance, vk::PhysicalDevice physdevice
 	               , uint32_t computeFamilyId, uint32_t transferFamilyId
 	               )
@@ -91,6 +92,14 @@ namespace vuh {
 			_cmdpool_compute = createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
 			                                     , computeFamilyId});
 			_cmdbuf_compute = allocCmdBuffer(*this, _cmdpool_compute);
+			if(_tfr_family_id == _cmp_family_id){
+				_cmdpool_transfer = _cmdpool_compute;
+				_cmdbuf_transfer = _cmdbuf_compute;
+			} else {
+				_cmdpool_transfer = createCommandPool(
+				                 {vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _tfr_family_id});
+				_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer);
+			}
 		} catch(vk::Error&) {
 			release(); // because vk::Device does not know how to clean after itself
 			throw;
@@ -100,10 +109,13 @@ namespace vuh {
 	/// release resources associated with device
 	auto Device::release() noexcept-> void {
 		if(static_cast<vk::Device&>(*this)){
-			destroyCommandPool(_cmdpool_compute);
 			if(_tfr_family_id != _cmp_family_id){
+				freeCommandBuffers(_cmdpool_transfer, 1, &_cmdbuf_transfer);
 				destroyCommandPool(_cmdpool_transfer);
 			}
+			freeCommandBuffers(_cmdpool_compute, 1, &_cmdbuf_compute);
+			destroyCommandPool(_cmdpool_compute);
+
 			vk::Device::destroy();
 		}
 	}
@@ -186,6 +198,11 @@ namespace vuh {
 		return uint32_t(-1);
 	}
 
+	/// @return true if compute queues family is different from that for transfer queues
+	auto Device::hasSeparateQueues() const-> bool {
+		return _cmp_family_id == _tfr_family_id;
+	}
+
 	/// @return id of the queue family supporting compute operations
 	auto Device::computeQueue(uint32_t i)-> vk::Queue {
 		return getQueue(_cmp_family_id, i);
@@ -217,18 +234,9 @@ namespace vuh {
 		return allocateMemory(allocInfo);
 	}
 
-	/// @return handle to command buffer for transfer commands
-	auto Device::transferCmdBuffer()-> vk::CommandBuffer& {
-		if(!_cmdbuf_transfer){
-			assert(!_cmdpool_transfer); // command buffer is supposed to be created together with the command pool
-			if(_tfr_family_id == _cmp_family_id){
-				_cmdpool_transfer = _cmdpool_compute;
-			} else {
-				_cmdpool_transfer = createCommandPool(
-				                 {vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _tfr_family_id});
-			}
-			_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer);
-		}
-		return _cmdbuf_transfer;
-	}
+	/// @return handle to command pool for transfer command buffers
+	auto Device::transferCmdPool()-> vk::CommandPool { return _cmdpool_transfer; }
+
+	/// @return handle to command buffer for syncronous transfer commands
+	auto Device::transferCmdBuffer()-> vk::CommandBuffer& { return _cmdbuf_transfer; }
 } // namespace vuh

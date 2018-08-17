@@ -23,7 +23,7 @@ namespace properties {
 	};
 
 	/// Flags for buffer used as a staging buffer to transfer data to GPU.
-	struct HostStage {
+	struct HostCoherent {
 	   using fallback_t = Host;
 	   static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eHostVisible )
 	                                      | memflags_t(vk::MemoryPropertyFlagBits::eHostCoherent);

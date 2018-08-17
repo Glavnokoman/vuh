@@ -26,12 +26,14 @@ namespace vuh {
 		auto memoryProperties(uint32_t id) const-> vk::MemoryPropertyFlags;
 		auto selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties) const-> uint32_t;
 		auto instance() const-> const vuh::Instance& {return _instance;}
+		auto hasSeparateQueues() const-> bool;
 
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
 		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
 		auto computeCmdPool()-> vk::CommandPool {return _cmdpool_compute;}
 		auto computeCmdBuffer()-> vk::CommandBuffer& {return _cmdbuf_compute;}
+		auto transferCmdPool()-> vk::CommandPool;
 		auto transferCmdBuffer()-> vk::CommandBuffer&;
 		auto createPipeline(vk::PipelineLayout pipe_layout
 		                    , vk::PipelineCache pipe_cache

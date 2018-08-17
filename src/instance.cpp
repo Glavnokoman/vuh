@@ -2,6 +2,7 @@
 #include "vuh/device.h"
 
 #include <algorithm>
+#include <array>
 #include <iostream>
 
 using std::begin; using std::end;
@@ -10,11 +11,11 @@ using std::begin; using std::end;
 
 namespace {
 #ifndef NDEBUG
-	static const char* default_layers[] = {"VK_LAYER_LUNARG_standard_validation"};
-	static const char* default_extensions[] = {VK_EXT_DEBUG_REPORT_EXTENSION_NAME};
+	static const std::array<const char*, 1> default_layers = {"VK_LAYER_LUNARG_standard_validation"};
+	static const std::array<const char*, 1> default_extensions = {VK_EXT_DEBUG_REPORT_EXTENSION_NAME};
 #else
-	static const char* default_layers[] = {};
-	static const char* default_extensions[] = {};
+	static const std::array<const char*, 0> default_layers = {};
+	static const std::array<const char*, 0> default_extensions = {};
 #endif
 
 	/// @return true if value x can be extracted from an array with a given function
@@ -109,8 +110,6 @@ namespace {
 		                                  instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
 		if(createFN){
 			createFN(instance, &createInfo, nullptr, &ret);
-		} else {
-			std::cerr << "Could not load vkCreateDebugReportCallbackEXT\n";
 		}
 		return ret;
 	}

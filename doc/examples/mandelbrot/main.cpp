@@ -35,7 +35,7 @@ auto main()-> int {
 	program.grid(vuh::div_up(width, 32), vuh::div_up(height, 32))
           .spec(32, 32)({width, height}, mandel);   // run the kernel
 
-   write_ppm("mandelebrot.ppm", begin(mandel), width, height);
+   write_ppm("mandelebrot.ppm", mandel.data(), width, height);
 
    return 0;
 }

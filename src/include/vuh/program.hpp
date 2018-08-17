@@ -3,6 +3,7 @@
 #include "array.hpp"
 #include "device.h"
 #include "utils.h"
+#include "delayed.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -94,6 +95,11 @@ namespace vuh {
 				queue.submit({submitInfo}, fence);
 				_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
 				_device.destroyFence(fence);
+			}
+
+			/// doc me
+			auto run_async()-> vuh::Fence {
+				throw "not implemented";
 			}
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
@@ -349,6 +355,12 @@ namespace vuh {
 		auto operator()(const Params& params, Arrs&... args)-> void {
 			bind(params, args...);
 			Base::run();
+		}
+
+		/// doc me
+		template<class... Arrs>
+		auto run_async(const Params& params, Arrs&&... args)-> vuh::Fence {
+			throw "not implemented";
 		}
 	private: // helpers
 		/// Set up the state of the kernel that depends on number and types of bound array parameters

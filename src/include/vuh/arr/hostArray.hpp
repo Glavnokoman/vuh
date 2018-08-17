@@ -1,6 +1,7 @@
 #pragma once
 
 #include "basicArray.hpp"
+#include "arrayIter.hpp"
 
 #include <algorithm>
 
@@ -17,15 +18,16 @@ template<class T, class Alloc>
 class HostArray: public BasicArray<Alloc> {
 	using Base = BasicArray<Alloc>;
 public:
+	using value_type = T;
 	/// Construct object of the class on given device.
 	/// Memory is not initialized with any data.
 	HostArray(vuh::Device& device  ///< device to create array on
 	          , size_t n_elements  ///< number of elements
 	          , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
 	          , vk::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
-	                                                                                     )
+	          )
 	   : BasicArray<Alloc>(device, n_elements*sizeof(T), flags_memory, flags_buffer)
-	   , _ptr(static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T))))
+	   , _data(static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T))))
 	   , _size(n_elements)
 	{}
 
@@ -55,31 +57,51 @@ public:
 	}
 
    /// Move constructor.
-   HostArray(HostArray&& o): Base(std::move(o)), _ptr(o._ptr), _size(o._size) {o._ptr = nullptr;}
+   HostArray(HostArray&& o): Base(std::move(o)), _data(o._data), _size(o._size) {o._data = nullptr;}
 	/// Move operator.
    auto operator=(HostArray&& o)-> HostArray& {
-      using std::swap;
-      swap(*this, static_cast<Base&>(o));
-      swap(_ptr, o._ptr);
-      swap(_size, o._size);
+		this->swap(o);
+		return *this;
    }
    
    /// Destroy array, and release all associated resources.
    ~HostArray() noexcept {
-      if(_ptr) {
+      if(_data) {
          Base::_dev.unmapMemory(Base::_mem);
       }
    }
+
+	/// doc me
+	auto swap(HostArray& o) noexcept-> void {
+		using std::swap;
+		swap(static_cast<Base&>(*this), static_cast<Base&>(o));
+      swap(_data, o._data);
+      swap(_size, o._size);
+	}
    
-   /// Iterator (forward) to start of array values.
-   auto begin()-> T* { return _ptr; }
-   auto begin() const-> const T* { return _ptr;}
+   /// Host-accesible iterator to beginning of array data
+	auto begin()-> value_type* { return _data; }
+	auto begin() const-> const value_type* { return _data; }
    
-   /// Iterator to the end (one past the last element) of array values.
-   auto end()-> T* { return begin() + size(); }
-   auto end() const-> const T* { return begin() + size();}
-   
-   /// Element access operator.
+	/// Pointer (host) to beginning of array data
+	auto data()-> T* {return _data;}
+	auto data() const-> const T* {return _data;}
+
+   /// Host-accessible iterator to the end (one past the last element) of array data.
+	auto end()-> value_type* { return begin() + size(); }
+	auto end() const-> const value_type* { return begin() + size(); }
+
+	///
+	auto device_begin()-> ArrayIter<HostArray> { return ArrayIter<HostArray>(*this, 0);}
+	auto device_begin() const-> ArrayIter<HostArray> { return ArrayIter<HostArray>(*this, 0);}
+	friend auto device_begin(HostArray& a)-> ArrayIter<HostArray> {return a.device_begin();}
+	
+	///
+	auto device_end()-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, _size);}
+	auto device_end() const-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, _size);}
+	friend auto device_end(HostArray& a)-> ArrayIter<HostArray> {return a.device_end();}
+
+   /// Element access operator (host-side).
    auto operator[](size_t i)-> T& { return *(begin() + i);}
    auto operator[](size_t i) const-> T { return *(begin() + i);}
    
@@ -90,7 +112,7 @@ public:
    /// (not the size of actually allocated chunk, which may be a bit bigger).
    auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
 private: // data
-   T* _ptr;       ///< host accessible pointer to the beginning of corresponding memory chunk.
+   T* _data;       ///< host accessible pointer to the beginning of corresponding memory chunk.
    size_t _size;  ///< Number of elements. Actual allocated memory may be a bit bigger then necessary.
 }; // class HostArray
 } // namespace arr

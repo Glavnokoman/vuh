@@ -17,4 +17,4 @@ cget install ${CGET_PREFIX}/src/vulkan-loader -DBUILD_WSI_WAYLAND_SUPPORT=OFF -D
 git clone --branch 6.2.2596 --depth 1 --recurse-submodules https://github.com/KhronosGroup/glslang.git ${CGET_PREFIX}/src/glslang
 cget install ${CGET_PREFIX}/src/glslang -DENABLE_HLSL=OFF -DENABLE_AMD_EXTENSIONS=OFF -DENABLE_NV_EXTENSIONS=OFF -DENABLE_OPT=OFF
 
-cget install catchorg/Catch2@v2.2.2 -DNO_SELFTEST=ON
+cget install catchorg/Catch2@v2.3.0 -DBUILD_TESTING=OFF

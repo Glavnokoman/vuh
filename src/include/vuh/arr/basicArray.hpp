@@ -51,6 +51,14 @@ public:
 		static_cast<vk::Buffer&>(other) = nullptr;
 	}
 
+	/// @return reference to device on which underlying buffer is allocated
+	auto device()-> vuh::Device& { return _dev; }
+
+	/// doc me
+	auto isHostVisible() const-> bool {
+		return bool(_flags & vk::MemoryPropertyFlagBits::eHostVisible);
+	}
+
 	/// Move assignment. Resources associated with current array are released immidiately and not when moved from
 	/// object goes out of scope.
 	auto operator= (BasicArray&& other) noexcept-> BasicArray& {
@@ -61,12 +69,12 @@ public:
 	}
 	
 	/// swap the guts of two basic arrays
-	friend auto swap(BasicArray& a1, BasicArray& a2) noexcept-> void {
+	auto swap(BasicArray& other) noexcept-> void {
 		using std::swap;
-		swap(a1, static_cast<vk::Buffer&>(a2));
-		swap(a1._mem, a2._mem);
-		swap(a1._flags, a2._flags);
-		swap(a1._dev, a2._dev);
+		swap(static_cast<vk::Buffer&>(&this), static_cast<vk::Buffer&>(other));
+		swap(_mem, other._mem);
+		swap(_flags, other._flags);
+		swap(_dev, other._dev);
 	}
 private: // helpers
 	/// release resources associated with current BasicArray object
