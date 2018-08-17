@@ -14,3 +14,4 @@ Features listed are in no particular order.
 - header generation from shaders
 - better integration/data exchange with graphic pipelines
 - compile for CPU-only environments
+- Python interface

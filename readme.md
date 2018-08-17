@@ -54,6 +54,7 @@ void main(){
 - storage buffers as ```vuh::Array<T>```
    + allocated in device-local, host-visible or device-local-host-visible memories
    + sync data exchange with host
+   + async device-device and partially async host-device data exchange with host synchronization  
 - compute shaders as ```vuh::Program```
    + buffers binding (passing arbitrary number of array parameters)
    + specialization constants (to set workgroup dimensions, etc...)

@@ -104,7 +104,4 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 			REQUIRE(host_data_tst == host_data);
 		}
 	}
-//	SECTION("device-local host-visible (unified) memory"){
-//		}
-//	}
 }
