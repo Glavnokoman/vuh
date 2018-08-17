@@ -78,7 +78,7 @@ namespace vuh {
 			{}
 		}; // struct CopyStageFromHost
 
-		///
+		/// doc me
 		template<class T, class IterDst>
 		struct CopyStageToHost: CopyDevice {
 			using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCached>>;
@@ -95,6 +95,7 @@ namespace vuh {
 			}
 		}; // struct StagedCopy
 
+		/// doc me
 		template<class IterSrc, class IterDst>
 		struct StdCopy {
 			IterSrc src_begin, src_end;
@@ -128,7 +129,6 @@ namespace vuh {
 		};
 	} // namespace detail
 
-
 	/// Type erasure over movable classes providing operator()(void) const-> void.
 	class Copy {
 	public:
@@ -150,14 +150,14 @@ namespace vuh {
 		std::unique_ptr<detail::ICopy> _obj; ///< doc me
 	};
 
-	/// Async copy between vuh arrays allocated on the same device
+	/// Async copy between arrays allocated on the same device
 	template<class Array1, class Array2>
 	auto copy_async(ArrayIter<Array1> src_begin, ArrayIter<Array1> src_end
 	                , ArrayIter<Array2> dst_begin
 	                )-> vuh::Delayed<Copy>
 	{
 		auto& src_device = src_begin.array().device();
-		auto copyDevice = CopyDevice(src_device);
+		auto copyDevice = detail::CopyDevice(src_device);
 		return Delayed<Copy>{copyDevice.copy_async(src_begin, src_end, dst_begin)
 		                    , Copy::wrap(std::move(copyDevice))};
 	}

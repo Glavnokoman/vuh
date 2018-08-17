@@ -20,6 +20,37 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 	auto instance = vuh::Instance();
 	auto device = instance.devices().at(0);
 
+	SECTION("in-device async copy from host-visible to device-local"){
+		auto array_src = vuh::Array<float, vuh::mem::HostCoherent>(device, arr_size);
+		std::copy(begin(host_data), end(host_data), begin(array_src));
+
+		SECTION("explicit fence"){
+			auto array_dst = vuh::Array<float, vuh::mem::Device>(device, arr_size);
+			auto fence = vuh::copy_async(device_begin(array_src), device_end(array_src)
+			                             , device_begin(array_dst));
+			fence.wait();
+			REQUIRE(array_dst.toHost<std::vector<float>>() == host_data);
+		}
+		SECTION("scoped"){
+			auto array_dst = vuh::Array<float, vuh::mem::Device>(device, arr_size);
+			{
+				auto fence = vuh::copy_async(device_begin(array_src), device_end(array_src)
+				                             , device_begin(array_dst));
+			}
+			REQUIRE(array_dst.toHost<std::vector<float>>() == host_data);
+		}
+		SECTION("copy 2 halves, scoped"){
+			const auto chunk_size = arr_size/2;
+			auto array_dst = vuh::Array<float, vuh::mem::Device>(device, arr_size);
+			{
+				auto f1 = vuh::copy_async(device_begin(array_src), device_begin(array_src) + chunk_size
+				                          , device_begin(array_dst));
+				auto f2 = vuh::copy_async(device_begin(array_src) + chunk_size, device_end(array_src)
+				                          , device_begin(array_dst) + chunk_size);
+			}
+			REQUIRE(array_dst.toHost<std::vector<float>>() == host_data);
+		}
+	}
 	SECTION("device-local memory to/from host"){
 		SECTION("async copy from host. explicit wait()"){
 			auto array = vuh::Array<float, vuh::mem::Device>(device, arr_size);
@@ -72,9 +103,6 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 			}
 			REQUIRE(host_data_tst == host_data);
 		}
-	}
-	SECTION("device-local memory to/from host-visible"){
-
 	}
 //	SECTION("device-local host-visible (unified) memory"){
 //		}
