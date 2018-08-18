@@ -222,6 +222,17 @@ namespace vuh {
 		
 	}
 
+	/// Detach the current compute command buffer for sync operations and create the new one.
+	/// @return the old buffer handle
+	auto Device::releaseComputeCmdBuffer()-> vk::CommandBuffer {
+		auto new_buffer = allocCmdBuffer(*this, _cmdpool_compute);
+		std::swap(new_buffer, _cmdbuf_compute);
+		if(_tfr_family_id == _cmp_family_id){
+			_cmdbuf_transfer = _cmdbuf_compute;
+		}
+		return new_buffer;
+	}
+
 	/// @return i-th queue in the family supporting transfer commands.
 	auto Device::transferQueue(uint32_t i)-> vk::Queue {
 		return getQueue(_tfr_family_id, i);

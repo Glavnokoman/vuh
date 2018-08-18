@@ -79,6 +79,37 @@ namespace vuh {
 			return r;
 		}
 
+		/// doc me
+		struct Compute {
+			explicit Compute(vuh::Device& device, vk::CommandBuffer buffer)
+			   : device(&device)
+			   , cmd_buffer(buffer)
+			{}
+
+			Compute(const Compute&) = delete;
+			auto operator= (const Compute&)-> Compute& = delete;
+			Compute(Compute&&) = default;
+			auto operator= (Compute&& o)-> Compute& {
+				release();
+				cmd_buffer = o.cmd_buffer;
+				device = std::move(o.device);
+			}
+
+			///
+			auto release() noexcept-> void {
+				if(device){
+					device->freeCommandBuffers(device->computeCmdPool(), 1, &cmd_buffer);
+				}
+			}
+
+			///
+			constexpr auto operator()() noexcept-> void {}
+		private:
+			struct _noop { constexpr auto operator()(vuh::Device*) noexcept-> void {} };
+			vk::CommandBuffer cmd_buffer;
+			std::unique_ptr<vuh::Device, _noop> device;
+		}; // struct Compute
+
 		/// Program base functionality.
 		/// Initializes and keeps most state variables, and array argument handling building blocks.
 		class ProgramBase {
@@ -98,8 +129,16 @@ namespace vuh {
 			}
 
 			/// doc me
-			auto run_async()-> vuh::Fence {
-				throw "not implemented";
+			auto run_async()-> vuh::Delayed<Compute> {
+				auto buffer = _device.releaseComputeCmdBuffer();
+				auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &buffer); // submit a single command buffer
+
+				// submit the command buffer to the queue and set up a fence.
+				auto queue = _device.computeQueue();
+				auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+				queue.submit({submitInfo}, fence);
+
+				return Delayed<Compute>{fence, _device, Compute(_device, buffer)};
 			}
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
@@ -297,14 +336,6 @@ namespace vuh {
 				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
 			}
 		}; // class SpecsBase
-
-		/// doc me
-		struct Compute {
-		private:
-			struct _noop { constexpr auto operator()(vuh::Device*) noexcept-> void {} };
-			vk::CommandBuffer cmd_buffer;
-			std::unique_ptr<vuh::Device, _noop> device;
-		}; // struct Compute
 	} // namespace detail
 
 	/// Actually runnable entity. Before array parameters are bound (and program run)
@@ -312,7 +343,7 @@ namespace vuh {
 	/// they should be set before that too.
 	template<class Specs=typelist<>, class Params=typelist<>> class Program;
 
-	/// specialization to with non-empty specialization constants and push constants
+	/// Specialization to with non-empty specialization constants and push constants.
 	template<template<class...> class Specs, class... Specs_Ts , class Params>
 	class Program<Specs<Specs_Ts...>, Params>: public detail::SpecsBase<Specs<Specs_Ts...>> {
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;
@@ -368,8 +399,9 @@ namespace vuh {
 
 		/// doc me
 		template<class... Arrs>
-		auto run_async(const Params& params, Arrs&&... args)-> vuh::Fence {
-			throw "not implemented";
+		auto run_async(const Params& params, Arrs&&... args)-> vuh::Delayed<detail::Compute> {
+			bind(params, args...);
+			return Base::run_async();
 		}
 	private: // helpers
 		/// Set up the state of the kernel that depends on number and types of bound array parameters
@@ -390,7 +422,7 @@ namespace vuh {
 		}
 	}; // class Program
 
-	/// specialization with non-empty specialization constants and empty push constants
+	/// Specialization with non-empty specialization constants and empty push constants.
 	template<template<class...> class Specs, class... Specs_Ts>
 	class Program<Specs<Specs_Ts...>, typelist<>>: public detail::SpecsBase<Specs<Specs_Ts...>>{
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;

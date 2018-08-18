@@ -41,6 +41,7 @@ namespace vuh {
 		                    , vk::PipelineCreateFlags flags={}
 		                    )-> vk::Pipeline;
 		auto instance()-> vuh::Instance& { return _instance; }
+		auto releaseComputeCmdBuffer()-> vk::CommandBuffer;
 		
 	private: // helpers
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice

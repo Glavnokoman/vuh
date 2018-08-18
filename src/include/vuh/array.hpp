@@ -2,6 +2,7 @@
 
 #include "arr/arrayProperties.h"
 #include "arr/arrayIter.hpp"
+#include "arr/arrayView.hpp"
 #include "arr/deviceArray.hpp"
 #include "arr/hostArray.hpp"
 
