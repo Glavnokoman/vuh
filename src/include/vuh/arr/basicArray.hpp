@@ -15,8 +15,9 @@ namespace arr {
 /// Keeps the data, handles initialization, copy/move, common interface, binding memory to buffer objects, etc...
 template<class Alloc>
 class BasicArray: public vk::Buffer {
+	static constexpr auto descriptor_flags = vk::BufferUsageFlagBits::eStorageBuffer;
 public:
-	static constexpr auto descriptor_class = vk::BufferUsageFlagBits::eStorageBuffer;
+	static constexpr auto descriptor_class = vk::DescriptorType::eStorageBuffer;
 
 	/// Construct SBO array of given size in device memory
 	BasicArray(vuh::Device& device                     ///< device to allocate array
@@ -24,7 +25,7 @@ public:
 	           , vk::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
 	           , vk::BufferUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
 	           )
-	   : vk::Buffer(Alloc::makeBuffer(device, size_bytes, descriptor_class | usage))
+	   : vk::Buffer(Alloc::makeBuffer(device, size_bytes, descriptor_flags | usage))
 	   , _dev(device)
    {
       try{
@@ -51,10 +52,13 @@ public:
 		static_cast<vk::Buffer&>(other) = nullptr;
 	}
 
+	/// @return underlying buffer
+	auto buffer()-> vk::Buffer { return *this; }
+
 	/// @return reference to device on which underlying buffer is allocated
 	auto device()-> vuh::Device& { return _dev; }
 
-	/// doc me
+	/// @return true if array is host-visible, ie can expose its data via a normal host pointer.
 	auto isHostVisible() const-> bool {
 		return bool(_flags & vk::MemoryPropertyFlagBits::eHostVisible);
 	}

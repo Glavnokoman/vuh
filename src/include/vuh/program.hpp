@@ -14,16 +14,19 @@
 
 namespace vuh {
 	namespace detail {
+
 		/// Traits to map array type to descriptor type
-		template<class T> struct DictTypeToDsc;
-
-		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::DeviceArray<T, Alloc>>{
-			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
+		template<class T> struct DictTypeToDsc {
+			static constexpr auto value = T::descriptor_class;
 		};
 
-		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::HostArray<T, Alloc>>{
-			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
-		};
+//		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::DeviceArray<T, Alloc>>{
+//			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
+//		};
+
+//		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::HostArray<T, Alloc>>{
+//			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
+//		};
 
 		/// @return tuple element offset
 		template<size_t Idx, class T>
@@ -240,7 +243,7 @@ namespace vuh {
 				assert(_pipeline); /// pipeline supposed to be initialized before this
 
 				constexpr auto N = sizeof...(arrs);
-				auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{arrs, 0, arrs.size_bytes()}... }}; // 0 is the offset here
+				auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{arrs.buffer(), 0, arrs.size_bytes()}... }}; // 0 is the offset here
 				auto write_dscsets = dscinfos2writesets(_dscset, dscinfos
 				                                                , std::make_index_sequence<N>{});
 				_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
