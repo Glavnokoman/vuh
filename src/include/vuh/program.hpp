@@ -194,7 +194,8 @@ namespace vuh {
 				_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
 			}
 
-			/// Starts writing the command buffer, binds a pipeline and a descriptor set.
+			/// Starts writing to the device's compute command buffer.
+			/// Binds a pipeline and a descriptor set.
 			template<class... Arrs>
 			auto command_buffer_begin(Arrs&... arrs)-> void {
 				assert(_pipeline); /// pipeline supposed to be initialized before this
@@ -296,6 +297,14 @@ namespace vuh {
 				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
 			}
 		}; // class SpecsBase
+
+		/// doc me
+		struct Compute {
+		private:
+			struct _noop { constexpr auto operator()(vuh::Device*) noexcept-> void {} };
+			vk::CommandBuffer cmd_buffer;
+			std::unique_ptr<vuh::Device, _noop> device;
+		}; // struct Compute
 	} // namespace detail
 
 	/// Actually runnable entity. Before array parameters are bound (and program run)
