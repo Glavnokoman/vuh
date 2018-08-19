@@ -42,8 +42,8 @@ namespace vuh {
 
 		auto operator= (Delayed&& other) noexcept-> Delayed& {
 			release();
-			vk::Fence(std::move(other));
-			Action(std::move(other));
+			static_cast<vk::Fence&>(*this) = std::move(static_cast<vk::Fence&>(other));
+			static_cast<Action&>(*this) = std::move(static_cast<Action&>(other));
 			_device = std::move(other._device);
 			return *this;
 		}
