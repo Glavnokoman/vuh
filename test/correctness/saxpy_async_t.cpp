@@ -12,8 +12,11 @@ using test::approx;
 
 TEST_CASE("data transfer and computation interleaved. sync host side.", "[correctness][async]"){
 	constexpr auto arr_size = 128;
+	const auto tile_size = arr_size/2;
+
 	auto y = std::vector<float>(arr_size, 1.0f);
 	auto x = std::vector<float>(arr_size, 2.0f);
+	std::fill(begin(x) + tile_size, end(x), 4.0);
 	const auto a = 0.1f; // saxpy scaling constant
 
 	auto out_ref = y;
@@ -28,7 +31,6 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 	auto d_x = vuh::Array<float>(device, arr_size);
 
 	const auto grid_x = 32;
-	const auto tile_size = arr_size/2;
 
 //	auto cap = device.hasSeparateQueues(); // check if compute queues family is same as transfer queues
 	SECTION("3-phase saxpy. default queues. verbose."){

@@ -241,7 +241,10 @@ namespace vuh {
 
 				constexpr auto N = sizeof...(arrs);
 				auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{
-					                           {{arrs.buffer(), arrs.offset(), arrs.size_bytes()}... }};
+					                           {{arrs.buffer()
+				                               , arrs.offset()*sizeof(typename Arrs::value_type)
+				                               , arrs.size_bytes()}... }
+				                };
 				auto write_dscsets = dscinfos2writesets(_dscset, dscinfos
 				                                       , std::make_index_sequence<N>{});
 				_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
