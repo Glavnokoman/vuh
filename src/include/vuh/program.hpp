@@ -76,8 +76,8 @@ namespace vuh {
 		}
 
 		/// Data part of for Compute class
-		struct ComputeData {
-			ComputeData(vuh::Device& device, vk::CommandBuffer buffer)
+		struct ComputeBuffer {
+			ComputeBuffer(vuh::Device& device, vk::CommandBuffer buffer)
 			   : cmd_buffer(buffer), device(&device){}
 
 			auto release() noexcept-> void {
@@ -85,16 +85,17 @@ namespace vuh {
 					device->freeCommandBuffers(device->computeCmdPool(), 1, &cmd_buffer);
 				}
 			}
+		public: // data
 			vk::CommandBuffer cmd_buffer; ///< command buffer to submit async computation commands
 			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; /// underlying device
 		}; // struct ComputeData
 
 		/// Helper class for use as a Delayed<> parameter extending the lifetime of the command
 		/// buffer and a noop triggered action.
-		struct Compute: private util::Resource<ComputeData> {
+		struct Compute: private util::Resource<ComputeBuffer> {
 			/// Constructor
 			explicit Compute(vuh::Device& device, vk::CommandBuffer buffer)
-			   : Resource<ComputeData>(device, std::move(buffer))
+			   : Resource<ComputeBuffer>(device, std::move(buffer))
 			{}
 
 			/// Noop. Action to be triggered when the fence is signaled.
