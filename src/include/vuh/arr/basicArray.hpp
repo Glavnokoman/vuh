@@ -55,6 +55,9 @@ public:
 	/// @return underlying buffer
 	auto buffer()-> vk::Buffer { return *this; }
 
+	/// doc me
+	auto offset() const-> std::size_t { return 0;}
+
 	/// @return reference to device on which underlying buffer is allocated
 	auto device()-> vuh::Device& { return _dev; }
 

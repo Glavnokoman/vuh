@@ -243,9 +243,10 @@ namespace vuh {
 				assert(_pipeline); /// pipeline supposed to be initialized before this
 
 				constexpr auto N = sizeof...(arrs);
-				auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{arrs.buffer(), 0, arrs.size_bytes()}... }}; // 0 is the offset here
+				auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{
+					                           {{arrs.buffer(), arrs.offset(), arrs.size_bytes()}... }};
 				auto write_dscsets = dscinfos2writesets(_dscset, dscinfos
-				                                                , std::make_index_sequence<N>{});
+				                                       , std::make_index_sequence<N>{});
 				_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 				// Start recording commands into the newly allocated command buffer.
