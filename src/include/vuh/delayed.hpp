@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <vuh/device.h>
-#include <vuh/movable.hpp>
+#include <vuh/resource.hpp>
 
 #include <cassert>
 
