@@ -20,14 +20,6 @@ namespace vuh {
 			static constexpr auto value = T::descriptor_class;
 		};
 
-//		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::DeviceArray<T, Alloc>>{
-//			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
-//		};
-
-//		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::HostArray<T, Alloc>>{
-//			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
-//		};
-
 		/// @return tuple element offset
 		template<size_t Idx, class T>
 		constexpr auto tuple_element_offset(const T& tup)-> std::size_t {
@@ -89,13 +81,18 @@ namespace vuh {
 			   , cmd_buffer(buffer)
 			{}
 
+			~Compute() noexcept {
+				release();
+			}
+
 			Compute(const Compute&) = delete;
 			auto operator= (const Compute&)-> Compute& = delete;
 			Compute(Compute&&) = default;
-			auto operator= (Compute&& o)-> Compute& {
+			auto operator= (Compute&& o) noexcept-> Compute& {
 				release();
 				cmd_buffer = o.cmd_buffer;
 				device = std::move(o.device);
+				return *this;
 			}
 
 			///
