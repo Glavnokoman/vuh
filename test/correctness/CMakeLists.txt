@@ -16,7 +16,7 @@ endfunction()
 add_catch_test(test_vuh
 	array_async_t.cpp
 	array_t.cpp
-	saxpy_async_t.cpp
+	# saxpy_async_t.cpp
 	saxpy_sync_t.cpp
 )
 target_link_libraries(test_vuh PRIVATE vuh)

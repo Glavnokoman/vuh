@@ -4,6 +4,7 @@
 #include "device.h"
 #include "utils.h"
 #include "delayed.hpp"
+#include "commandBuffer.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -74,40 +75,30 @@ namespace vuh {
 			return r;
 		}
 
-		/// doc me
-		struct Compute {
-			explicit Compute(vuh::Device& device, vk::CommandBuffer buffer)
-			   : device(&device)
-			   , cmd_buffer(buffer)
-			{}
+		/// Data part of for Compute class
+		struct ComputeData {
+			ComputeData(vuh::Device& device, vk::CommandBuffer buffer)
+			   : cmd_buffer(buffer), device(&device){}
 
-			~Compute() noexcept {
-				release();
-			}
-
-			Compute(const Compute&) = delete;
-			auto operator= (const Compute&)-> Compute& = delete;
-			Compute(Compute&&) = default;
-			auto operator= (Compute&& o) noexcept-> Compute& {
-				release();
-				cmd_buffer = o.cmd_buffer;
-				device = std::move(o.device);
-				return *this;
-			}
-
-			///
 			auto release() noexcept-> void {
 				if(device){
 					device->freeCommandBuffers(device->computeCmdPool(), 1, &cmd_buffer);
 				}
 			}
+			vk::CommandBuffer cmd_buffer; ///< command buffer to submit async computation commands
+			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; /// underlying device
+		}; // struct ComputeData
 
-			///
+		/// Helper class for use as a Delayed<> parameter extending the lifetime of the command
+		/// buffer and a noop triggered action.
+		struct Compute: private util::Resource<ComputeData> {
+			/// Constructor
+			explicit Compute(vuh::Device& device, vk::CommandBuffer buffer)
+			   : Resource<ComputeData>(device, std::move(buffer))
+			{}
+
+			/// Noop. Action to be triggered when the fence is signaled.
 			constexpr auto operator()() noexcept-> void {}
-		private:
-			struct _noop { constexpr auto operator()(vuh::Device*) noexcept-> void {} };
-			vk::CommandBuffer cmd_buffer;
-			std::unique_ptr<vuh::Device, _noop> device;
 		}; // struct Compute
 
 		/// Program base functionality.

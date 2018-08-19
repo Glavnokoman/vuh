@@ -12,7 +12,8 @@ namespace vuh {
 namespace arr {
 
 /// Covers basic array functionality. Wraps the SBO buffer.
-/// Keeps the data, handles initialization, copy/move, common interface, binding memory to buffer objects, etc...
+/// Keeps the data, handles initialization, copy/move, common interface,
+/// binding memory to buffer objects, etc...
 template<class Alloc>
 class BasicArray: public vk::Buffer {
 	static constexpr auto descriptor_flags = vk::BufferUsageFlagBits::eStorageBuffer;
@@ -55,7 +56,8 @@ public:
 	/// @return underlying buffer
 	auto buffer()-> vk::Buffer { return *this; }
 
-	/// doc me
+	/// @return offset of the current buffer from the beginning of associated device memory.
+	/// For arrays managing their own memory this is always 0.
 	auto offset() const-> std::size_t { return 0;}
 
 	/// @return reference to device on which underlying buffer is allocated

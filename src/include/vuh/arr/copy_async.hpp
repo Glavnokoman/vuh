@@ -3,6 +3,7 @@
 #include "arrayIter.hpp"
 #include <vuh/delayed.hpp>
 #include <vuh/traits.hpp>
+#include <vuh/commandBuffer.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -10,25 +11,11 @@
 
 namespace vuh {
 	namespace detail {
+
 		/// RAII wraper around transfer command buffer to use for async copy operation.
 		/// Satisfies Copy strategy with noop operator() for delayed action.
-		struct CopyDevice {
-			CopyDevice(const CopyDevice&) = delete;
-			auto operator= (const CopyDevice&)-> CopyDevice& = delete;
-			CopyDevice(CopyDevice&&) = default;
-			auto operator= (CopyDevice&&)-> CopyDevice& = default;
-			///
-			CopyDevice(vuh::Device& device): device(&device){
-				auto bufferAI = vk::CommandBufferAllocateInfo(device.transferCmdPool()
-				                                              , vk::CommandBufferLevel::ePrimary, 1);
-				cmd_buffer = device.allocateCommandBuffers(bufferAI)[0];
-			}
-
-			~CopyDevice(){
-				if(device){
-					device->freeCommandBuffers(device->transferCmdPool(), 1, &cmd_buffer);
-				}
-			}
+		struct CopyDevice: private CmdBuffer {
+			CopyDevice(vuh::Device& device): CmdBuffer(device){}
 
 			/// delayed operation is a noop
 			constexpr auto operator()() const-> void {}
@@ -59,11 +46,6 @@ namespace vuh {
 
 				return Delayed<>{fence, *device};
 			}
-
-		private: // data
-			struct _noop { constexpr auto operator()(vuh::Device*) noexcept-> void {} };
-			vk::CommandBuffer cmd_buffer;
-			std::unique_ptr<vuh::Device, _noop> device;
 		}; // struct CopyDevice
 
 		///
@@ -176,7 +158,7 @@ namespace vuh {
 		auto& array = dst_begin.array();
 		if(array.isHostVisible()){ // normal copy, the function blocks till the copying is complete
 			array.fromHost(src_begin, src_end, dst_begin.offset());
-			return Delayed<Copy>{Fence(), Copy::wrap(detail::Noop{})};
+			return Delayed<Copy>{array.device(), Copy::wrap(detail::Noop{})};
 		} else { // copy first to staging buffer and then async copy from staging buffer to device
 			auto stage = detail::CopyStageFromHost<T>(array.device(), src_begin, src_end);
 			return Delayed<Copy>{
@@ -202,7 +184,7 @@ namespace vuh {
 			                    , Copy::wrap(std::move(stage))};
 		} else { // array is host visible
 			using SrcIter = ArrayIter<arr::DeviceArray<T, Alloc>>;
-			return Delayed<Copy>{ Fence{}
+			return Delayed<Copy>{ array.device()
 			                    , Copy::wrap(detail::StdCopy<SrcIter, DstIter>(src_begin, src_end, dst_begin))};
 		}
 	}
