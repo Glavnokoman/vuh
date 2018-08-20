@@ -37,10 +37,13 @@ namespace vuh {
 			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< device holding the buffer
 		}; // struct _CmdBuffer
 
+		/// Movable command buffer class.
 		using CmdBuffer = util::Resource<_CmdBuffer>;
 
-		/// RAII wraper around transfer command buffer to use for async copy operation.
-		/// Satisfies Copy strategy with noop operator() for delayed action.
+		/// Implements the actual async copy between two device buffers.
+		/// Owns the transient transfer command buffer.
+		/// Used to keep that alive till async copy is over.
+		/// The delayed action associated with operator() is a noop.
 		struct CopyDevice: private CmdBuffer {
 			CopyDevice(vuh::Device& device): CmdBuffer(device){}
 
@@ -75,36 +78,43 @@ namespace vuh {
 			}
 		}; // struct CopyDevice
 
-		///
+		/// Keeps the staging array and transfer command buffer alive till async copy completes.
+		/// Delayed action is a noop.
+		/// At construction copies the data from host to the staging buffer.
 		template<class T>
 		struct CopyStageFromHost: public CopyDevice {
 			using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCoherent>>;
 			StageArray array; ///< staging buffer
 
+			/// Constructor. Copies data from host to the internal staging buffer.
 			template<class Iter1, class Iter2>
 			CopyStageFromHost(vuh::Device& device, Iter1 src_begin, Iter2 src_end)
 				: CopyDevice(device), array(device, src_begin, src_end)
 			{}
 		}; // struct CopyStageFromHost
 
-		/// doc me
+		/// Keeps the staging buffer and the transfer command buffer alive till async copy completes.
+		/// Delayed action copies data from staging buffer to the host.
 		template<class T, class IterDst>
 		struct CopyStageToHost: CopyDevice {
 			using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCached>>;
-
 			StageArray array;      ///< staging buffer
 			IterDst    dst_begin;  ///< iterator to beginning of the host destination range
+
+			/// Constructor.
 			explicit CopyStageToHost(vuh::Device& device, std::size_t array_size, IterDst dst_begin)
 			   : CopyDevice(device), array(device, array_size), dst_begin(dst_begin)
 			{}
 
+			/// Delayed action. Copies data from staging buffer to the host.
 			auto operator()() const-> void {
 				using std::begin; using std::end;
 				std::copy(begin(array), end(array), dst_begin);
 			}
 		}; // struct StagedCopy
 
-		/// doc me
+		/// Delayed action copies data from host-visible device buffer to host.
+		/// Buffer is expected to exist till the copy is complete.
 		template<class IterSrc, class IterDst>
 		struct StdCopy {
 			IterSrc src_begin, src_end;
@@ -148,7 +158,8 @@ namespace vuh {
 			return Copy(std::make_unique<detail::CopyWrapper<T>>(std::move(t)));
 		}
 
-		/// runs the operator() of underlying type-erased object
+		/// Runs the operator() of underlying type-erased object.
+		/// Presumed semantics of operator() is the delayed data copy operation.
 		auto operator()() const-> void {
 			assert(_obj);
 			(*_obj)();
