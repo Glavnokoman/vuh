@@ -4,7 +4,6 @@
 #include "device.h"
 #include "utils.h"
 #include "delayed.hpp"
-#include "commandBuffer.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -75,11 +74,14 @@ namespace vuh {
 			return r;
 		}
 
-		/// Data part of for Compute class
+		/// Transient command buffer data with a releaseable interface.
 		struct ComputeBuffer {
+			/// Constructor. Takes ownership over provided buffer.
 			ComputeBuffer(vuh::Device& device, vk::CommandBuffer buffer)
 			   : cmd_buffer(buffer), device(&device){}
 
+			/// Release resources associated with owned command buffer.
+			/// Buffer is released from device's compute command pool.
 			auto release() noexcept-> void {
 				if(device){
 					device->freeCommandBuffers(device->computeCmdPool(), 1, &cmd_buffer);
@@ -87,7 +89,7 @@ namespace vuh {
 			}
 		public: // data
 			vk::CommandBuffer cmd_buffer; ///< command buffer to submit async computation commands
-			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; /// underlying device
+			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< underlying device
 		}; // struct ComputeData
 
 		/// Helper class for use as a Delayed<> parameter extending the lifetime of the command
@@ -393,14 +395,17 @@ namespace vuh {
 			Base::run();
 		}
 
-		/// doc me
+		/// Run the program with provided parameters.
+		/// @return Delayed<Compute> object for synchronization with host.
+		/// @pre grid dimensions should be specified before callind this.
 		template<class... Arrs>
 		auto run_async(const Params& params, Arrs&&... args)-> vuh::Delayed<detail::Compute> {
 			bind(params, args...);
 			return Base::run_async();
 		}
 	private: // helpers
-		/// Set up the state of the kernel that depends on number and types of bound array parameters
+		/// Set up the state of the kernel that depends on number and types of bound array parameters.
+		/// Initizalizes the pipeline layout, declares the push constants interface.
 		template<class... Arrs>
 		auto init_pipelayout(Arrs&... args)-> void {
 			auto psranges = std::array<vk::PushConstantRange, 1>{{
@@ -408,7 +413,8 @@ namespace vuh {
 			Base::init_pipelayout(psranges, args...);
 		}
 
-		/// Creates command buffer.
+		/// Populate the associated device's compute command buffer.
+		/// Binds the descriptors and pushes the push constants.
 		template<class... Arrs>
 		auto create_command_buffer(const Params& p, Arrs&... args)-> void {
 			Base::command_buffer_begin(args...);
