@@ -1,6 +1,7 @@
 #pragma once
 
 #include "arrayIter.hpp"
+#include "deviceArray.hpp"
 #include <vuh/delayed.hpp>
 #include <vuh/traits.hpp>
 #include <vuh/resource.hpp>

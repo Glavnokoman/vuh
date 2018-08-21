@@ -3,6 +3,7 @@
 #include "arr/arrayProperties.h"
 #include "arr/arrayIter.hpp"
 #include "arr/arrayView.hpp"
+#include "arr/copy_async.hpp"
 #include "arr/deviceArray.hpp"
 #include "arr/hostArray.hpp"
 

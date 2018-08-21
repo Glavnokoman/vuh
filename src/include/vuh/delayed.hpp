@@ -61,8 +61,11 @@ namespace vuh {
 		auto operator= (const Delayed&)-> Delayed& = delete;
 		Delayed(Delayed&& other) = default;
 
+		/// Move assignment.
+		/// In case the current object owns the unsignalled fence this is going to block
+		/// till that is signalled and only then proceed to taking over the move-from object.
 		auto operator= (Delayed&& other) noexcept-> Delayed& {
-			release();
+			wait();
 			static_cast<vk::Fence&>(*this) = std::move(static_cast<vk::Fence&>(other));
 			static_cast<Action&>(*this) = std::move(static_cast<Action&>(other));
 			_device = std::move(other._device);
@@ -82,7 +85,7 @@ namespace vuh {
 		{
 			if(_device){
 				_device->waitForFences({*this}, true, period);
-				if(_device->getFenceStatus() == vk::Result::eSuccess){
+				if(_device->getFenceStatus(*this) == vk::Result::eSuccess){
 					_device->destroyFence(*this);
 					static_cast<Action&>(*this)(); // exercise action
 					_device.release();
