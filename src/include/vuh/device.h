@@ -8,7 +8,13 @@ namespace vuh {
 	class Instance;
 
 	/// Logical device packed with associated command pools and buffers.
-	/// A drop-in replacement for vk::Device.
+	/// Holds the pool(s) for transfer and compute operations as well as command
+	/// buffers for sync operations.
+	/// When the copy of the Device object is made it recreates all underlying
+	/// structures access to which needs to be synchrnized, while still referring
+	/// to the same physical device. Such that copying the Device object might be
+	/// a convenient (although somewhat resource consuming) way to use device from
+	/// different threads.
 	class Device: public vk::Device {
 	public:
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice);
