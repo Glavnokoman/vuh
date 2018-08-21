@@ -48,7 +48,7 @@ namespace vuh {
 		template<size_t N>
 		auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types) {
 			auto r = std::array<vk::DescriptorSetLayoutBinding, N>{};
-			for(size_t i = 0; i < N; ++i){ // can be done compile-time
+			for(size_t i = 0; i < N; ++i){ // can be expanded compile-time
 				r[i] = {uint32_t(i), dsc_types[i], 1, vk::ShaderStageFlagBits::eCompute};
 			}
 			return r;
@@ -122,7 +122,8 @@ namespace vuh {
 				_device.destroyFence(fence);
 			}
 
-			/// doc me
+			/// Run the Program object on previously bound parameters.
+			/// @return Delayed<Compute> object used for synchronization with host
 			auto run_async()-> vuh::Delayed<Compute> {
 				auto buffer = _device.releaseComputeCmdBuffer();
 				auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &buffer); // submit a single command buffer
@@ -339,9 +340,13 @@ namespace vuh {
 	/// Actually runnable entity. Before array parameters are bound (and program run)
 	/// working grid dimensions should be set up, and if there are specialization constants to set
 	/// they should be set before that too.
+	/// Push constants can be specified together with the input/output array parameters right at the
+	/// calling point.
+	/// Or alternatively the empty call operator may be triggered on previously fully set up instance
+	/// of Program.
 	template<class Specs=typelist<>, class Params=typelist<>> class Program;
 
-	/// Specialization to with non-empty specialization constants and push constants.
+	/// Specialization with non-empty specialization constants and push constants.
 	template<template<class...> class Specs, class... Specs_Ts , class Params>
 	class Program<Specs<Specs_Ts...>, Params>: public detail::SpecsBase<Specs<Specs_Ts...>> {
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;
@@ -395,7 +400,7 @@ namespace vuh {
 			Base::run();
 		}
 
-		/// Run the program with provided parameters.
+		/// Initiate execution of the program with provided parameters and immidiately return.
 		/// @return Delayed<Compute> object for synchronization with host.
 		/// @pre grid dimensions should be specified before callind this.
 		template<class... Arrs>
@@ -477,6 +482,15 @@ namespace vuh {
 		auto operator()(Arrs&... args)-> void {
 			bind(args...);
 			Base::run();
+		}
+
+		/// Initiate execution of the program with provided parameters and immidiately return.
+		/// @return Delayed<Compute> object for synchronization with host.
+		/// @pre grid dimensions should be specified before callind this.
+		template<class... Arrs>
+		auto run_async(Arrs&&... args)-> vuh::Delayed<detail::Compute> {
+			bind(args...);
+			return Base::run_async();
 		}
 	}; // class Program
 } // namespace vuh
