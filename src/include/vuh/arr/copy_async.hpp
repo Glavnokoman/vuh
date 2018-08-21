@@ -149,6 +149,8 @@ namespace vuh {
 	} // namespace detail
 
 	/// Type erasure over movable classes providing operator()(void) const-> void.
+	/// Used to trigger some action (encoded in that operator()()) and/or extend resources
+	/// lifetime at/till the synchrnonization point.
 	class Copy {
 	public:
 		/// Takes an object of some type T, creates a CopyWrapper<T> of it on the heap
@@ -183,7 +185,8 @@ namespace vuh {
 	}
 
 	/// Async copy data from host memory to device-local array.
-	/// Blocks while copying from host memory to host-visible staging array.
+	/// Blocks while for the duration of initial copy from host memory to host-visible
+	/// staging array.
 	/// Only the memory transfer between staging buffer and device memory is actually async.
 	/// If device array is host-visible the operation is fully blocking.
 	template<class SrcIter1, class SrcIter2, class T, class Alloc>
@@ -207,6 +210,11 @@ namespace vuh {
 	}
 
 	/// Async copy data from device-local array to host.
+	/// Initiates async copy from device to the staging buffer and immidiately returns
+	/// the Delayed<Copy>  object used for synchronization with host.
+	/// The copy between staging buffer and host is only triggered at the synchronization point
+	/// (Delayed<Copy>::wait() or destructor) and it blocks till the complete operation is finished.
+	/// If device array is host-visible it just makes the blocking call to std::copy().
 	template<class T, class Alloc, class DstIter>
 	auto copy_async(ArrayIter<arr::DeviceArray<T, Alloc>> src_begin
 	               , ArrayIter<arr::DeviceArray<T, Alloc>> src_end
