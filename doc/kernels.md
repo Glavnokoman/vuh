@@ -1,5 +1,5 @@
 # Kernels Usage
-To execute the kernel on a GPU one must first create the host object of type ```vuh::Program``` matching the kernel interfaces (specialization constants, push constants and buffer bindings)
+To execute the kernel on a GPU one must first create the object of type ```vuh::Program``` matching the kernel interfaces (specialization constants, push constants and buffer bindings)
 ```cpp
 auto program = vuh::Program(device, "kernel.spv");
 ```
