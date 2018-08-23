@@ -81,20 +81,20 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 		}
 
 		{ // phase 2. process first tiles, copy over the second portion,
+			auto f_p = program.grid(tile_size/grid_x).spec(grid_x)
+			                  .run_async({tile_size, a}, vuh::array_view(d_y, 0, tile_size)
+			                                           , vuh::array_view(d_x, 0, tile_size));
 			auto f_y = vuh::copy_async(begin(y) + tile_size, end(y), device_begin(d_y) + tile_size);
 			auto f_x = vuh::copy_async(begin(x) + tile_size, end(x), device_begin(d_x) + tile_size);
-
-			program.grid(tile_size/grid_x).spec(grid_x)
-			       .run_async({tile_size, a}, vuh::array_view(d_y, 0, tile_size)
-			                                , vuh::array_view(d_x, 0, tile_size));
 		}
 
 		{ // phase 3. copy back first result tile, run kernel on second tiles
-			auto f_y_1 = vuh::copy_async(device_begin(d_y), device_begin(d_y) + tile_size, begin(y));
+			auto f_y1 = vuh::copy_async(device_begin(d_y), device_begin(d_y) + tile_size, begin(y));
 
 			program.run_async({tile_size, a}, vuh::array_view(d_y, tile_size, arr_size)
 			                                , vuh::array_view(d_x, tile_size, arr_size));
-			vuh::copy_async(device_begin(d_y) + tile_size, device_end(d_y), begin(y) + tile_size);
+			auto f_y2 = vuh::copy_async(device_begin(d_y) + tile_size, device_end(d_y), begin(y) + tile_size);
+			f_y1.wait();
 		}
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5).verbose());
