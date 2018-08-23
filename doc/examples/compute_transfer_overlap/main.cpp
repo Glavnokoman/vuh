@@ -72,8 +72,8 @@ auto main()-> int {
 		auto f_y1 = vuh::copy_async(device_begin(d_y), device_begin(d_y) + tile_size, begin(y));
 
 		// We need result to be available to init the copy-back of the second chunk. Hence blocking call.
-		program.run({tile_size, a}, vuh::array_view(d_y, tile_size, arr_size)
-		                          , vuh::array_view(d_x, tile_size, arr_size));
+		program({tile_size, a}, vuh::array_view(d_y, tile_size, arr_size)
+		                      , vuh::array_view(d_x, tile_size, arr_size));
 		auto f_y2 = vuh::copy_async(device_begin(d_y) + tile_size, device_end(d_y), begin(y) + tile_size);
 		f_y1.wait(); // explicitly wait for the first chunk here (think of staging buffers and destruction order)
 	}
