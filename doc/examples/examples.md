@@ -1,5 +1,5 @@
 # vuh examples
-- Mandelbrot ([doc/examples/mandelbrot/](mandelbrot))
+## Mandelbrot ([doc/examples/mandelbrot/](mandelbrot))
 Render the Mandelbrot set and write it to an (ppm) image.
 This is the literal translation of [Vulkan Minimal Compute](https://github.com/Erkaman/vulkan_minimal_compute) example.
 With the original source spanning over ~800 lines...
@@ -29,11 +29,41 @@ Set is rendered in 2D workgroups of size 32x32 and the corresponding 2D grid dim
 In the end the data is dumped to disk as a ppm file.
 Note that ```write_ppm``` accepts just normal ```uint32_t*``` pointer.
 
-- saxpy ([doc/examples/saxpy/](saxpy))
+## saxpy ([doc/examples/saxpy/](saxpy))
 Calculate [generalized vector addition](https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms#Level_1).
 Classical example to demonstrate computational frameworks/libraries.
 Using arrays in device-local memory (needless in this particular example) and performs calculation on a 1D grid with 1D workgroups.
 
-- using  custom logger ([doc/examples/spdlog](spdlog))
-Demonstrates using custom logger for Vulkan instance diagnostic messages.
-This example requires ```spdlog``` library to build.
+## asynchronous saxpy ([doc/examples/compute_transfer_overlap](compute_transfer_overlap))
+This example demostrates overlap of computation and data transfers using async calls with host
+synchronization mechanism.
+It splits saxpy computation in two packages, each equal to half of the original problems.
+Overlaps the computation on the first part of the data with the transfer of the second one to device.
+And the computation on the second part of the data with transfering the first half of the results
+back to the host.
+No kernel modification is required compared to a fully blocking saxpy example.
+
+The problem is split in 3 phases.
+In the first phase the first tiles (halves of the corresponding arrays) are transferred to the device.
+The second phase starts async computation of the previously transferred tiles and initiates async
+transfer of the second halves of the working datasets.
+The phase ends with a synchronization point at which both computation and data transfers should complete.
+The 3rd phase starts with async copy of the first tile of processed data back to host.
+Then it makes a blocking call to do computation on the second half of the data.
+When that is ready the async transfer of the second half of the result is initiated potentially
+overlapping with the ongoing transfer of the first half.
+This example may not (and most probably is not) the most optimal way to do the thing.
+It is written in effort to demonstate the async features in most unobstructed way while still doing
+not something completely unreasonable.
+
+Keypoints:
++ synchronization point can be either a call to Delayed<>::wait() or just the end of the scope
++ calling async function and ignoring its return is essentially a blocking call (but may not be doing exactly the same!)
++ async data transfer between host and device potentially blocks for the duration of a hidden copy to/from the staging buffer
+ 	- host-to-device blocks at call site
+	- device-to-host only initiates staging buffer to host transfer only at synchronization point, and then blocks for the duration of it.
+
+## using  custom logger ([doc/examples/spdlog](spdlog))
+Demonstrates using custom logger for logging Vuh and (when available) Vulkan instance diagnostic messages.
+Instead of default option to log to ```std::cerr``` the ```spdlog``` is used.
+This example depends on ```spdlog``` to be available (and discoverable by CMake).
