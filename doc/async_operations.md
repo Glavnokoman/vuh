@@ -5,14 +5,12 @@ Another application is overlapping data transfers and computation on GPU.
 For the latter interface presented here not optimal since it involves synchronization with the host.
 
 # Synchronization tokens
-- returned by async operations
-- used to sync with host
-- are some actions delayed till the underlying fence is signalled
+- returned by async operations and used to sync with host
+- token is in essence some actions delayed till the underlying fence is signalled
 - sync points are Delayed<>::wait() and Delayed<>::~Delayed<>()
-- time-out wait(t) can be called multiple time
-- action will take place once and only once
-- tokens are movable
-- assignment is a sync point for the token being assigned to
+- move assignment is also a sync point for the token being assigned to
+- (time-outed) wait() can be called multiple times or not called at all
+   + action will take place once and only once
 - ignoring returned value (a token) from async function effectively makes a blocking call
    + but may still be slightly different from corresponding blocking operation
 # Async data transfer
