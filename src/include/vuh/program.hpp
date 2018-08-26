@@ -363,6 +363,9 @@ namespace vuh {
 		   : Base(device, code, flags)
 		{}
 
+		using Base::run;
+		using Base::run_async;
+
 		/// Specify running batch size (3D).
  		/// This only sets the dimensions of work batch in units of workgroup, does not start
 		/// the actual calculation.
@@ -390,6 +393,14 @@ namespace vuh {
 			}
 			create_command_buffer(p, args...);
 			return *this;
+		}
+
+		/// Run program with provided parameters.
+		/// @pre grid dimensions should be specified before calling this.
+		template<class... Arrs>
+		auto run(const Params& params, Arrs&&... args)-> void {
+			bind(params, args...);
+			Base::run();
 		}
 
 		/// Run program with provided parameters.
@@ -445,6 +456,9 @@ namespace vuh {
 		        )
 		   : Base (device, code, flags)
 		{}
+
+		using Base::run;
+		using Base::run_async;
 
 		/// Specify (3D) running batch size.
  		/// This only sets the dimensions of work batch in units of workgroup, does not start

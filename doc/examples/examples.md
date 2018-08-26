@@ -69,6 +69,7 @@ with ```
 ▧- device-to-stage copy, ▒- stage-to-host blocking copy,
 █- kernel execution
 ```
+
 This example may not (and most probably is not) the most optimal way to do the thing.
 It is written in effort to demonstate the async features in most unobstructed way while still doing
 not something completely unreasonable.
