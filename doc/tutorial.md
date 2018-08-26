@@ -2,9 +2,9 @@
 to its GPU part (```SPIR-V``` binary).
 It does not provide a complete isolation from ```Vulkan``` API
 but rather a set of helpers to eliminate the boilerplate.
-Knowledge of ```Vulkan``` programming model it is not required to understand this tutorial
+Knowledge of ```Vulkan``` programming model is not required to understand this tutorial
 or start using ```vuh```.
-However it could be very helpful for deeper understanding of what is going on
+It could be helpful however for better understanding of what is going on
 and at the later stages.
 In this tutorial the term ```kernel``` is used interchangeably with
 ```compute shader``` to designate a program to be executed on GPU.
@@ -16,3 +16,4 @@ Only the parts of it directly interfacing with the ```C++``` side are discussed.
 - [Basic program structure](basic_program_structure.md)
 - [Arrays usage](array_usage.md)
 - [Kernels usage](kernels.md)
+- [Async operations](async_operations.md)

@@ -14,15 +14,10 @@
 
 namespace vuh {
 	namespace detail {
+
 		/// Traits to map array type to descriptor type
-		template<class T> struct DictTypeToDsc;
-
-		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::DeviceArray<T, Alloc>>{
-			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
-		};
-
-		template<class T, class Alloc> struct DictTypeToDsc<vuh::arr::HostArray<T, Alloc>>{
-			static constexpr vk::DescriptorType value = vk::DescriptorType::eStorageBuffer;
+		template<class T> struct DictTypeToDsc {
+			static constexpr auto value = T::descriptor_class;
 		};
 
 		/// @return tuple element offset
@@ -53,7 +48,7 @@ namespace vuh {
 		template<size_t N>
 		auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types) {
 			auto r = std::array<vk::DescriptorSetLayoutBinding, N>{};
-			for(size_t i = 0; i < N; ++i){ // can be done compile-time
+			for(size_t i = 0; i < N; ++i){ // can be expanded compile-time
 				r[i] = {uint32_t(i), dsc_types[i], 1, vk::ShaderStageFlagBits::eCompute};
 			}
 			return r;
@@ -79,6 +74,36 @@ namespace vuh {
 			return r;
 		}
 
+		/// Transient command buffer data with a releaseable interface.
+		struct ComputeBuffer {
+			/// Constructor. Takes ownership over provided buffer.
+			ComputeBuffer(vuh::Device& device, vk::CommandBuffer buffer)
+			   : cmd_buffer(buffer), device(&device){}
+
+			/// Release resources associated with owned command buffer.
+			/// Buffer is released from device's compute command pool.
+			auto release() noexcept-> void {
+				if(device){
+					device->freeCommandBuffers(device->computeCmdPool(), 1, &cmd_buffer);
+				}
+			}
+		public: // data
+			vk::CommandBuffer cmd_buffer; ///< command buffer to submit async computation commands
+			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< underlying device
+		}; // struct ComputeData
+
+		/// Helper class for use as a Delayed<> parameter extending the lifetime of the command
+		/// buffer and a noop triggered action.
+		struct Compute: private util::Resource<ComputeBuffer> {
+			/// Constructor
+			explicit Compute(vuh::Device& device, vk::CommandBuffer buffer)
+			   : Resource<ComputeBuffer>(device, std::move(buffer))
+			{}
+
+			/// Noop. Action to be triggered when the fence is signaled.
+			constexpr auto operator()() noexcept-> void {}
+		}; // struct Compute
+
 		/// Program base functionality.
 		/// Initializes and keeps most state variables, and array argument handling building blocks.
 		class ProgramBase {
@@ -97,9 +122,18 @@ namespace vuh {
 				_device.destroyFence(fence);
 			}
 
-			/// doc me
-			auto run_async()-> vuh::Fence {
-				throw "not implemented";
+			/// Run the Program object on previously bound parameters.
+			/// @return Delayed<Compute> object used for synchronization with host
+			auto run_async()-> vuh::Delayed<Compute> {
+				auto buffer = _device.releaseComputeCmdBuffer();
+				auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &buffer); // submit a single command buffer
+
+				// submit the command buffer to the queue and set up a fence.
+				auto queue = _device.computeQueue();
+				auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+				queue.submit({submitInfo}, fence);
+
+				return Delayed<Compute>{fence, _device, Compute(_device, buffer)};
 			}
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
@@ -194,15 +228,20 @@ namespace vuh {
 				_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
 			}
 
-			/// Starts writing the command buffer, binds a pipeline and a descriptor set.
+			/// Starts writing to the device's compute command buffer.
+			/// Binds a pipeline and a descriptor set.
 			template<class... Arrs>
 			auto command_buffer_begin(Arrs&... arrs)-> void {
 				assert(_pipeline); /// pipeline supposed to be initialized before this
 
 				constexpr auto N = sizeof...(arrs);
-				auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{{{arrs, 0, arrs.size_bytes()}... }}; // 0 is the offset here
+				auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{
+					                           {{arrs.buffer()
+				                               , arrs.offset()*sizeof(typename Arrs::value_type)
+				                               , arrs.size_bytes()}... }
+				                };
 				auto write_dscsets = dscinfos2writesets(_dscset, dscinfos
-				                                                , std::make_index_sequence<N>{});
+				                                       , std::make_index_sequence<N>{});
 				_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 				// Start recording commands into the newly allocated command buffer.
@@ -301,9 +340,13 @@ namespace vuh {
 	/// Actually runnable entity. Before array parameters are bound (and program run)
 	/// working grid dimensions should be set up, and if there are specialization constants to set
 	/// they should be set before that too.
+	/// Push constants can be specified together with the input/output array parameters right at the
+	/// calling point.
+	/// Or alternatively the empty call operator may be triggered on previously fully set up instance
+	/// of Program.
 	template<class Specs=typelist<>, class Params=typelist<>> class Program;
 
-	/// specialization to with non-empty specialization constants and push constants
+	/// Specialization with non-empty specialization constants and push constants.
 	template<template<class...> class Specs, class... Specs_Ts , class Params>
 	class Program<Specs<Specs_Ts...>, Params>: public detail::SpecsBase<Specs<Specs_Ts...>> {
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;
@@ -319,6 +362,9 @@ namespace vuh {
 		        )
 		   : Base(device, code, flags)
 		{}
+
+		using Base::run;
+		using Base::run_async;
 
 		/// Specify running batch size (3D).
  		/// This only sets the dimensions of work batch in units of workgroup, does not start
@@ -339,7 +385,7 @@ namespace vuh {
 		/// @pre Grid dimensions and specialization constants (if applicable)
 		/// should be specified before calling this.
 		template<class... Arrs>
-		auto bind(const Params& p, Arrs&... args)-> const Program& {
+		auto bind(const Params& p, Arrs&&... args)-> const Program& {
 			if(!Base::_pipeline){ // handle multiple rebind
 				init_pipelayout(args...);
 				Base::alloc_descriptor_sets(args...);
@@ -352,18 +398,30 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-		auto operator()(const Params& params, Arrs&... args)-> void {
+		auto run(const Params& params, Arrs&&... args)-> void {
 			bind(params, args...);
 			Base::run();
 		}
 
-		/// doc me
+		/// Run program with provided parameters.
+		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-		auto run_async(const Params& params, Arrs&&... args)-> vuh::Fence {
-			throw "not implemented";
+		auto operator()(const Params& params, Arrs&&... args)-> void {
+			bind(params, args...);
+			Base::run();
+		}
+
+		/// Initiate execution of the program with provided parameters and immidiately return.
+		/// @return Delayed<Compute> object for synchronization with host.
+		/// @pre grid dimensions should be specified before callind this.
+		template<class... Arrs>
+		auto run_async(const Params& params, Arrs&&... args)-> vuh::Delayed<detail::Compute> {
+			bind(params, args...);
+			return Base::run_async();
 		}
 	private: // helpers
-		/// Set up the state of the kernel that depends on number and types of bound array parameters
+		/// Set up the state of the kernel that depends on number and types of bound array parameters.
+		/// Initizalizes the pipeline layout, declares the push constants interface.
 		template<class... Arrs>
 		auto init_pipelayout(Arrs&... args)-> void {
 			auto psranges = std::array<vk::PushConstantRange, 1>{{
@@ -371,7 +429,8 @@ namespace vuh {
 			Base::init_pipelayout(psranges, args...);
 		}
 
-		/// Creates command buffer.
+		/// Populate the associated device's compute command buffer.
+		/// Binds the descriptors and pushes the push constants.
 		template<class... Arrs>
 		auto create_command_buffer(const Params& p, Arrs&... args)-> void {
 			Base::command_buffer_begin(args...);
@@ -381,7 +440,7 @@ namespace vuh {
 		}
 	}; // class Program
 
-	/// specialization with non-empty specialization constants and empty push constants
+	/// Specialization with non-empty specialization constants and empty push constants.
 	template<template<class...> class Specs, class... Specs_Ts>
 	class Program<Specs<Specs_Ts...>, typelist<>>: public detail::SpecsBase<Specs<Specs_Ts...>>{
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;
@@ -397,6 +456,9 @@ namespace vuh {
 		        )
 		   : Base (device, code, flags)
 		{}
+
+		using Base::run;
+		using Base::run_async;
 
 		/// Specify (3D) running batch size.
  		/// This only sets the dimensions of work batch in units of workgroup, does not start
@@ -417,7 +479,7 @@ namespace vuh {
 		/// @pre Grid dimensions and specialization constants (if applicable)
 		/// should be specified before calling this.
 		template<class... Arrs>
-		auto bind(Arrs&... args)-> const Program& {
+		auto bind(Arrs&&... args)-> const Program& {
 			if(!Base::_pipeline){ // handle multiple rebind
 				Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
 				Base::alloc_descriptor_sets(args...);
@@ -431,9 +493,18 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-		auto operator()(Arrs&... args)-> void {
+		auto operator()(Arrs&&... args)-> void {
 			bind(args...);
 			Base::run();
+		}
+
+		/// Initiate execution of the program with provided parameters and immidiately return.
+		/// @return Delayed<Compute> object for synchronization with host.
+		/// @pre grid dimensions should be specified before callind this.
+		template<class... Arrs>
+		auto run_async(Arrs&&... args)-> vuh::Delayed<detail::Compute> {
+			bind(args...);
+			return Base::run_async();
 		}
 	}; // class Program
 } // namespace vuh
