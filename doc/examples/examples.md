@@ -64,7 +64,8 @@ Execution of sync and async version can be schematically depicted as follows:
    ░░░   ▤▤▤▤▤▤│░░░▤▤▤▤▤▤      │▧▧▧▧▒▒▒
                │   ░░░   ▤▤▤▤▤▤│    ▧▧▧▧▒▒▒
 ```
-with ```
+with
+```
 ░- host-to-stage copy, ▤- stage-to-device copy,
 ▧- device-to-stage copy, ▒- stage-to-host blocking copy,
 █- kernel execution
