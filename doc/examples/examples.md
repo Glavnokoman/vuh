@@ -52,18 +52,28 @@ The 3rd phase starts with async copy of the first tile of processed data back to
 Then it makes a blocking call to do computation on the second half of the data.
 When that is ready the async transfer of the second half of the result is initiated potentially
 overlapping with the ongoing transfer of the first half.
+
+Execution of sync and async version can be schematically depicted as follows:
+- sync
+```
+░░░░░░▤▤▤▤▤▤▤▤▤▤│░░░░░░▤▤▤▤▤▤▤▤▤▤│██████│▧▧▧▧▧▧▧▧▒▒▒▒▒▒
+```
+- async
+```
+░░░▤▤▤▤▤▤      │███            │███
+   ░░░   ▤▤▤▤▤▤│░░░▤▤▤▤▤▤      │▧▧▧▧▒▒▒
+               │   ░░░   ▤▤▤▤▤▤│    ▧▧▧▧▒▒▒
+```
+with ```
+░- host-to-stage copy, ▤- stage-to-device copy,
+▧- device-to-stage copy, ▒- stage-to-host blocking copy,
+█- kernel execution
+```
 This example may not (and most probably is not) the most optimal way to do the thing.
 It is written in effort to demonstate the async features in most unobstructed way while still doing
 not something completely unreasonable.
 
-Keypoints:
-+ synchronization point can be either a call to Delayed<>::wait() or just the end of the scope
-+ calling async function and ignoring its return is essentially a blocking call (but may not be doing exactly the same!)
-+ async data transfer between host and device potentially blocks for the duration of a hidden copy to/from the staging buffer
- 	- host-to-device blocks at call site
-	- device-to-host only initiates staging buffer to host transfer only at synchronization point, and then blocks for the duration of it.
-
 ## using  custom logger ([doc/examples/spdlog](spdlog))
 Demonstrates using custom logger for logging Vuh and (when available) Vulkan instance diagnostic messages.
-Instead of default option to log to ```std::cerr``` the ```spdlog``` is used.
+Instead of default option to log to ```std::cerr``` the ```spdlog``` library is used.
 This example depends on ```spdlog``` to be available (and discoverable by CMake).

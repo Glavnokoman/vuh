@@ -54,28 +54,28 @@ auto main()-> int {
 
 	{ // phase 1. copy tiles to device
 		// initiate copying to device and return synchronization token
-		auto f_y = vuh::copy_async(begin(y), begin(y) + tile_size, device_begin(d_y));
+		auto t_y = vuh::copy_async(begin(y), begin(y) + tile_size, device_begin(d_y));
 		// this is essentially a blocking call
 		vuh::copy_async(begin(x), begin(x) + tile_size, device_begin(d_x));
 	} // here it blocks till both transfers are complete
 
 	{ // phase 2. process first tiles, copy over the second chunk
-		auto f_p = program.grid(tile_size/grid_x).spec(grid_x)
+		auto t_p = program.grid(tile_size/grid_x).spec(grid_x)
 		                   .run_async({tile_size, a}, vuh::array_view(d_y, 0, tile_size)
 		                                            , vuh::array_view(d_x, 0, tile_size));
 
-		auto f_y = vuh::copy_async(begin(y) + tile_size, end(y), device_begin(d_y) + tile_size);
-		auto f_x = vuh::copy_async(begin(x) + tile_size, end(x), device_begin(d_x) + tile_size);
+		auto t_y = vuh::copy_async(begin(y) + tile_size, end(y), device_begin(d_y) + tile_size);
+		auto t_x = vuh::copy_async(begin(x) + tile_size, end(x), device_begin(d_x) + tile_size);
 	} // here it blocks again
 
 	{ // phase 3. copy back first half of the result, run kernel on second tiles
-		auto f_y1 = vuh::copy_async(device_begin(d_y), device_begin(d_y) + tile_size, begin(y));
+		auto t_1 = vuh::copy_async(device_begin(d_y), device_begin(d_y) + tile_size, begin(y));
 
 		// We need result to be available to init the copy-back of the second chunk. Hence blocking call.
 		program({tile_size, a}, vuh::array_view(d_y, tile_size, arr_size)
 		                      , vuh::array_view(d_x, tile_size, arr_size));
-		auto f_y2 = vuh::copy_async(device_begin(d_y) + tile_size, device_end(d_y), begin(y) + tile_size);
-		f_y1.wait(); // explicitly wait for the first chunk here (think of staging buffers and destruction order)
+		auto t_2 = vuh::copy_async(device_begin(d_y) + tile_size, device_end(d_y), begin(y) + tile_size);
+		t_1.wait(); // explicitly wait for the first chunk here (think of staging buffers and destruction order)
 	}
 
 	return 0;
