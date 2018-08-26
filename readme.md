@@ -53,13 +53,13 @@ void main(){
 # Features
 - storage buffers as ```vuh::Array<T>```
    + allocated in device-local, host-visible or device-local-host-visible memories
-   + sync data exchange with host
-   + async device-device and partially async host-device data exchange with host synchronization  
-- compute shaders as ```vuh::Program```
+   + data exchange with host incl. hidden staging buffers
+- compute kernels as ```vuh::Program```
    + buffers binding (passing arbitrary number of array parameters)
    + specialization constants (to set workgroup dimensions, etc...)
    + push-constants (to pass small data (<= 128 Bytes), like task dimensions etc...)
-   + sync execution
+   + whatever compute shaders support, shared memory, etc...
+- async data transfer/kernel execution with host-side synchronization
 - multiple device support
 - [yet to come...](doc/features_to_come.md)
 - [not ever coming...](doc/features_not_to_come.md)
