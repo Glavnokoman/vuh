@@ -20,10 +20,10 @@ cmake --build . --target install
 Install script depends on ```cmake``` and ```cget``` (```pip install cget```) to be available.
 Replace ```VUH_SOURCE_DIR``` and ```DEPENDENCIES_INSTALL_DIR``` by their values on your system.
 Build out of source.
- ```bash
+```bash
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
 ${VUH_SOURCE_DIR}/config/install_dependencies.sh
-cmake ${VUH_SOURCE_DIR} -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR}
+cmake -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR} ${VUH_SOURCE_DIR}
 cmake --build . --target install
 ```
 ### Windows
