@@ -1,0 +1,71 @@
+#version 440
+
+layout(local_size_x_id = 0, local_size_y_id = 1) in; // workgroup dimensions specialization constants
+layout(push_constant) uniform Parameters {
+   uint cellCountX;
+   uint cellCountY;
+   float dt_sim;
+   uint i;
+} p;
+layout(std430, binding = 0) buffer buf0 { float n_[]; };
+layout(std430, binding = 1) buffer buf1 { float m_[]; };
+layout(std430, binding = 2) buffer buf2 { float h_[]; };
+layout(std430, binding = 3) buffer buf3 { float I[]; };
+layout(std430, binding = 4) buffer buf4 { float V_YX[]; };
+
+void main() {
+const float
+        g_Na_max = 4, g_K_add = 0.002, g_L = 0,
+        E_Na = 40, E_L = -60,
+
+        Area = 7.6e-3;// mm2 3e-8*1e6, //7.6e-5, //veikia prie 1.96e-8*1e6, //bandymu keliu, plotas nebutinai yra tikras last., tiesiog kad vyktu sklidimas prie realaus PJ laidumo88
+
+float alpha_n = 0, beta_n = 0, alpha_m = 0, beta_m = 0, alpha_h = 0, beta_h = 0, g_Na = 0, g_K1 = 0, g_K2 = 0, i_Na = 0, i_K = 0, i_Leak = 0, i_ion = 0, sum_I_gj = 0;
+
+   uint x = gl_GlobalInvocationID.x;
+   uint y = gl_GlobalInvocationID.y;
+   if (x < p.cellCountX && y < p.cellCountY) {
+        uint adr = p.cellCountX*y + x;
+
+        float V = V_YX[adr];
+        float n = n_[adr];
+        float m = m_[adr];
+        float h = h_[adr];
+
+        i_Leak = g_L*(V - E_L);
+        //------------potassium
+        alpha_n = .0003*(-V - 50) / (exp((-V - 50) / 10) - 1);
+        beta_n = .002*exp((-V - 90) / 80);
+        n = n + (alpha_n*(1 - n) - beta_n*n)*p.dt_sim;
+        g_K1 = .012*exp((-V - 90) / 50) + .00015*exp((V + 90) / 60);
+        g_K2 = .012*n * n * n * n;
+        i_K = (g_K1 + g_K2 + g_K_add)*(V + 100);
+        //------------ - sodium
+        alpha_h = .166*exp((-V - 90) / 20);
+        beta_h = 1 / (1 + exp((-V - 42) / 10));
+        h = h + (alpha_h*(1 - h) - beta_h*h)*p.dt_sim;
+        alpha_m = .1*(-V - 48) / (exp((-V - 48) / 15) - 1);
+        beta_m = .12*(V + 8) / (exp((V + 8) / 5) - 1);
+        m = m + (alpha_m*(1 - m) - beta_m*m)*p.dt_sim;
+        g_Na = m * m * m * h * g_Na_max;
+        i_Na = (g_Na + .0014)*(V - E_Na);
+
+        i_ion = (i_Na + i_K + i_Leak);
+
+        n_[adr] = n;
+        m_[adr] = m;
+        h_[adr] = h;
+
+       if (x > 0 && x < p.cellCountX-1 && y > 0 && y < p.cellCountY-1 ) { // TODO: separete if x ... if y ..., will get extra line simulated
+           float V = V_YX[adr];
+           float dx1 = V_YX[p.cellCountX*y + x - 1] - V; // each thread compares two cells: right(x+1) and up (y+1) with current cell (x,y)
+           float dx2 = V_YX[p.cellCountX*y + x + 1] - V;
+           float dy1 = V_YX[p.cellCountX*(y-1) + x] - V;
+           float dy2 = V_YX[p.cellCountX*(y+1) + x] - V;
+           float gjX = 125e-9f;
+           float gjY = 125e-9f/4.f;
+           I[adr] = -Area*i_ion + 1000 * ( gjX*dx1 + gjX*dx2 + gjY*dy1 + gjY * dy2 );
+       }
+    }
+}
+
