@@ -6,9 +6,9 @@ This is to keep track of ideas on what (big) features could/should be implemente
 - dynamic uniforms
 - memory pooling
 - using multiple queues on a single device
-- pipelining kernels and data transfers with GPU-side sync
+- async data transfers and kernel execution with GPU-side sync
 - option to use in no-exception environments
 - headers generation from shaders
 - better integration/data exchange with graphic pipelines
 - compile for no-GPU environments
-- Python interface
+- Python bindings

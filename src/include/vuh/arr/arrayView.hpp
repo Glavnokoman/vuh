@@ -32,7 +32,7 @@ namespace vuh {
 		std::size_t _offset_end;   ///< offset (number of array elements) of the end (one past the last valid elements) of the span.
 	}; // class ArrayView
 
-	/// doc me
+	/// Create a ArrayView into given Array.
 	template<class Array>
 	auto array_view(Array& array, std::size_t offset_begin, size_t offset_end)-> ArrayView<Array>{
 		return ArrayView<Array>(array, offset_begin, offset_end);

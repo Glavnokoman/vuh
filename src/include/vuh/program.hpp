@@ -116,10 +116,8 @@ namespace vuh {
 
 				// submit the command buffer to the queue and set up a fence.
 				auto queue = _device.computeQueue();
-				auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
-				queue.submit({submitInfo}, fence);
-				_device.waitForFences({fence}, true, uint64_t(-1));      // -1 means wait for the fence indefinitely
-				_device.destroyFence(fence);
+				queue.submit({submitInfo}, nullptr);
+				queue.waitIdle();
 			}
 
 			/// Run the Program object on previously bound parameters.

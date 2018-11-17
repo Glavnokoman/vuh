@@ -59,7 +59,7 @@ void main(){
    + specialization constants (to set workgroup dimensions, etc...)
    + push-constants (to pass small data (<= 128 Bytes), like task dimensions etc...)
    + whatever compute shaders support, shared memory, etc...
-- async data transfer/kernel execution with host-side synchronization
+- asynchronous data transfer and kernel execution with host-side synchronization
 - multiple device support
 - [yet to come...](doc/features_to_come.md)
 - [not ever coming...](doc/features_not_to_come.md)
