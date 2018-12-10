@@ -22,7 +22,8 @@ namespace properties {
 	   static constexpr bufflags_t buffer = {};
 	};
 
-	/// Flags for buffer used as a staging buffer to transfer data to GPU.
+	/// Flags for buffer in a host-accessible memory with coherent access. 
+	/// Best used as a staging buffer to transfer data to GPU.
 	struct HostCoherent {
 	   using fallback_t = Host;
 	   static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eHostVisible )
@@ -30,7 +31,8 @@ namespace properties {
 	   static constexpr bufflags_t buffer = bufflags_t(vk::BufferUsageFlagBits::eTransferSrc);
 	};
 
-	/// Flags for buffer used as a staging buffer to transfer data from GPU.
+	/// Flags for buffer in a host-accessible memory with cached access. 
+	/// Best used as a staging buffer to transfer data from GPU.
 	struct HostCached {
 	   using fallback_t = Host;
 	   static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eHostVisible)
