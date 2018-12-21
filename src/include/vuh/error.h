@@ -12,7 +12,7 @@ namespace vuh {
 	};
 
 	/// Exception indicating failure to read a file.
-	class FileReadFailure: std::runtime_error {
+	class FileReadFailure: public std::runtime_error {
 	public:
 		FileReadFailure(const std::string& message);
 		FileReadFailure(const char* message);
