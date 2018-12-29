@@ -3,7 +3,7 @@
 #include <vector>
 
 auto main()-> int {
-   auto y = std::vector<float>(128, 1.0f);
+	auto y = std::vector<float>(128, 1.0f);
 	auto x = std::vector<float>(128, 2.0f);
 	const auto a = 0.1f; // saxpy scaling constant
 
@@ -19,5 +19,5 @@ auto main()-> int {
 	program.grid(128/64).spec(64)({128, a}, d_y, d_x); // run once, wait for completion
 	d_y.toHost(begin(y));                              // copy data back to host
 
-   return 0;
+	return 0;
 }

@@ -55,5 +55,5 @@ auto main()-> int {
 		instance.report("explicit message log", err.what(), VK_DEBUG_REPORT_ERROR_BIT_EXT);
 	}
 
-   return 0;
+	return 0;
 }
