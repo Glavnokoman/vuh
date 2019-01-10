@@ -71,7 +71,7 @@ namespace {
 	}
 
 	/// Default debug reporter used when user did not care to provide his own.
-	static auto debugReporter(
+	static auto VKAPI_ATTR debugReporter(
 	      VkDebugReportFlagsEXT , VkDebugReportObjectTypeEXT, uint64_t, size_t, int32_t
 	      , const char*                pLayerPrefix
 	      , const char*                pMessage
