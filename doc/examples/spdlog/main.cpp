@@ -3,6 +3,11 @@
 
 #include <spdlog/spdlog.h>
 
+/// spdlog-1.2.1 basic_logger_mt moved to <spdlog/sinks/basic_file_sink.h>
+#if __has_include(<spdlog/sinks/basic_file_sink.h>)
+#include <spdlog/sinks/basic_file_sink.h>
+#endif
+
 #include <fstream>
 #include <vector>
 
