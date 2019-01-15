@@ -6,7 +6,7 @@
 - [Glslang](https://github.com/KhronosGroup/glslang) (optional, build-only)
 - [Catch2](https://github.com/catchorg/Catch2) (optional, build-only)
 - [sltbench](https://github.com/ivafanas/sltbench) (optional, build-only)
-- [spdlog] (https://github.com/gabime/spdlog) (>=1.2.1)
+- [spdlog](https://github.com/gabime/spdlog) (>=1.2.1)
 
 ## Compile with dependencies already in place
 This assumes required dependencies are already present on your system and findable by ```cmake```.
