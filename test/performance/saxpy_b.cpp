@@ -90,7 +90,7 @@ namespace {
 	/// Benchmarked function.
 	/// Just run the kernel, assumes the data copied and kernel all set up.
 	/// This is supposed to be combined with FixCopyDataBindAll fixture.
-	auto saxpy(Program& program, const Params& p)-> void {
+	auto saxpy(Program& program, const Params& /*p*/)-> void {
 		program.run();
 	}
 
@@ -98,7 +98,7 @@ namespace {
 	static const auto params = std::vector<Params>({{32u, 2.f}, {128u, 2.f}, {1024u, 3.f}});
 } // namespace
 
-SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixDataHostVisible, params);
-SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixCopyDataBindAll, params);
+SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixDataHostVisible, params)
+SLTBENCH_FUNCTION_WITH_FIXTURE_AND_ARGS(saxpy, FixCopyDataBindAll, params)
 
-SLTBENCH_MAIN();
+SLTBENCH_MAIN()
