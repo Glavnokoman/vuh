@@ -68,11 +68,15 @@ public:
 		return bool(_flags & vk::MemoryPropertyFlagBits::eHostVisible);
 	}
 
-	/// Move assignment. Resources associated with current array are released immidiately and not when moved from
-	/// object goes out of scope.
+	/// Move assignment. 
+	/// Resources associated with current array are released immidiately (and not when moved from
+	/// object goes out of scope).
 	auto operator= (BasicArray&& other) noexcept-> BasicArray& {
 		release();
-		std::memcpy(this, &other, sizeof(BasicArray));
+		_mem = other._mem;
+		_flags = other._flags;
+		_dev = other._dev;
+		reinterpret_cast<vk::Buffer&>(*this) = reinterpret_cast<vk::Buffer&>(other);
 		reinterpret_cast<vk::Buffer&>(other) = nullptr;
 		return *this;
 	}
