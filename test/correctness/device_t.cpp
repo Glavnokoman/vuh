@@ -14,7 +14,7 @@ namespace {
 
 TEST_CASE("initialization & system info", "[correctness]"){
 	SECTION("physical devices properties and queues"){
-		for(const auto& pd: instance.physDevices()){
+		for(const auto& pd: instance.physicalDevices()){
 			auto props = pd.getProperties(); // forwards vk::PhysicalDevice
 
 			std::cout << "physical device: " << pd.name() << "\n"
@@ -32,8 +32,23 @@ TEST_CASE("initialization & system info", "[correctness]"){
 			}
 		}
 	}
+	SECTION("wild ideas"){
+		auto pd = instance.physicalDevices().at(0);
+		auto dev0 = pd.computeDevice(); // default, best allocation of 1 transport and 1 compute queue
+		auto dev1 = pd.computeDevice(vuh::Queues::Default); // same default
+		auto dev2 = pd.computeDevice(vuh::Queues::All);     // claim all queues
+		auto dev3 = pd.computeDevice(vuh::Queues::Streams(4)); // best possible allocation of queues to accomodate 4 streams
+		auto dev4 = pd.computeDevice(vuh::Queues::Spec
+		                             { {0 /*family_id*/, 4 /*number queues*/, {/*priorities*/}}
+		                             , {1, 2, {}}
+		                             , {2, 1, {}} });
+		for(size_t i = 0; i < dev4.nQueues(); ++i){
+			auto q_i = dev4.queue(i);
+			std::cout << q_i.canCompute() << q_i.canTransfer() << "\n";
+		}
+	}
 	SECTION("default compute device"){
-		auto phys_dev = instance.physDevices().at(0);
+		auto phys_dev = instance.physicalDevices().at(0);
 		auto dev = phys_dev.computeDevice(); // only default queues
 		SECTION("attach queues to a default-constructed device"){
 			SECTION("compute and transfer queues"){

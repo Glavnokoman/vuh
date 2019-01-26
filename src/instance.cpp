@@ -123,9 +123,9 @@ namespace vuh {
 	                   , const vk::ApplicationInfo& info
 	                   , debug_reporter_t report_callback
 	                   )
-	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
+	   : vk::Instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
 	   , _reporter(report_callback ? report_callback : debugReporter)
-	   , _reporter_cbk(registerReporter(_instance, _reporter))
+	   , _reporter_cbk(registerReporter(*this, _reporter))
 	{}
 
 	/// Clean instance resources.
@@ -135,17 +135,17 @@ namespace vuh {
 
 	/// Move constructor
 	Instance::Instance(Instance&& o) noexcept
-	   : _instance(o._instance)
+	   : vk::Instance(std::move(o))
 	   , _reporter(o._reporter)
 	   , _reporter_cbk(o._reporter_cbk)
 	{
-		o._instance = nullptr;
+		static_cast<vk::Instance&>(*this) = nullptr;
 	}
 
 	/// Move assignment
 	auto Instance::operator=(Instance&& o) noexcept-> Instance& {
 		using std::swap;
-		swap(_instance, o._instance);
+		swap(static_cast<vk::Instance&>(*this), static_cast<vk::Instance&>(o));
 		swap(_reporter, o._reporter);
 		swap(_reporter_cbk, o._reporter_cbk);
 		return *this;
@@ -154,23 +154,22 @@ namespace vuh {
 	/// Destroy underlying vulkan instance.
 	/// All resources associated with it, should be released before that.
 	auto Instance::clear() noexcept-> void {
-		if(_instance){
+		if(static_cast<vk::Instance&>(*this)){
 			if(_reporter_cbk){// unregister callback.
 				auto destroyFn = PFN_vkDestroyDebugReportCallbackEXT(
-				                    vkGetInstanceProcAddr(_instance, "vkDestroyDebugReportCallbackEXT")
+				                    vkGetInstanceProcAddr(*this, "vkDestroyDebugReportCallbackEXT")
 				                    );
 				if(destroyFn){
-					destroyFn(_instance, _reporter_cbk, nullptr);
+					destroyFn(*this, _reporter_cbk, nullptr);
 				}
 			}
-
-			_instance.destroy();
+			static_cast<vk::Instance&>(*this).destroy();
 		}
 	}
 
 	/// @return vector of available vulkan devices
 	auto Instance::devices()-> std::vector<Device> {
-		auto physdevs = _instance.enumeratePhysicalDevices();
+		auto physdevs = this->enumeratePhysicalDevices();
 		auto r = std::vector<Device>{};
 		for(auto pd: physdevs){
 			r.emplace_back(*this, pd);
