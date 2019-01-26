@@ -13,7 +13,6 @@ namespace {
 } // namespace
 
 TEST_CASE("initialization & system info", "[correctness]"){
-
 	SECTION("physical devices properties and queues"){
 		for(const auto& pd: instance.physDevices()){
 			auto props = pd.getProperties(); // forwards vk::PhysicalDevice

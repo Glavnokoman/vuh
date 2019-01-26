@@ -15,7 +15,7 @@ namespace vuh {
 	/// In debug builds adds default validation layer/extension.
 	/// Default debug reporter sends messages to std::cerr.
 	/// Reentrant.
-	class Instance {
+	class Instance: public vk::Instance {
 	public:
 		explicit Instance(const std::vector<const char*>& layers={}
 		                 , const std::vector<const char*>& extension={}
@@ -36,7 +36,7 @@ namespace vuh {
 	private: // helpers
 		auto clear() noexcept-> void;
 	private: // data
-		vk::Instance _instance;     ///< vulkan instance
+//		vk::Instance _instance;     ///< vulkan instance
 		debug_reporter_t _reporter; ///< points to actual reporting function. This pointer is registered with a reporter callback but can also be used directly.
 		VkDebugReportCallbackEXT _reporter_cbk; ///< report callback. Only used to release the handle in the end.
 	}; // class Instance
