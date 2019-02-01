@@ -22,7 +22,7 @@ const auto scale_mult = 2.0f; // saxpy mult
 const auto out_ref = test::saxpy(hy, hx, scale_mult);
 
 auto instance = vuh::Instance();
-auto pdev = instance.physDevices().at(0);
+auto pdev = instance.physicalDevices().at(0);
 } // namespace
 
 TEST_CASE("queues", "[correctness][async]"){
@@ -34,15 +34,15 @@ TEST_CASE("queues", "[correctness][async]"){
 	struct Params{uint32_t size; float a;};
 	auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv");
 
-	SECTION("mixed queues"){
+	SECTION("streams"){
 		constexpr auto n_queues = 4;
-		auto queues = device.mixedQueues(n_queues); // should work even if there are not enough physical queues
+		auto queues = device.makeStreams(n_queues); // should work even if there are not enough physical queues
 		REQUIRE(queues.size() == n_queues);
 
 		const auto patch_size = arr_size/n_queues;
 		const auto block_size = 128;
 		auto h_out = vuh::Array<float, vuh::mem::HostCached>(device, arr_size);
-		SECTION("fine-grained mixed queue config"){
+		SECTION("fine-grained stream config"){
 			auto transfer_queue_ids = std::vector<size_t>{};
 			auto compute_queue_ids = std::vector<size_t>{};
 			for(size_t i = 0; i < device.numQueues(); ++i){
@@ -61,7 +61,7 @@ TEST_CASE("queues", "[correctness][async]"){
 			auto fine_queues = device.mixedQueues(queue_config);
 			REQUIRE(fine_queues.size() == n_queues);
 		}
-		SECTION("mixed queues 1"){
+		SECTION("streams 1"){
 			auto off = size_t(0);
 			for(auto& q: queues){
 				auto cb = q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off))
@@ -79,7 +79,7 @@ TEST_CASE("queues", "[correctness][async]"){
 			
 			REQUIRE(h_out == test::approx(out_ref).eps(1e-5));
 		}
-		SECTION("mixed queues 2"){
+		SECTION("streams 2"){
 			auto off = size_t(0);
 			for(auto& q: queues){
 				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off))
@@ -97,7 +97,7 @@ TEST_CASE("queues", "[correctness][async]"){
 			
 			REQUIRE(h_out == test::approx(out_ref).eps(1e-5));
 		}
-		SECTION("mixed queues 3"){
+		SECTION("streams 3"){
 			auto cbs = std::vector<vuh::BarrierCompute>{};
 			auto off = size_t(0);
 			for(auto& q: queues){
