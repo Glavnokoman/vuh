@@ -64,15 +64,15 @@ TEST_CASE("queues", "[correctness][async]"){
 		SECTION("streams 1"){
 			auto off = size_t(0);
 			for(auto& q: queues){
-				auto cb = q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off))
-				           .copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off))
+				auto cb = q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size))
+				           .copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size))
 				           .cb();
 				auto tb = cb.run(program.grid(patch_size/block_size).spec(block_size)
 				                        .bind( {patch_size, scale_mult}
 				                             , vuh::array_view(d_y, off, off + patch_size)
 				                             , vuh::array_view(d_x, off, off + patch_size))
 				                 ).tb();
-				tb.copy(vuh::array_view(d_y, off, patch_size), vuh::array_view(h_out, off));
+				tb.copy(vuh::array_view(d_y, off, patch_size), vuh::array_view(h_out, off, off+patch_size));
 				off += patch_size;
 			}
 			for(auto& q: queues){ q.wait(); } // wait till queues are empty
@@ -82,15 +82,15 @@ TEST_CASE("queues", "[correctness][async]"){
 		SECTION("streams 2"){
 			auto off = size_t(0);
 			for(auto& q: queues){
-				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off))
-				 .copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off))
+				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size))
+				 .copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size))
 				 .cb()
 				 .run(program.grid(patch_size/block_size).spec(block_size)
 				             .push(patch_size, scale_mult)
 				             .bind( vuh::array_view(d_y, off, off + patch_size)
 				                  , vuh::array_view(d_x, off, off + patch_size)))
 				 .tb()
-				 .copy(vuh::array_view(d_y, off, patch_size), vuh::array_view(h_out, off));
+				 .copy(vuh::array_view(d_y, off, patch_size), vuh::array_view(h_out, off, off+patch_size));
 				off += patch_size;
 			}
 			for(auto& q: queues){ q.wait(); } // wait till queues are empty
@@ -101,8 +101,8 @@ TEST_CASE("queues", "[correctness][async]"){
 			auto cbs = std::vector<vuh::BarrierCompute>{};
 			auto off = size_t(0);
 			for(auto& q: queues){
-				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off));
-				q.copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off));
+				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size));
+				q.copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size));
 				cbs.push_back(q.cb());
 				off += patch_size;
 			}
@@ -131,20 +131,20 @@ TEST_CASE("queues", "[correctness][async]"){
 		SECTION("inter-queue sync"){
 			program.grid(patch_size/block_size).spec(block_size).push(patch_size, scale_mult);
 			
-			auto e1 = queues[0].copy(&hy[0], &hy[arr_size], d_y).bq(); // vuh::BarrierQueue
-			auto e2 = queues[1].copy(&hx[0], &hx[arr_size], d_x).bq();
+			auto e1 = queues[0].copy(&hy[0], &hy[arr_size], d_y).qb(); // vuh::BarrierQueue
+			auto e2 = queues[1].copy(&hx[0], &hx[arr_size], d_x).qb();
 			auto e3 = queues[2].on(e1, e2).run(
 			             program.bind( vuh::array_view(d_y, 0, arr_size/2)
 			                         , vuh::array_view(d_x, 0, arr_size/2))
-			             ).bq();
+			             ).qb();
 			auto e4 = queues[3].on(e1, e2).run(
 			             program.bind( vuh::array_view(d_y, arr_size/2, arr_size)
 			                         , vuh::array_view(d_x, arr_size/2, arr_size))
-			             ).bq();
+			             ).qb();
 			auto hb = queues[0].on(e3).copy( vuh::array_view(d_y, 0, arr_size/2) 
-			                               , vuh::array_view(h_out, 0)).hb();
+			                               , vuh::array_view(h_out, 0, arr_size/2)).hb();
 			queues[1].on(e4).copy( vuh::array_view(d_y, arr_size/2, arr_size) 
-			                     , vuh::array_view(h_out, arr_size/2)).hb();
+			                     , vuh::array_view(h_out, arr_size/2, arr_size)).hb();
 			hb.wait();
 			
 			REQUIRE(h_out == test::approx(out_ref).eps(1e-5));

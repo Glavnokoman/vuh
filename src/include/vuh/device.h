@@ -7,22 +7,25 @@
 namespace vuh {
 	class Instance;
 	class Queue;
+	class PhysicalDevice;
 
 	/// construction options for compute device
-	namespace devOpts {
-		enum ConstructionOptions {Default, AllQueues};
+	namespace queueOptions {
+		enum Simple {Default, AllQueues};
 
+		/// doc me
 		struct Streams {
 			const unsigned number;
 		};
 
-		struct QueueSpec {
+		/// doc me
+		struct Spec {
 			unsigned family_id;
 			unsigned num_queues;
 			std::vector<float> priorities;
 		};
 
-		using QueueSpecs = std::vector<QueueSpec>;
+		using Specs = std::vector<Spec>;
 	} // namespace devOpts
 
 	/// Logical device packed with associated command pools and buffers.
@@ -37,9 +40,9 @@ namespace vuh {
 	public:
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice);
 		explicit Device(vuh::PhysicalDevice& physdevice);
-		explicit Device(vuh::PhysicalDevice& physdevice, devOpts::ConstructionOptions);
-		explicit Device(vuh::PhysicalDevice& physdevice, devOpts::Streams nstreams);
-		explicit Device(vuh::PhysicalDevice& physdevice, const devOpts::QueueSpecs& specs);
+		explicit Device(vuh::PhysicalDevice& physdevice, queueOptions::Simple);
+		explicit Device(vuh::PhysicalDevice& physdevice, queueOptions::Streams nstreams);
+		explicit Device(vuh::PhysicalDevice& physdevice, const queueOptions::Specs& specs);
 
 		~Device() noexcept;
 
@@ -58,7 +61,7 @@ namespace vuh {
 		auto hasSeparateQueues() const-> bool;
 		auto queueCount() const-> uint32_t;
 
-		auto queue(uint32_t i)-> vk::Queue;
+		auto queue(uint32_t i)-> vuh::Queue;
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
 		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
