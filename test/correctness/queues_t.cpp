@@ -35,17 +35,16 @@ TEST_CASE("queues", "[correctness][async]"){
 	auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv");
 
 	SECTION("streams"){
-		constexpr auto n_queues = 4;
-		auto queues = device.makeStreams(n_queues); // should work even if there are not enough physical queues
-		REQUIRE(queues.size() == n_queues);
+		auto streams = device.streams();
+		const auto n_streams = streams.size();
 
-		const auto patch_size = arr_size/n_queues;
+		const auto patch_size = arr_size/n_streams;
 		const auto block_size = 128;
 		auto h_out = vuh::Array<float, vuh::mem::HostCached>(device, arr_size);
 		SECTION("fine-grained stream config"){
 			auto transfer_queue_ids = std::vector<size_t>{};
 			auto compute_queue_ids = std::vector<size_t>{};
-			for(size_t i = 0; i < device.numQueues(); ++i){
+			for(size_t i = 0; i < device.queueCount(); ++i){
 				if(device.queue(i).canCompute()){
 					compute_queue_ids.push_back(i);
 				}
@@ -53,8 +52,8 @@ TEST_CASE("queues", "[correctness][async]"){
 					compute_queue_ids.push_back(i);
 				}
 			}
-			auto queue_config = std::vector<vuh::MixedQueueSpec>{};
-			for(size_t i = 0; i < n_queues; ++i){
+			auto queue_config = std::vector<vuh::StreamSpec>{};
+			for(size_t i = 0; i < n_streams; ++i){
 				queue_config.push_back({ compute_queue_ids[i % compute_queue_ids.size()]
 				                       , transfer_queue_ids[i % transfer_queue_ids.size()]});
 			}
@@ -63,7 +62,7 @@ TEST_CASE("queues", "[correctness][async]"){
 		}
 		SECTION("streams 1"){
 			auto off = size_t(0);
-			for(auto& q: queues){
+			for(auto& q: streams){
 				auto cb = q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size))
 				           .copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size))
 				           .cb();
@@ -75,13 +74,13 @@ TEST_CASE("queues", "[correctness][async]"){
 				tb.copy(vuh::array_view(d_y, off, patch_size), vuh::array_view(h_out, off, off+patch_size));
 				off += patch_size;
 			}
-			for(auto& q: queues){ q.wait(); } // wait till queues are empty
+			for(auto& q: streams){ q.wait(); } // wait till queues are empty
 			
 			REQUIRE(h_out == test::approx(out_ref).eps(1e-5));
 		}
 		SECTION("streams 2"){
 			auto off = size_t(0);
-			for(auto& q: queues){
+			for(auto& q: streams){
 				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size))
 				 .copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size))
 				 .cb()
@@ -93,14 +92,14 @@ TEST_CASE("queues", "[correctness][async]"){
 				 .copy(vuh::array_view(d_y, off, patch_size), vuh::array_view(h_out, off, off+patch_size));
 				off += patch_size;
 			}
-			for(auto& q: queues){ q.wait(); } // wait till queues are empty
+			for(auto& q: streams){ q.wait(); } // wait till queues are empty
 			
 			REQUIRE(h_out == test::approx(out_ref).eps(1e-5));
 		}
 		SECTION("streams 3"){
 			auto cbs = std::vector<vuh::BarrierCompute>{};
 			auto off = size_t(0);
-			for(auto& q: queues){
+			for(auto& q: streams){
 				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size));
 				q.copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size));
 				cbs.push_back(q.cb());

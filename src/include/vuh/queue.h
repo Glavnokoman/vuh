@@ -34,8 +34,8 @@ public:
 	auto hb()-> vuh::BarrierHost;
 
 private: // data
-	const uint32_t     _family_id;
-	vk::CommandBuffer* _cmd_buffer;
+	const uint32_t     _family_id;  ///< id of the family that queue belongs to
+	vk::CommandBuffer* _cmd_buffer; ///< command buffer associated with the family
 }; // class Queue
 
 
