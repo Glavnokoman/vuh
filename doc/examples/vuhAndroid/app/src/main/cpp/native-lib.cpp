@@ -12,9 +12,9 @@
 static char * loadFromAsset(AAssetManager* mgr,const char* file,size_t& len) {
     AAsset * asset = AAssetManager_open(mgr, file, AASSET_MODE_BUFFER);
     if (NULL != asset) {
-        size_t length = AAsset_getLength(asset);
-        char *content = new char[length];
-        AAsset_read(asset, content, length);
+        len = AAsset_getLength(asset);
+        char *content = new char[len];
+        AAsset_read(asset, content, len);
         AAsset_close(asset);
         return content;
     }
