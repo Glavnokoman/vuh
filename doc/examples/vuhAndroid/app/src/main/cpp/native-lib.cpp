@@ -9,17 +9,33 @@
 #include <android/asset_manager_jni.h>
 #include "log.h"
 
-static char * loadFromAsset(AAssetManager* mgr,const char* file) {
+static char * loadFromAsset(AAssetManager* mgr,const char* file,size_t& len) {
     AAsset * asset = AAssetManager_open(mgr, file, AASSET_MODE_BUFFER);
-    size_t length = AAsset_getLength(asset);
-    char * content = new char[length];
-    AAsset_read(asset, content, length);
-    AAsset_close(asset);
-    return content;
+    if (NULL != asset) {
+        size_t length = AAsset_getLength(asset);
+        char *content = new char[length];
+        AAsset_read(asset, content, length);
+        AAsset_close(asset);
+        return content;
+    }
+    return NULL;
 }
 
-static bool loadSaxpy(AAssetManager* mgr,std::vector<char>& code) {
-    char * saxpy = loadFromAsset(mgr,"saxpy.comp");
+static bool loadFromAsset(AAssetManager* mgr,const char* file,std::vector<char>& buf) {
+    AAsset * asset = AAssetManager_open(mgr, file, AASSET_MODE_BUFFER);
+    if(NULL != asset ) {
+        size_t length = AAsset_getLength(asset);
+        buf.resize(length);
+        AAsset_read(asset, &buf[0], length);
+        AAsset_close(asset);
+        return true;
+    }
+    return false;
+}
+
+static bool loadSaxpyComp(AAssetManager* mgr,std::vector<char>& code) {
+    size_t len = 0;
+    char * saxpy = loadFromAsset(mgr,"saxpy.comp",len);
     if(NULL != saxpy) {
         std::vector<unsigned int> spirv;
         bool suc = glsl2spv(VK_SHADER_STAGE_COMPUTE_BIT,saxpy,spirv);
@@ -34,7 +50,11 @@ static bool loadSaxpy(AAssetManager* mgr,std::vector<char>& code) {
     return false;
 }
 
-static auto saxpy(AAssetManager* mgr)-> bool {
+static bool loadSaxpySpv(AAssetManager* mgr,std::vector<char>& code) {
+    return loadFromAsset(mgr,"saxpy.spv",code);
+}
+
+static auto saxpy(AAssetManager* mgr,bool comp)-> bool {
     auto y = std::vector<float>(128, 1.0f);
     auto x = std::vector<float>(128, 2.0f);
     const auto a = 0.1f; // saxpy scaling constant
@@ -53,7 +73,12 @@ static auto saxpy(AAssetManager* mgr)-> bool {
         };
         LOGD("saxpy before %f",y[0]);
         std::vector<char> code;
-        bool suc = loadSaxpy(mgr, code);
+        bool suc = false;
+        if (comp) {
+            suc = loadSaxpyComp(mgr, code);
+        } else {
+            suc = loadSaxpySpv(mgr, code);
+        }
         if (suc) {
             auto program = vuh::Program<Specs, Params>(device,
                                                        code); // define the kernel by linking interface and spir-v implementation
@@ -75,6 +100,7 @@ Java_com_mobibrw_vuhandroid_MainActivity_stringFromJNI(
         jobject assetManager) {
     std::string hello = "Hello from C++";
     AAssetManager * assetMgr = AAssetManager_fromJava(env, assetManager);
-    saxpy(assetMgr);
+    saxpy(assetMgr, true);
+    saxpy(assetMgr, false);
     return env->NewStringUTF(hello.c_str());
 }

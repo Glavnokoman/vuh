@@ -38,6 +38,18 @@ SET(Vuh_INCLUDE_PATH ${VUH_ROOT_DIR}src/include)
 include_directories(${Vulkan_INCLUDE_DIR})
 include_directories(${Vuh_INCLUDE_PATH})
 
+# for make .comp to .spv
+SET(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/main/assets)
+# from ${ANDROID_NDK}/build/cmake/android.toolchain.cmake
+# TOOL_OS_SUFFIX linux or macOS TOOL_OS_SUFFIX "" windows TOOL_OS_SUFFIX ".exe"
+SET(GLSLC ${ANDROID_NDK}/shader-tools/${ANDROID_NDK_HOST_SYSTEM_NAME}/glslc${TOOL_OS_SUFFIX})
+add_custom_command(OUTPUT GLSL2SPVCMD
+        COMMAND ${GLSLC} -c ${SHADER_DIR}/saxpy.comp -o ${SHADER_DIR}/saxpy.spv
+        )
+add_custom_target(GLSL2SPV
+        DEPENDS GLSL2SPVCMD
+        )
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -55,6 +67,7 @@ add_library( # Sets the name of the library.
 
 
 add_dependencies(native-lib vuh)
+add_dependencies(native-lib GLSL2SPV)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
