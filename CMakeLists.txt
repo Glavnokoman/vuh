@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(vuh VERSION 1.1.1)
+project(vuh VERSION 1.1.2)
 
 option(VUH_BUILD_BENCHMARKS "Build benchmarks for vuh library" OFF)
 option(VUH_BUILD_DOCS "Build doxygen documentation for vuh" ON)

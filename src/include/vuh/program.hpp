@@ -177,10 +177,21 @@ namespace vuh {
 				o._shader = nullptr; //
 			}
 
-			/// Move assignment.
+			/// Move assignment. Releases resources allocated for current instance before taking 
+			/// ownership over those of the other instance.
 			ProgramBase& operator= (ProgramBase&& o) noexcept {
 				release();
-				std::memcpy(this, &o, sizeof(ProgramBase));
+				// member-wise copy
+				_shader     = o._shader;
+				_dsclayout  = o._dsclayout;
+				_dscpool    = o._dscpool;
+				_dscset     = o._dscset;
+				_pipecache  = o._pipecache; 
+				_pipelayout	= o._pipelayout;
+				_pipeline   = o._pipeline;
+				_device     = o._device;
+				_batch      = o._batch;	
+			
 				o._shader = nullptr;
 				return *this;
 			}
