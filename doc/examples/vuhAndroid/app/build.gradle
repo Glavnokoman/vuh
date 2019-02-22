@@ -29,6 +29,19 @@ android {
             path "CMakeLists.txt"
         }
     }
+
+    // for Validation Layers and debug
+    sourceSets {
+        main {
+            jniLibs {
+                // Gradle includes libraries in the following path as dependencies
+                // of your CMake or ndk-build project so that they are packaged in
+                // your app’s APK.
+                def NDKDir = android.ndkDirectory
+                srcDir "${NDKDir}/sources/third_party/vulkan/src/build-android/jniLibs"
+            }
+        }
+    }
 }
 
 dependencies {
