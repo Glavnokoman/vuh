@@ -95,15 +95,17 @@ namespace {
 
 	/// Register a callback function for the extension VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
 	/// so that warnings emitted from the validation layer are actually printed.
-	auto registerReporter(vk::Instance instance, vuh::debug_reporter_t reporter
+	auto registerReporter(vk::Instance instance, vuh::debug_reporter_t reporter,
+	                     vuh::debug_reporter_flags_t flags = DEF_DBG_REPORT_FLAGS,
+	                     void*	userdata = nullptr
 	                     )-> VkDebugReportCallbackEXT
 	{
 		auto ret = VkDebugReportCallbackEXT(nullptr);
 		auto createInfo = VkDebugReportCallbackCreateInfoEXT{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-		createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT
-		                   | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+		createInfo.flags = flags;
 		createInfo.pfnCallback = reporter;
+		createInfo.pUserData = userdata;
 
 		// explicitly load this function
 		auto createFN = PFN_vkCreateDebugReportCallbackEXT(
@@ -122,10 +124,12 @@ namespace vuh {
 	                   , const std::vector<const char*>& extension
 	                   , const vk::ApplicationInfo& info
 	                   , debug_reporter_t report_callback
+	                   , debug_reporter_flags_t report_flags
+					   , void* report_userdata
 	                   )
 	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
 	   , _reporter(report_callback ? report_callback : debugReporter)
-	   , _reporter_cbk(registerReporter(_instance, _reporter))
+	   , _reporter_cbk(registerReporter(_instance, _reporter,report_flags,report_userdata))
 	{}
 
 	/// Clean instance resources.

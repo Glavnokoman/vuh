@@ -137,7 +137,8 @@ static auto saxpyValidationLayers(AAssetManager* mgr)-> bool {
     auto y = std::vector<float>(128, 1.0f);
     auto x = std::vector<float>(128, 2.0f);
     const auto a = 0.1f; // saxpy scaling constant
-    auto instance = vuh::Instance(layer_names,{VK_EXT_DEBUG_REPORT_EXTENSION_NAME},{nullptr, 0, nullptr, 0, VK_API_VERSION_1_0},debugReporter);
+    vuh::debug_reporter_flags_t flags = DEF_DBG_REPORT_FLAGS | VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+    auto instance = vuh::Instance(layer_names,{VK_EXT_DEBUG_REPORT_EXTENSION_NAME},{nullptr, 0, nullptr, 0, VK_API_VERSION_1_0},debugReporter,flags);
     if (instance.devices().size() > 0) {
         auto device = instance.devices().at(0);  // just get the first compute-capable device
 

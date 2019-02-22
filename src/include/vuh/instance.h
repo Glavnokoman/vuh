@@ -9,6 +9,9 @@ namespace vuh {
 
 	using debug_reporter_t = PFN_vkDebugReportCallbackEXT;
 
+	using debug_reporter_flags_t = VkDebugReportFlagsEXT;
+	#define DEF_DBG_REPORT_FLAGS  (VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+
 	/// Working with vuh starts from creating an object of this class.
 	/// Its main responsibility is listing the available devices and handling extensions and layers.
 	/// It is also responsible for logging vuh and vulkan messages.
@@ -21,6 +24,8 @@ namespace vuh {
 		                 , const std::vector<const char*>& extension={}
 		                 , const vk::ApplicationInfo& info={nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}
 		                 , debug_reporter_t report_callback=nullptr
+		                 , debug_reporter_flags_t report_flags=DEF_DBG_REPORT_FLAGS
+		                 , void* report_userdata=nullptr
 		                 );
 
 		~Instance() noexcept;
