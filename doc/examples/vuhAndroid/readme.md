@@ -1,4 +1,6 @@
 following https://developer.android.google.cn/ndk/guides/graphics/shader-compilers
+	https://developer.android.com/ndk/guides/graphics/validation-layer?hl=zh-cn
+	
 saxpy example on Android
 
 ```
@@ -44,3 +46,6 @@ $ export ANDROID_CMAKE_REV_3_10="3.10.2.4988404"
 $ ${ANDROID_SDK_HOME}/tools/bin/sdkmanager "cmake;$ANDROID_CMAKE_REV_3_10"
 
 ```
+
+debug Validation Layers following
+    https://developer.android.com/ndk/guides/graphics/validation-layer?hl=zh-cn
