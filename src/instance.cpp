@@ -111,7 +111,11 @@ namespace {
 		auto createFN = PFN_vkCreateDebugReportCallbackEXT(
 		                                  instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
 		if(createFN){
-			createFN(instance, &createInfo, nullptr, &ret);
+            //https://github.com/KhronosGroup/Vulkan-Hpp/issues/70
+            // 32-bit vulkan is not typesafe for handles, so don't allow copy constructors on this platform by default.
+            // VULKAN_HPP_TYPESAFE_CONVERSION commit
+            // we use vk::Instance's  VkInstance() operator get right handle value
+			createFN(VkInstance(instance), &createInfo, nullptr, &ret);
 		}
 		return ret;
 	}
@@ -160,11 +164,15 @@ namespace vuh {
 	auto Instance::clear() noexcept-> void {
 		if(_instance){
 			if(_reporter_cbk){// unregister callback.
+                //https://github.com/KhronosGroup/Vulkan-Hpp/issues/70
+                // 32-bit vulkan is not typesafe for handles, so don't allow copy constructors on this platform by default.
+                // VULKAN_HPP_TYPESAFE_CONVERSION commit
+                // we use vk::Instance's  VkInstance() operator get right handle value
 				auto destroyFn = PFN_vkDestroyDebugReportCallbackEXT(
-				                    vkGetInstanceProcAddr(_instance, "vkDestroyDebugReportCallbackEXT")
+				                    vkGetInstanceProcAddr(VkInstance(_instance), "vkDestroyDebugReportCallbackEXT")
 				                    );
 				if(destroyFn){
-					destroyFn(_instance, _reporter_cbk, nullptr);
+					destroyFn(VkInstance(_instance), _reporter_cbk, nullptr);
 				}
 			}
 

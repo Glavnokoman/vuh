@@ -25,7 +25,9 @@ add_library(vulkan SHARED IMPORTED)
 set_target_properties(vulkan PROPERTIES IMPORTED_LOCATION ${Vulkan_LIBRARIES})
 
 # for vuh
-add_definitions(-DVK_USE_PLATFORM_ANDROID_KHR=1 -DVULKAN_HPP_TYPESAFE_CONVERSION=1)
+# do'nt define VULKAN_HPP_TYPESAFE_CONVERSION it's not safe on 32bits system
+# from vulkan.hpp "32-bit vulkan is not typesafe for handles, so don't allow copy constructors on this platform by default."
+add_definitions(-DVK_USE_PLATFORM_ANDROID_KHR=1)
 SET(VUH_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../)
 SET(VUH_BUILD_TESTS OFF)
 SET(VUH_BUILD_DOCS OFF)
