@@ -167,6 +167,80 @@ static auto saxpyValidationLayers(AAssetManager* mgr)-> bool {
     return false;
 }
 
+static auto saxpyAsync(AAssetManager* mgr,bool comp)-> bool {
+    auto y = std::vector<float>(128, 1.0f);
+    auto x = std::vector<float>(128, 2.0f);
+    const auto a = 0.1f; // saxpy scaling constant
+    auto instance = vuh::Instance();
+    if (instance.devices().size() > 0) {
+        auto device = instance.devices().at(0);  // just get the first compute-capable device
+
+        using Specs = vuh::typelist<uint32_t>;
+        struct Params {
+            uint32_t size;
+            float a;
+        };
+        std::vector<char> code;
+        bool suc = false;
+        if (comp) {
+            suc = loadSaxpyComp(mgr, code);
+        } else {
+            suc = loadSaxpySpv(mgr, code);
+        }
+        if (suc) {
+            auto program = vuh::Program<Specs, Params>(device,
+                                                       code); // define the kernel by linking interface and spir-v implementation
+            {
+                LOGD("saxpy async before %f",y[0]);
+                auto d_y = vuh::Array<float>(device,
+                                             y); // allocate memory on device and copy data from host
+                auto d_x = vuh::Array<float>(device, x); // same for x
+
+                auto delay = program.grid(128 / 64).spec(64).run_async({128, a}, d_y, d_x);
+                delay.wait(); // run once, wait for completion
+                d_y.toHost(begin(y));                              // copy data back to host
+                LOGD("saxpy async after %f", y[0]);
+            }
+
+            {
+                /*reset args*/
+                y = std::vector<float>(128, 1.0f);
+                LOGD("saxpy async suspend before %f", y[0]);
+
+                auto d_y = vuh::Array<float>(device,
+                                             y); // allocate memory on device and copy data from host
+                auto d_x = vuh::Array<float>(device, x); // same for x
+
+                /*run but suspend wait for signal*/
+                auto delay = program.grid(128 / 64).spec(64).run_async({128, a}, true, d_y, d_x);
+                delay.resume();
+                delay.wait(); // run once, wait for completion
+                d_y.toHost(begin(y));                              // copy data back to host
+                LOGD("saxpy async suspend after %f", y[0]);
+            }
+
+            {
+                /*reset args*/
+                y = std::vector<float>(128, 1.0f);
+                LOGD("saxpy async unsuspend before %f", y[0]);
+                auto d_y = vuh::Array<float>(device,
+                                              y); // allocate memory on device and copy data from host
+                auto d_x = vuh::Array<float>(device, x); // same for x
+
+                /*run but suspend wait for signal*/
+                auto delay3 = program.grid(128 / 64).spec(64).run_async({128, a}, false, d_y,
+                                                                        d_x);
+                delay3.wait(); // run once, wait for completion
+                d_y.toHost(begin(y));
+                LOGD("saxpy async unsuspend after %f", y[0]);
+            }
+        }
+
+        return suc;
+    }
+    return false;
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_mobibrw_vuhandroid_MainActivity_stringFromJNI(
         JNIEnv *env,
@@ -177,5 +251,6 @@ Java_com_mobibrw_vuhandroid_MainActivity_stringFromJNI(
     saxpy(assetMgr, true);
     saxpy(assetMgr, false);
     saxpyValidationLayers(assetMgr);
+    saxpyAsync(assetMgr, false);
     return env->NewStringUTF(hello.c_str());
 }
