@@ -27,7 +27,7 @@ namespace vuh {
 	/// The corresponding action will necessarily take place once and only once, whether
 	/// it is at the explicit wait() call or at object destruction.
 	template<class Action=detail::Noop>
-	class Delayed: public vk::Fence, private Action {
+	class Delayed: public vk::Fence, vk::Event, private Action {
 		template<class> friend class Delayed;
 	public:
 		/// Constructor. Takes ownership of the fence.
@@ -37,6 +37,13 @@ namespace vuh {
 		   , Action(std::move(action))
 		   , _device(&device)
 		{}
+
+        explicit Delayed(vk::Fence fence, vk::Event event, vuh::Device& device, Action action={})
+                : vk::Fence(fence)
+				, vk::Event(event)
+                , Action(std::move(action))
+                , _device(&device)
+        {}
 
 		/// Constructor. Creates the fence in a signalled state.
 		explicit Delayed(vuh::Device& device, Action action={})
@@ -87,10 +94,26 @@ namespace vuh {
 				_device->waitForFences({*this}, true, period);
 				if(_device->getFenceStatus(*this) == vk::Result::eSuccess){
 					_device->destroyFence(*this);
+					if(vk::Event(*this)) {
+						_device->destroyEvent(*this);
+					}
 					static_cast<Action&>(*this)(); // exercise action
 					_device.release();
 				}
 			}
+		}
+
+		/// fire launch signal and wake up blocked program
+		/// we use this for precise time measurement or command pool
+		/// we submit some tasks to driver and wake up them when we need
+		/// it's not thread safe , please call resume on the thread who create the program
+		/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later on android
+		bool resume() {
+			if(vk::Event(*this)) {
+				_device->setEvent(*this);
+				return true;
+			}
+			return false;
 		}
 	private: // data
 		std::unique_ptr<Device, util::NoopDeleter<Device>> _device; ///< refers to the device owning corresponding the underlying fence.

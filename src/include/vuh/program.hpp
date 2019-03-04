@@ -121,17 +121,29 @@ namespace vuh {
 			}
 
 			/// Run the Program object on previously bound parameters.
+			/// if suspend == true we will add an event on the top of command queue ,the command will wait until event is fired
+			/// we use this for precise time measurement or command pool
+			/// we submit some tasks to driver and wake up them when we need
+			/// it's not thread safe , please call resume on the thread who create the program
+			/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later on android
 			/// @return Delayed<Compute> object used for synchronization with host
-			auto run_async()-> vuh::Delayed<Compute> {
+			auto run_async(bool suspend=false)-> vuh::Delayed<Compute> {
 				auto buffer = _device.releaseComputeCmdBuffer();
 				auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &buffer); // submit a single command buffer
+				vk::Event event;
 
+				if(suspend) {
+					event = _device.createEvent(vk::EventCreateInfo());
+					buffer.waitEvents(1, &event, vk::PipelineStageFlagBits::eHost,
+									  vk::PipelineStageFlagBits::eTopOfPipe, 0, NULL, 0, NULL, 0,
+									  NULL);
+				}
 				// submit the command buffer to the queue and set up a fence.
 				auto queue = _device.computeQueue();
 				auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
 				queue.submit({submitInfo}, fence);
 
-				return Delayed<Compute>{fence, _device, Compute(_device, buffer)};
+				return Delayed<Compute>{fence, event, _device, Compute(_device, buffer)};
 			}
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
@@ -427,6 +439,20 @@ namespace vuh {
 		auto run_async(const Params& params, Arrs&&... args)-> vuh::Delayed<detail::Compute> {
 			bind(params, args...);
 			return Base::run_async();
+		}
+
+		/// Initiate execution of the program with provided parameters and immidiately return.
+		/// if suspend == true we will add an event on the top of command queue ,the command will wait until event is fired
+		/// we use this for precise time measurement or command pool
+		/// we submit some tasks to driver and wake up them when we need
+		/// it's not thread safe , please call resume on the thread who create the program
+		/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later
+		/// @return Delayed<Compute> object for synchronization with host.
+		/// @pre grid dimensions should be specified before callind this.
+		template<class... Arrs>
+		auto run_async(const Params& params,bool suspend, Arrs&&... args)-> vuh::Delayed<detail::Compute> {
+			bind(params, args...);
+			return Base::run_async(suspend);
 		}
 	private: // helpers
 		/// Set up the state of the kernel that depends on number and types of bound array parameters.
