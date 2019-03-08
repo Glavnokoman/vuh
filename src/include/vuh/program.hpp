@@ -128,23 +128,57 @@ namespace vuh {
 			/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later on android
 			/// @return Delayed<Compute> object used for synchronization with host
 			auto run_async(bool suspend=false)-> vuh::Delayed<Compute> {
-				auto buffer = _device.releaseComputeCmdBuffer();
-				auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &buffer); // submit a single command buffer
+				vk::Result res = vk::Result::eSuccess;
 				vk::Event event;
+				auto buffer = _device.releaseComputeCmdBuffer(res);
+				if (vk::Result::eSuccess == res) {
+					auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1,
+													 &buffer); // submit a single command buffer
+					if (suspend) {
+						auto ev = _device.createEvent(vk::EventCreateInfo());
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+						res = ev.result;
+						event = ev.value;
+#else
+						event = ev;
+#endif
+						if (bool(event)) {
+							buffer.waitEvents(1, &event, vk::PipelineStageFlagBits::eHost,
+											  vk::PipelineStageFlagBits::eTopOfPipe, 0, NULL, 0,
+											  NULL,
+											  0,
+											  NULL);
+						}
+					}
+					if ((!suspend) || bool(event)) {
+						// submit the command buffer to the queue and set up a fence.
+						auto queue = _device.computeQueue();
+						auto fen = _device.createFence(
+								vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+						res = fen.result;
+						auto fence = fen.value;
+#else
+						auto fence = fen;
+#endif
+						if (bool(fence)) {
+							queue.submit({submitInfo}, fence);
 
-				if(suspend) {
-					event = _device.createEvent(vk::EventCreateInfo());
-					buffer.waitEvents(1, &event, vk::PipelineStageFlagBits::eHost,
-									  vk::PipelineStageFlagBits::eTopOfPipe, 0, NULL, 0, NULL, 0,
-									  NULL);
+							return Delayed<Compute>{fence, event, _device,
+													Compute(_device, buffer)};
+						}
+					}
 				}
-				// submit the command buffer to the queue and set up a fence.
-				auto queue = _device.computeQueue();
-				auto fence = _device.createFence(vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
-				queue.submit({submitInfo}, fence);
-
-				return Delayed<Compute>{fence, event, _device, Compute(_device, buffer)};
+				return Delayed<Compute>(_device, res, event,Compute(_device, nullptr));
 			}
+
+			explicit operator bool() const { return bool(_device); };
+			bool operator!() const {return !_device; };
+
+			vk::Result error() const { return _result; };
+			bool success() const { return (vk::Result::eSuccess == _result); };
+			std::string error_to_string() const {return vk::to_string(_result); };
+
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
 			ProgramBase(vuh::Device& device        ///< device used to run the code
@@ -160,10 +194,17 @@ namespace vuh {
 			            , vk::ShaderModuleCreateFlags flags={}
 			            )
 			   : _device(device)
+			   , _result(vk::Result::eSuccess)
 			{
-				_shader = device.createShaderModule({ flags, uint32_t(code.size())
-				                                    , reinterpret_cast<const uint32_t*>(code.data())
-				                                    });
+				auto shader = device.createShaderModule({ flags, uint32_t(code.size())
+																 , reinterpret_cast<const uint32_t*>(code.data())
+														 });
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+				_result = shader.result;
+				_shader = shader.value;
+#else
+				_shader = shader;
+#endif
 			}
 
 			/// Destroy the object and release associated resources.
@@ -226,13 +267,36 @@ namespace vuh {
 			auto init_pipelayout(const std::array<vk::PushConstantRange, N>& psrange, Arrs&...)-> void {
 				auto dscTypes = typesToDscTypes<Arrs...>();
 				auto bindings = dscTypesToLayout(dscTypes);
-				_dsclayout = _device.createDescriptorSetLayout(
+				auto layout = _device.createDescriptorSetLayout(
 				                                       { vk::DescriptorSetLayoutCreateFlags()
 				                                       , uint32_t(bindings.size()), bindings.data()
 				                                       });
-				_pipecache = _device.createPipelineCache({});
-				_pipelayout = _device.createPipelineLayout(
-				        {vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N), psrange.data()});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+				_result = layout.result;
+				_dsclayout = layout.value;
+#else
+				_dsclayout = layout;
+#endif
+				if(bool(_dsclayout)) {
+					auto pipe_cache = _device.createPipelineCache({});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+					_result = pipe_cache.result;
+					_pipecache = pipe_cache.value;
+#else
+					_pipecache = pipe_cache;
+#endif
+				}
+				if(bool(_pipelayout)) {
+					auto pipe_layout = _device.createPipelineLayout(
+							{vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N),
+							 psrange.data()});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+					_result = pipe_layout.result;
+					_pipelayout = pipe_layout.value;
+#else
+					_pipelayout = pipe_layout;
+#endif
+				}
 			}
 
 			/// Allocates descriptors sets
@@ -242,11 +306,26 @@ namespace vuh {
 				auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
 				                                                   , sizeof...(Arrs));
 				auto descriptor_sizes = std::array<vk::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-				_dscpool = _device.createDescriptorPool(
-				                             {vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
-				                              , uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
-				                              });
-				_dscset = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout})[0];
+				auto pool =  _device.createDescriptorPool(
+						{vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
+								, uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
+						});
+				_result = vk::Result::eSuccess;
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+				_result = pool.result;
+				_dscpool = pool.value;
+#else
+				_dscpool = pool;
+#endif
+				if (bool(_dscpool)) {
+					auto desc_set = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+					_result = pool.result;
+					_dscset = desc_set.value[0];
+#else
+					_dscset = desc_set[0];
+#endif
+				}
 			}
 
 			/// Starts writing to the device's compute command buffer.
@@ -294,6 +373,8 @@ namespace vuh {
 
 			vuh::Device& _device;                ///< refer to device to run shader on
 			std::array<uint32_t, 3> _batch={0, 0, 0}; ///< 3D evaluation grid dimensions (number of workgroups to run)
+
+			vk::Result	_result;
 		}; // class ProgramBase
 
 		/// Part of Program handling specialization constants.
@@ -327,7 +408,7 @@ namespace vuh {
 				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
 																				 , vk::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", &specInfo);
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _result);
 			}
 		protected:
 			std::tuple<Spec_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
@@ -353,7 +434,7 @@ namespace vuh {
 																				 , vk::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", nullptr);
 
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _result);
 			}
 		}; // class SpecsBase
 	} // namespace detail

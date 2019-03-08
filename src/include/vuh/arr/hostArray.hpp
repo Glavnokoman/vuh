@@ -27,9 +27,17 @@ public:
 	          , vk::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	          )
 	   : BasicArray<Alloc>(device, n_elements*sizeof(T), flags_memory, flags_buffer)
-	   , _data(static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T))))
+	   , _result(vk::Result::eSuccess)
 	   , _size(n_elements)
-	{}
+	{
+		auto data = Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T));
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		_result = data.result;
+		_data = static_cast<T*>(data.value);
+#else
+		_data = static_cast<T*>(data.value);
+#endif
+	}
 
 	/// Construct array on given device and initialize with a provided value.
 	HostArray( vuh::Device& device ///< device to create array on
@@ -114,6 +122,7 @@ public:
 private: // data
    T* _data;       ///< host accessible pointer to the beginning of corresponding memory chunk.
    size_t _size;  ///< Number of elements. Actual allocated memory may be a bit bigger then necessary.
+   vk::Result _result;
 }; // class HostArray
 } // namespace arr
 } // namespace vuh

@@ -18,7 +18,18 @@ namespace vuh {
 			_CmdBuffer(vuh::Device& device): device(&device){
 				auto bufferAI = vk::CommandBufferAllocateInfo(device.transferCmdPool()
 																			 , vk::CommandBufferLevel::ePrimary, 1);
-				cmd_buffer = device.allocateCommandBuffers(bufferAI)[0];
+				auto buffer = device.allocateCommandBuffers(bufferAI);
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+				result = buffer.result;
+				if(vk::Result::eSuccess == result) {
+					cmd_buffer = buffer.value[0];
+				} else {
+					cmd_buffer = vk::CommandBuffer();
+				}
+#else
+				result = vk::Result::eSuccess;
+				cmd_buffer = buffer[0];
+#endif
 			}
 
 			/// Constructor. Takes ownership over the provided buffer.
@@ -36,6 +47,7 @@ namespace vuh {
 		public: // data
 			vk::CommandBuffer cmd_buffer; ///< command buffer managed by this wrapper class
 			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< device holding the buffer
+			vk::Result result;
 		}; // struct _CmdBuffer
 
 		/// Movable command buffer class.
@@ -72,10 +84,17 @@ namespace vuh {
 
 				auto queue = device->transferQueue();
 				auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buffer);
-				auto fence = device->createFence(vk::FenceCreateInfo());
+				auto result = vk::Result::eSuccess;
+				auto fen = device->createFence(vk::FenceCreateInfo());
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+				result = fen.result;
+				auto fence = fen.value;
+#else
+				auto fence = fen;
+#endif
 				queue.submit({submit_info}, fence);
 
-				return Delayed<>{fence, *device};
+				return Delayed<>{fence, *device,result};
 			}
 		}; // struct CopyDevice
 

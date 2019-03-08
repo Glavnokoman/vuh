@@ -10,6 +10,7 @@ namespace {
 	auto createDevice(const vk::PhysicalDevice& physicalDevice ///< physical device to wrap
 	                  , uint32_t compute_family_id             ///< index of queue family supporting compute operations
 	                  , uint32_t transfer_family_id            ///< index of queue family supporting transfer operations
+	                  , vk::Result& result
 	                  )-> vk::Device
 	{
 		// When creating the device specify what queues it has
@@ -25,7 +26,14 @@ namespace {
 		}
 		auto devCI = vk::DeviceCreateInfo(vk::DeviceCreateFlags(), n_queues, queueCIs.data());
 
-		return physicalDevice.createDevice(devCI, nullptr);
+		auto device = physicalDevice.createDevice(devCI, nullptr);
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		result = device.result;
+		return device.value;
+#else
+		result = vk::Result::eSuccess;
+		return device;
+#endif
 	}
 
 	/// @return preffered family id for the desired queue flags combination, or -1 if none is found.
@@ -56,11 +64,22 @@ namespace {
 	/// Allocate command buffer
 	auto allocCmdBuffer(vk::Device device
 	                    , vk::CommandPool pool
+	                    , vk::Result& result
 	                    , vk::CommandBufferLevel level=vk::CommandBufferLevel::ePrimary
 	                    )-> vk::CommandBuffer
 	{
 		auto commandBufferAI = vk::CommandBufferAllocateInfo(pool, level, 1); // 1 is the command buffer count here
-		return device.allocateCommandBuffers(commandBufferAI)[0];
+		auto buffers = device.allocateCommandBuffers(commandBufferAI);
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		result = buffers.result;
+		if(vk::Result::eSuccess == result) {
+			return buffers.value[0];
+		}
+		return vk::CommandBuffer();
+#else
+		result = vk::Result::eSuccess;
+		return buffers[0];
+#endif
 	}
 } // namespace
 
@@ -82,12 +101,38 @@ namespace vuh {
 	Device::Device(Instance& instance, vk::PhysicalDevice physdevice
 	               , uint32_t computeFamilyId, uint32_t transferFamilyId
 	               )
-	  : vk::Device(createDevice(physdevice, computeFamilyId, transferFamilyId))
+	  : vk::Device(createDevice(physdevice, computeFamilyId, transferFamilyId,_result))
 	  , _instance(instance)
 	  , _physdev(physdevice)
 	  , _cmp_family_id(computeFamilyId)
 	  , _tfr_family_id(transferFamilyId)
 	{
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		auto pool = createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
+													 , computeFamilyId});
+		_result = pool.result;
+		if(vk::Result::eSuccess == _result) {
+			_cmdpool_compute = pool.value;
+			_cmdbuf_compute = allocCmdBuffer(*this, _cmdpool_compute, _result);
+			if(vk::Result::eSuccess == _result) {
+				if (_tfr_family_id == _cmp_family_id) {
+					_cmdpool_transfer = _cmdpool_compute;
+					_cmdbuf_transfer = _cmdbuf_compute;
+				} else {
+					auto transfer = createCommandPool(
+							{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _tfr_family_id});
+					_result = transfer.result;
+					if (vk::Result::eSuccess == _result) {
+						_cmdpool_transfer = transfer.value;
+						_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer, _result);
+					}
+				}
+			}
+		}
+		if(vk::Result::eSuccess != _result) {
+			release(); // because vk::Device does not know how to clean after itself
+		}
+#else
 		try {
 			_cmdpool_compute = createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
 			                                     , computeFamilyId});
@@ -104,17 +149,26 @@ namespace vuh {
 			release(); // because vk::Device does not know how to clean after itself
 			throw;
 		}
+#endif
 	}
 
 	/// release resources associated with device
 	auto Device::release() noexcept-> void {
 		if(static_cast<vk::Device&>(*this)){
 			if(_tfr_family_id != _cmp_family_id){
-				freeCommandBuffers(_cmdpool_transfer, 1, &_cmdbuf_transfer);
-				destroyCommandPool(_cmdpool_transfer);
+				if(bool(_cmdpool_transfer) && bool(_cmdbuf_transfer)) {
+					freeCommandBuffers(_cmdpool_transfer, 1, &_cmdbuf_transfer);
+				}
+				if(bool(_cmdpool_transfer)) {
+					destroyCommandPool(_cmdpool_transfer);
+				}
 			}
-			freeCommandBuffers(_cmdpool_compute, 1, &_cmdbuf_compute);
-			destroyCommandPool(_cmdpool_compute);
+			if(bool(_cmdpool_compute) && bool(_cmdbuf_compute)) {
+				freeCommandBuffers(_cmdpool_compute, 1, &_cmdbuf_compute);
+			}
+			if(bool(_cmdpool_compute)) {
+				destroyCommandPool(_cmdpool_compute);
+			}
 
 			vk::Device::destroy();
 		}
@@ -213,22 +267,31 @@ namespace vuh {
 	auto Device::createPipeline(vk::PipelineLayout pipe_layout
 	                            , vk::PipelineCache pipe_cache
 	                            , const vk::PipelineShaderStageCreateInfo& shader_stage_info
+	                            , vk::Result& result
 	                            , vk::PipelineCreateFlags flags
 	                            )-> vk::Pipeline
 	{
 		auto pipelineCI = vk::ComputePipelineCreateInfo(flags
 																		, shader_stage_info, pipe_layout);
-		return createComputePipeline(pipe_cache, pipelineCI, nullptr);
-		
+		auto pipeline = createComputePipeline(pipe_cache, pipelineCI, nullptr);
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		result = pipeline.result;
+		return pipeline.value;
+#else
+		result = vk::Result::eSuccess;
+		return pipeline;
+#endif
 	}
 
 	/// Detach the current compute command buffer for sync operations and create the new one.
 	/// @return the old buffer handle
-	auto Device::releaseComputeCmdBuffer()-> vk::CommandBuffer {
-		auto new_buffer = allocCmdBuffer(*this, _cmdpool_compute);
-		std::swap(new_buffer, _cmdbuf_compute);
-		if(_tfr_family_id == _cmp_family_id){
-			_cmdbuf_transfer = _cmdbuf_compute;
+	auto Device::releaseComputeCmdBuffer(vk::Result& result)-> vk::CommandBuffer {
+		auto new_buffer = allocCmdBuffer(*this, _cmdpool_compute, result);
+		if (vk::Result::eSuccess == result) {
+			std::swap(new_buffer, _cmdbuf_compute);
+			if (_tfr_family_id == _cmp_family_id) {
+				_cmdbuf_transfer = _cmdbuf_compute;
+			}
 		}
 		return new_buffer;
 	}
@@ -239,10 +302,17 @@ namespace vuh {
 	}
 
 	/// Allocate device memory for the buffer in the memory with given id.
-	auto Device::alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory {
+	auto Device::alloc(vk::Buffer buf, uint32_t memory_id, vk::Result& result)-> vk::DeviceMemory {
 	   auto memoryReqs = getBufferMemoryRequirements(buf);
 	   auto allocInfo = vk::MemoryAllocateInfo(memoryReqs.size, memory_id);
-		return allocateMemory(allocInfo);
+	   auto allocMem = allocateMemory(allocInfo);
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		result = allocMem.result;
+		return allocMem.value;
+#else
+		result = vk::Result::eSuccess;
+		return allocMem;
+#endif
 	}
 
 	/// @return handle to command pool for transfer command buffers

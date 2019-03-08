@@ -1,5 +1,7 @@
 #include "vuh/error.h"
 
+#ifndef VULKAN_HPP_NO_EXCEPTIONS
+
 namespace vuh {
 	/// Constructs the exception object with explanatory string.
 	NoSuitableMemoryFound::NoSuitableMemoryFound(const std::string& message)
@@ -22,3 +24,5 @@ namespace vuh {
 	{}
 
 } // namespace vuh
+
+#endif

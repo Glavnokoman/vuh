@@ -24,10 +24,19 @@ public:
 	static auto makeBuffer(vuh::Device& device   ///< device to create buffer on
 	                      , size_t size_bytes    ///< desired size in bytes
 	                      , vk::BufferUsageFlags flags ///< additional (to the ones defined in Props) buffer usage flags
+	                      , vk::Result& result
 	                      )-> vk::Buffer
 	{
 		const auto flags_combined = flags | vk::BufferUsageFlags(Props::buffer);
-		return device.createBuffer({ {}, size_bytes, flags_combined});
+
+		auto buffer = device.createBuffer({ {}, size_bytes, flags_combined});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		result = buffer.result;
+		return buffer.value;
+#else
+		result = vk::Result::eSuccess;
+		return buffer;
+#endif
 	}
 
 	/// Allocate memory for the buffer.
@@ -38,15 +47,25 @@ public:
 	{
 		_memid = findMemory(device, buffer, flags_memory);
 		auto mem = vk::DeviceMemory{};
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		auto alloc_mem = device.allocateMemory({device.getBufferMemoryRequirements(buffer).size, _memid});
+		if (vk::Result::eSuccess == alloc_mem.result) {
+			mem = alloc_mem.value;
+		} else {
+			device.instance().report("AllocDevice failed to allocate memory, using fallback", vk::to_string(alloc_mem.result).c_str()
+					, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
+#else
 		try{
 			mem = device.allocateMemory({device.getBufferMemoryRequirements(buffer).size, _memid});
 		} catch (vk::Error& e){
-			auto allocFallback = AllocFallback{};
 			device.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 			                         , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
+#endif
+			auto allocFallback = AllocFallback{};
 			mem = allocFallback.allocMemory(device, buffer, flags_memory);
 			_memid = allocFallback.memId();
 		}
+
 		return mem;
 	}
 
@@ -97,37 +116,65 @@ public:
 	
 	/// @throws vk::OutOfDeviceMemoryError
 	auto allocMemory(vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags)-> vk::DeviceMemory {
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		VULKAN_HPP_ASSERT(0);
+		return vk::DeviceMemory();
+#else
 		throw vk::OutOfDeviceMemoryError("failed to allocate device memory"
 		                                 " and no fallback available");
+#endif
 	}
 	
 	/// @throws vuh::NoSuitableMemoryFound
 	static auto findMemory(const vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags flags
 	                       )-> uint32_t
 	{
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		VULKAN_HPP_ASSERT(0);
+		return VK_NULL_HANDLE;
+#else
 		throw NoSuitableMemoryFound("no memory with flags " + std::to_string(uint32_t(flags))
 		                            + " could be found and not fallback available");
+#endif
 	}
 
 	/// Create buffer. Normally this should only be called in tests.
 	static auto makeBuffer(vuh::Device& device ///< device to create buffer on
 	                      , size_t size_bytes  ///< desired size in bytes
 	                      , vk::BufferUsageFlags flags ///< additional buffer usage flags
+	                      , vk::Result& result
 	                      )-> vk::Buffer
 	{
-		return device.createBuffer({ {}, size_bytes, flags});
+		vk::ResultValueType<vk::Buffer>::type buffer = device.createBuffer({ {}, size_bytes, flags});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		result = buffer.result;
+		return buffer.value;
+#else
+		result = vk::Result::eSuccess;
+		return buffer;
+#endif
 	}
 	
 	/// @throw std::logic_error
 	/// Should not normally be called.
 	auto memoryProperties(vuh::Device&) const-> vk::MemoryPropertyFlags {
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		VULKAN_HPP_ASSERT(0);
+		return vk::MemoryPropertyFlags();
+#else
 		throw std::logic_error("this functions is not supposed to be called");
+#endif
 	}
 
 	/// @throw std::logic_error
 	/// Should not normally be called.
 	auto memId() const-> uint32_t {
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		VULKAN_HPP_ASSERT(0);
+		return VK_NULL_HANDLE;
+#else
 		throw std::logic_error("this function is not supposed to be called");
+#endif
 	}
 };
 

@@ -218,12 +218,30 @@ public:
 private: // helpers
 	auto host_data()-> T* {
 		assert(Base::isHostVisible());
-		return static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
+        auto data = Base::_dev.mapMemory(Base::_mem, 0, size_bytes());
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+        assert(vk::Result::eSuccess != data.result);
+        if (vk::Result::eSuccess == data.result) {
+            return static_cast<T *>(data.value);
+        }
+        return nullptr;
+#else
+		return static_cast<T*>(data);
+#endif
 	}
 
 	auto host_data() const-> const T* {
 		assert(Base::isHostVisible());
-		return static_cast<const T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
+        auto data = Base::_dev.mapMemory(Base::_mem, 0, size_bytes());
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		assert(vk::Result::eSuccess != data.result);
+		if (vk::Result::eSuccess == data.result) {
+            return static_cast<const T *>(data.value);
+        }
+        return nullptr;
+#else
+        return static_cast<const T*>(data);
+#endif
 	}
 private: // data
 	size_t _size; ///< number of elements. Actual allocated memory may be a bit bigger than necessary.

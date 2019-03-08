@@ -38,11 +38,19 @@ namespace vuh {
 		auto devices()-> std::vector<vuh::Device>;
 		auto report(const char* prefix, const char* message
 		            , VkDebugReportFlagsEXT flags=VK_DEBUG_REPORT_INFORMATION_BIT_EXT) const-> void;
+
+		explicit operator bool() const;
+		bool operator!() const;
+
+		vk::Result error() const;
+		std::string error_to_string() const;
+
 	private: // helpers
 		auto clear() noexcept-> void;
 	private: // data
 		vk::Instance _instance;     ///< vulkan instance
 		debug_reporter_t _reporter; ///< points to actual reporting function. This pointer is registered with a reporter callback but can also be used directly.
 		VkDebugReportCallbackEXT _reporter_cbk; ///< report callback. Only used to release the handle in the end.
+		vk::Result	_result;
 	}; // class Instance
 } // namespace vuh
