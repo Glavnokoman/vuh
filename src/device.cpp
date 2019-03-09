@@ -136,14 +136,14 @@ namespace vuh {
 		try {
 			_cmdpool_compute = createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
 			                                     , computeFamilyId});
-			_cmdbuf_compute = allocCmdBuffer(*this, _cmdpool_compute);
+			_cmdbuf_compute = allocCmdBuffer(*this, _cmdpool_compute, _result);
 			if(_tfr_family_id == _cmp_family_id){
 				_cmdpool_transfer = _cmdpool_compute;
 				_cmdbuf_transfer = _cmdbuf_compute;
 			} else {
 				_cmdpool_transfer = createCommandPool(
 				                 {vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _tfr_family_id});
-				_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer);
+				_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer, _result);
 			}
 		} catch(vk::Error&) {
 			release(); // because vk::Device does not know how to clean after itself

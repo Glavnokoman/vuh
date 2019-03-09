@@ -35,7 +35,7 @@ public:
 		_result = data.result;
 		_data = static_cast<T*>(data.value);
 #else
-		_data = static_cast<T*>(data.value);
+		_data = static_cast<T*>(data);
 #endif
 	}
 
