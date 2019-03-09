@@ -162,7 +162,7 @@ namespace vuh {
 	/// Destroy underlying vulkan instance.
 	/// All resources associated with it, should be released before that.
 	auto Instance::clear() noexcept-> void {
-		if(_instance){
+		if(bool(_instance)){
 			if(_reporter_cbk){// unregister callback.
                 //https://github.com/KhronosGroup/Vulkan-Hpp/issues/70
                 // 32-bit vulkan is not typesafe for handles, so don't allow copy constructors on this platform by default.

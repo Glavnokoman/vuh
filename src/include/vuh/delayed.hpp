@@ -94,7 +94,7 @@ namespace vuh {
 				_device->waitForFences({*this}, true, period);
 				if(_device->getFenceStatus(*this) == vk::Result::eSuccess){
 					_device->destroyFence(*this);
-					if(vk::Event(*this)) {
+					if(bool(vk::Event(*this))) {
 						_device->destroyEvent(*this);
 					}
 					static_cast<Action&>(*this)(); // exercise action
@@ -109,7 +109,7 @@ namespace vuh {
 		/// it's not thread safe , please call resume on the thread who create the program
 		/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later on android
 		bool resume() {
-			if(vk::Event(*this)) {
+			if(bool(vk::Event(*this))) {
 				_device->setEvent(*this);
 				return true;
 			}
