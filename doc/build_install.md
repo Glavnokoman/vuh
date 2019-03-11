@@ -38,6 +38,7 @@ brew install python
 brew install python2
 brew install glslang
 brew install spdlog
+brew install doxygen
 sudo python -m pip install --upgrade pip
 python -m pip install cget
 export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]; root=os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(mod))))); print os.path.join(root,"bin")'`
