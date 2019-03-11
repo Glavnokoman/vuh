@@ -42,6 +42,7 @@ export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]
 export PATH="$BINPATH:$PATH"
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
 bash ${VUH_SOURCE_DIR}/config/install_dependencies.sh
+brew install glslang
 brew install spdlog
 cmake -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR} ${VUH_SOURCE_DIR}
 cmake --build . --target install
