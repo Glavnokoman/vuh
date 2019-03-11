@@ -33,8 +33,15 @@ Should be similar to above.
 
 ### macOS
 ```bash
+export PATH="/usr/local/bin:$PATH"
+brew install python
+brew install python2
+sudo python -m pip install --upgrade pip
+python -m pip install cget
+export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]; root=os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(mod))))); print os.path.join(root,"bin")'`
+export PATH="$BINPATH:$PATH"
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
-${VUH_SOURCE_DIR}/config/install_dependencies.sh
+bash ${VUH_SOURCE_DIR}/config/install_dependencies.sh
 brew install spdlog
 cmake -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR} ${VUH_SOURCE_DIR}
 cmake --build . --target install
