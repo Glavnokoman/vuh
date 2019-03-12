@@ -49,4 +49,19 @@ export Catch2_DIR=$(cd "$(dirname ${DEPENDENCIES_INSTALL_DIR})";pwd)
 cmake -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR} ${VUH_SOURCE_DIR}
 cmake --build . --target install
 ```
-  
+macOS do'nt support vulkan ,we need [MoltenVK](https://github.com/KhronosGroup/MoltenVK)
+```bash
+cd ~
+brew install cmake
+brew install python
+brew install ninja
+git clone https://github.com/KhronosGroup/MoltenVK.git
+cd MoltenVK
+bash fetchDependencies
+make
+export VK_ICD_FILENAMES=~/MoltenVK/Package/Release/MoltenVK/macOS/dynamic/MoltenVK_icd.json
+```  
+run test (build vuh first)
+```bash
+${VUH_SOURCE_DIR}/test/correctness/test_vuh
+``` 
