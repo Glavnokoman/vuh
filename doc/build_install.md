@@ -59,6 +59,7 @@ git clone https://github.com/KhronosGroup/MoltenVK.git
 cd MoltenVK
 bash fetchDependencies
 make
+make macos
 export VK_ICD_FILENAMES=~/MoltenVK/Package/Release/MoltenVK/macOS/dynamic/MoltenVK_icd.json
 ```  
 run test (build vuh first)
