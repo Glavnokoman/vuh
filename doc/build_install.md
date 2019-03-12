@@ -44,6 +44,8 @@ export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]
 export PATH="$BINPATH:$PATH"
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
 bash ${VUH_SOURCE_DIR}/config/install_dependencies.sh
+export VULKAN_SDK=$(cd "$(dirname ${DEPENDENCIES_INSTALL_DIR})";pwd)
 cmake -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR} ${VUH_SOURCE_DIR}
 cmake --build . --target install
 ```
+  
