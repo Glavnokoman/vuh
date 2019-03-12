@@ -45,6 +45,7 @@ export PATH="$BINPATH:$PATH"
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
 bash ${VUH_SOURCE_DIR}/config/install_dependencies.sh
 export VULKAN_SDK=$(cd "$(dirname ${DEPENDENCIES_INSTALL_DIR})";pwd)
+export Catch2_DIR=$(cd "$(dirname ${DEPENDENCIES_INSTALL_DIR})";pwd)
 cmake -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR} ${VUH_SOURCE_DIR}
 cmake --build . --target install
 ```
