@@ -45,6 +45,25 @@ export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]
 export PATH="$BINPATH:$PATH"
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
 bash ${VUH_SOURCE_DIR}/config/install_dependencies.sh
+export VULKAN_SDK=$(cd "$(dirname ${DEPENDENCIES_INSTALL_DIR})";pwd)
+export Catch2_DIR=$(cd "$(dirname ${DEPENDENCIES_INSTALL_DIR})";pwd)
 cmake -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR} ${VUH_SOURCE_DIR}
 cmake --build . --target install
 ```
+macOS do'nt support vulkan ,we need [MoltenVK](https://github.com/KhronosGroup/MoltenVK)
+```bash
+cd ~
+brew install cmake
+brew install python
+brew install ninja
+git clone https://github.com/KhronosGroup/MoltenVK.git
+cd MoltenVK
+bash fetchDependencies
+make
+make macos
+export VK_ICD_FILENAMES=~/MoltenVK/Package/Release/MoltenVK/macOS/dynamic/MoltenVK_icd.json
+```  
+run test (build vuh first)
+```bash
+${VUH_SOURCE_DIR}/test/correctness/test_vuh
+``` 
