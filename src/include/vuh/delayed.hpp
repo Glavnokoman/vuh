@@ -60,7 +60,16 @@ namespace vuh {
 				, Action(std::move(action))
 				, _device(&device)
 				, _result(result)
-		{}
+		{
+			auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+			_result = fen.result;
+		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+		    static_cast<vk::Fence&>(*this) = std::move(fen.value);
+#else
+			static_cast<vk::Fence&>(*this) = std::move(fen);
+#endif
+		}
 
 		/// Constructor. Creates the fence in a signalled state.
 		explicit Delayed(vuh::Device& device, Action action={})
@@ -68,13 +77,13 @@ namespace vuh {
 				, _device(&device)
 				, _result(vk::Result::eSuccess)
 		{
+			auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		    auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
 		    _result = fen.result;
 		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
-		    vk::Fence(*this) = fen.value;
+		    static_cast<vk::Fence&>(*this) = std::move(fen.value);
 #else
-			vk::Fence(*this) = device.createFence({vk::FenceCreateFlagBits::eSignaled});
+			static_cast<vk::Fence&>(*this) = std::move(fen);
 #endif
 		}
 
