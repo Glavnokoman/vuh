@@ -36,7 +36,7 @@ namespace vuh {
 
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
-		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
+		auto alloc(vk::Buffer buf, uint32_t memory_id, vk::Result& result)-> vk::DeviceMemory;
 		auto computeCmdPool()-> vk::CommandPool {return _cmdpool_compute;}
 		auto computeCmdBuffer()-> vk::CommandBuffer& {return _cmdbuf_compute;}
 		auto transferCmdPool()-> vk::CommandPool;
@@ -44,10 +44,11 @@ namespace vuh {
 		auto createPipeline(vk::PipelineLayout pipe_layout
 		                    , vk::PipelineCache pipe_cache
 		                    , const vk::PipelineShaderStageCreateInfo& shader_stage_info
+							, vk::Result& result
 		                    , vk::PipelineCreateFlags flags={}
 		                    )-> vk::Pipeline;
 		auto instance()-> vuh::Instance& { return _instance; }
-		auto releaseComputeCmdBuffer()-> vk::CommandBuffer;
+		auto releaseComputeCmdBuffer(vk::Result& result)-> vk::CommandBuffer;
 		
 	private: // helpers
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice
@@ -64,5 +65,6 @@ namespace vuh {
 		vk::CommandBuffer  _cmdbuf_transfer;    ///< primary command buffer associated with transfer command pool. Initialized on first transfer request.
 		uint32_t _cmp_family_id = uint32_t(-1); ///< compute queue family id. -1 if device does not have compute-capable queues.
 		uint32_t _tfr_family_id = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
+		vk::Result	_result;
 	}; // class Device
 }

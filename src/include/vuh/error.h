@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#ifndef VULKAN_HPP_NO_EXCEPTIONS
+
 namespace vuh {
 	/// Exception indicating that memory with requested properties
 	/// has not been found on a device.
@@ -18,3 +20,5 @@ namespace vuh {
 		FileReadFailure(const char* message);
 	};
 } // namespace vuh
+
+#endif
