@@ -29,6 +29,7 @@ namespace {
 		auto device = physicalDevice.createDevice(devCI, nullptr);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = device.result;
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
 		return device.value;
 #else
 		result = vk::Result::eSuccess;
@@ -72,6 +73,7 @@ namespace {
 		auto buffers = device.allocateCommandBuffers(commandBufferAI);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = buffers.result;
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
 		if(vk::Result::eSuccess == result) {
 			return buffers.value[0];
 		}
@@ -111,9 +113,11 @@ namespace vuh {
 		auto pool = createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
 													 , computeFamilyId});
 		_result = pool.result;
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 		if(vk::Result::eSuccess == _result) {
 			_cmdpool_compute = pool.value;
 			_cmdbuf_compute = allocCmdBuffer(*this, _cmdpool_compute, _result);
+			VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 			if(vk::Result::eSuccess == _result) {
 				if (_tfr_family_id == _cmp_family_id) {
 					_cmdpool_transfer = _cmdpool_compute;
@@ -122,6 +126,7 @@ namespace vuh {
 					auto transfer = createCommandPool(
 							{vk::CommandPoolCreateFlagBits::eResetCommandBuffer, _tfr_family_id});
 					_result = transfer.result;
+					VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 					if (vk::Result::eSuccess == _result) {
 						_cmdpool_transfer = transfer.value;
 						_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer, _result);
@@ -129,6 +134,7 @@ namespace vuh {
 				}
 			}
 		}
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 		if(vk::Result::eSuccess != _result) {
 			release(); // because vk::Device does not know how to clean after itself
 		}
@@ -276,6 +282,7 @@ namespace vuh {
 		auto pipeline = createComputePipeline(pipe_cache, pipelineCI, nullptr);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = pipeline.result;
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
 		return pipeline.value;
 #else
 		result = vk::Result::eSuccess;
@@ -308,6 +315,7 @@ namespace vuh {
 	   auto allocMem = allocateMemory(allocInfo);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = allocMem.result;
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
 		return allocMem.value;
 #else
 		result = vk::Result::eSuccess;

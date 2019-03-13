@@ -32,6 +32,7 @@ public:
 		auto buffer = device.createBuffer({ {}, size_bytes, flags_combined});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = buffer.result;
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
 		return buffer.value;
 #else
 		result = vk::Result::eSuccess;
@@ -49,6 +50,7 @@ public:
 		auto mem = vk::DeviceMemory{};
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		auto alloc_mem = device.allocateMemory({device.getBufferMemoryRequirements(buffer).size, _memid});
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == alloc_mem.result);
 		if (vk::Result::eSuccess == alloc_mem.result) {
 			mem = alloc_mem.value;
 		} else {
@@ -148,6 +150,7 @@ public:
 		vk::ResultValueType<vk::Buffer>::type buffer = device.createBuffer({ {}, size_bytes, flags});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = buffer.result;
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
 		return buffer.value;
 #else
 		result = vk::Result::eSuccess;

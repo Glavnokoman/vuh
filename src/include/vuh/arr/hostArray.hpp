@@ -33,6 +33,7 @@ public:
 		auto data = Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T));
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		_result = data.result;
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 		_data = static_cast<T*>(data.value);
 #else
 		_data = static_cast<T*>(data);

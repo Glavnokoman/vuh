@@ -21,6 +21,7 @@ namespace vuh {
 				auto buffer = device.allocateCommandBuffers(bufferAI);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				result = buffer.result;
+				VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
 				if(vk::Result::eSuccess == result) {
 					cmd_buffer = buffer.value[0];
 				} else {
@@ -88,6 +89,7 @@ namespace vuh {
 				auto fen = device->createFence(vk::FenceCreateInfo());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				result = fen.result;
+				VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
 				auto fence = fen.value;
 #else
 				auto fence = fen;

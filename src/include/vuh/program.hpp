@@ -138,6 +138,7 @@ namespace vuh {
 						auto ev = _device.createEvent(vk::EventCreateInfo());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 						res = ev.result;
+						VULKAN_HPP_ASSERT(vk::Result::eSuccess == res);
 						event = ev.value;
 #else
 						event = ev;
@@ -157,6 +158,7 @@ namespace vuh {
 								vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 						res = fen.result;
+						VULKAN_HPP_ASSERT(vk::Result::eSuccess == res);
 						auto fence = fen.value;
 #else
 						auto fence = fen;
@@ -201,6 +203,7 @@ namespace vuh {
 														 });
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				_result = shader.result;
+				VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 				_shader = shader.value;
 #else
 				_shader = shader;
@@ -273,6 +276,7 @@ namespace vuh {
 				                                       });
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				_result = layout.result;
+				VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 				_dsclayout = layout.value;
 #else
 				_dsclayout = layout;
@@ -281,6 +285,7 @@ namespace vuh {
 					auto pipe_cache = _device.createPipelineCache({});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 					_result = pipe_cache.result;
+					VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 					_pipecache = pipe_cache.value;
 #else
 					_pipecache = pipe_cache;
@@ -292,6 +297,7 @@ namespace vuh {
 							 psrange.data()});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 					_result = pipe_layout.result;
+					VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 					_pipelayout = pipe_layout.value;
 #else
 					_pipelayout = pipe_layout;
@@ -313,6 +319,7 @@ namespace vuh {
 				_result = vk::Result::eSuccess;
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				_result = pool.result;
+				VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 				_dscpool = pool.value;
 #else
 				_dscpool = pool;
@@ -321,6 +328,7 @@ namespace vuh {
 					auto desc_set = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 					_result = pool.result;
+					VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 					_dscset = desc_set.value[0];
 #else
 					_dscset = desc_set[0];

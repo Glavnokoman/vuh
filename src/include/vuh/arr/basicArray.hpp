@@ -30,6 +30,7 @@ public:
 	   , _dev(device)
    {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
 		if (vk::Result::eSuccess == _result) {
 			auto alloc = Alloc();
 			_mem = alloc.allocMemory(device, *this, properties);

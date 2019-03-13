@@ -54,6 +54,7 @@ namespace {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
         const auto em_layers = vk::enumerateInstanceLayerProperties();
         auto avail_layers = em_layers.value;
+        VULKAN_HPP_ASSERT(vk::Result::eSuccess == em_layers.result);
         if(vk::Result::eSuccess != em_layers.result) {
             avail_layers.clear();
         }
@@ -73,6 +74,7 @@ namespace {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
         const auto em_extensions = vk::enumerateInstanceExtensionProperties();
         auto avail_extensions = em_extensions.value;
+        VULKAN_HPP_ASSERT(vk::Result::eSuccess == em_extensions.result);
         if(vk::Result::eSuccess != em_extensions.result) {
             avail_extensions.clear();
         }
@@ -110,6 +112,7 @@ namespace {
 		auto instance = vk::createInstance(createInfo);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
         result = instance.result;
+        VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
         return instance.value;
 #else
         result = vk::Result::eSuccess;
@@ -209,6 +212,7 @@ namespace vuh {
 		auto devs = _instance.enumeratePhysicalDevices();
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
         _result = devs.result;
+        VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
         auto physdevs = devs.value;
 #else
         _result = vk::Result::eSuccess;
