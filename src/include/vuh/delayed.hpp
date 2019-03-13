@@ -62,6 +62,23 @@ namespace vuh {
 				, _result(result)
 		{}
 
+		/// Constructor. Creates the fence in a signalled state.
+		explicit Delayed(vuh::Device& device, Action action={})
+				: Action(std::move(action))
+				, _device(&device)
+				, _result(vk::Result::eSuccess)
+		{
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		    auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
+		    _result = fen.result;
+		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+		    vk::Fence(*this) = fen.value;
+#else
+			vk::Fence(*this) = device.createFence({vk::FenceCreateFlagBits::eSignaled});
+#endif
+		}
+
+
 		/// Constructs from the object of Delayed<Noop> and inherits the state of that.
 		/// Takes over the undelying fence ownership.
 		/// Mostly substitute its own action in place of Noop.
@@ -140,6 +157,7 @@ namespace vuh {
 		}
 
 		vk::Result error() const { return _result; };
+		bool success() const { return vk::Result::eSuccess == _result; }
 		std::string error_to_string() const { return vk::to_string(_result); };
 
 	private: // data
