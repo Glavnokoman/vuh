@@ -165,6 +165,28 @@ namespace vuh {
 			return false;
 		}
 
+		// if fenceFd is support, we can use epoll or select wait for fence complete
+		bool supportFenceFd() {
+			return _device->supportFenceFd();
+		}
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+        auto fenceFd(HANDLE& fd)-> vk::Result {
+			vk::FenceGetWin32HandleInfoKHR info(*this);
+			auto res = _device->getFenceWin32HandleKHR(info);
+#else
+		auto fenceFd(int& fd)-> vk::Result {
+			vk::FenceGetFdInfoKHR info(*this);
+			auto res = _device->getFenceFdKHR(info);
+#endif
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+			fd = res.value;
+			return res.result;
+#else
+			return vk::Result(res);
+#endif
+		}
+
 		vk::Result error() const { return _result; };
 		bool success() const { return vk::Result::eSuccess == _result; }
 		std::string error_to_string() const { return vk::to_string(_result); };

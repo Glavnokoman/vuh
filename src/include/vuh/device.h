@@ -49,6 +49,9 @@ namespace vuh {
 		                    )-> vk::Pipeline;
 		auto instance()-> vuh::Instance& { return _instance; }
 		auto releaseComputeCmdBuffer(vk::Result& result)-> vk::CommandBuffer;
+
+		// if fenceFd is support, we can use epoll or select wait for fence complete
+		auto supportFenceFd()-> bool;
 		
 	private: // helpers
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice
@@ -56,6 +59,8 @@ namespace vuh {
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice
 	                   , uint32_t computeFamilyId, uint32_t transferFamilyId);
 		auto release() noexcept-> void;
+
+		auto fenceFdSupported() noexcept-> bool;
 	private: // data
 		vuh::Instance&     _instance;           ///< refer to Instance object used to create device
 		vk::PhysicalDevice _physdev;            ///< handle to associated physical device
@@ -65,6 +70,7 @@ namespace vuh {
 		vk::CommandBuffer  _cmdbuf_transfer;    ///< primary command buffer associated with transfer command pool. Initialized on first transfer request.
 		uint32_t _cmp_family_id = uint32_t(-1); ///< compute queue family id. -1 if device does not have compute-capable queues.
 		uint32_t _tfr_family_id = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
-		vk::Result	_result;
+		vk::Result	_result;					///< result of vulkan's api
+		bool		_support_fence_fd;			///< if fenceFd is support, we can use epoll or select wait for fence complete
 	}; // class Device
 }
