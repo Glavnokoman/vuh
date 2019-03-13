@@ -286,7 +286,7 @@ namespace vuh {
 					_pipecache = pipe_cache;
 #endif
 				}
-				if(bool(_pipelayout)) {
+				if(bool(_pipecache)) {
 					auto pipe_layout = _device.createPipelineLayout(
 							{vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N),
 							 psrange.data()});
