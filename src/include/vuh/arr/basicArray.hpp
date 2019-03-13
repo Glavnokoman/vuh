@@ -26,9 +26,21 @@ public:
 	           , vk::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
 	           , vk::BufferUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
 	           )
-	   : vk::Buffer(Alloc::makeBuffer(device, size_bytes, descriptor_flags | usage))
+	   : vk::Buffer(Alloc::makeBuffer(device, size_bytes, descriptor_flags | usage, _result))
 	   , _dev(device)
    {
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+		if (vk::Result::eSuccess == _result) {
+			auto alloc = Alloc();
+			_mem = alloc.allocMemory(device, *this, properties);
+			_flags = alloc.memoryProperties(device);
+			_dev.bindBufferMemory(*this, _mem, 0);
+		}
+		//else {
+		//	release();
+		//}
+#else
       try{
          auto alloc = Alloc();
          _mem = alloc.allocMemory(device, *this, properties);
@@ -38,6 +50,7 @@ public:
          release();
          throw;
       }
+#endif
 	}
 
 	/// Release resources associated with current object.
@@ -101,6 +114,7 @@ protected: // data
 	vk::DeviceMemory _mem;           ///< associated chunk of device memory
 	vk::MemoryPropertyFlags _flags;  ///< actual flags of allocated memory (may differ from those requested)
 	vuh::Device& _dev;               ///< referes underlying logical device
+	vk::Result _result;
 }; // class BasicArray
 } // namespace arr
 } // namespace vuh

@@ -51,7 +51,16 @@ namespace {
 	/// Filter requested layers, throw away those not present on particular instance.
 	/// Add default validation layers to debug build.
 	auto filter_layers(const std::vector<const char*>& layers) {
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+        const auto em_layers = vk::enumerateInstanceLayerProperties();
+        auto avail_layers = em_layers.value;
+        VULKAN_HPP_ASSERT(vk::Result::eSuccess == em_layers.result);
+        if(vk::Result::eSuccess != em_layers.result) {
+            avail_layers.clear();
+        }
+#else
 		const auto avail_layers = vk::enumerateInstanceLayerProperties();
+#endif
 		auto r = filter_list({}, layers, avail_layers
 		                     , [](const auto& l){return l.layerName;});
 		r = filter_list(std::move(r), default_layers, avail_layers
@@ -62,7 +71,16 @@ namespace {
 	/// Filter requested extensions, throw away those not present on particular instance.
 	/// Add default debug extensions to debug build.
 	auto filter_extensions(const std::vector<const char*>& extensions) {
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+        const auto em_extensions = vk::enumerateInstanceExtensionProperties();
+        auto avail_extensions = em_extensions.value;
+        VULKAN_HPP_ASSERT(vk::Result::eSuccess == em_extensions.result);
+        if(vk::Result::eSuccess != em_extensions.result) {
+            avail_extensions.clear();
+        }
+#else
 		const auto avail_extensions = vk::enumerateInstanceExtensionProperties();
+#endif
 		auto r = filter_list({}, extensions, avail_extensions
 		                     , [](const auto& l){return l.extensionName;});
 		r = filter_list(std::move(r), default_extensions, avail_extensions
@@ -86,11 +104,20 @@ namespace {
 	auto createInstance(const std::vector<const char*> layers
 	                   , const std::vector<const char*> extensions
 	                   , const vk::ApplicationInfo& info
+	                   , vk::Result& result
 	                   )-> vk::Instance
 	{
 		auto createInfo = vk::InstanceCreateInfo(vk::InstanceCreateFlags(), &info
 		                                         , ARR_VIEW(layers), ARR_VIEW(extensions));
-		return vk::createInstance(createInfo);
+		auto instance = vk::createInstance(createInfo);
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+        result = instance.result;
+        VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
+        return instance.value;
+#else
+        result = vk::Result::eSuccess;
+		return instance;
+#endif
 	}
 
 	/// Register a callback function for the extension VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
@@ -131,7 +158,7 @@ namespace vuh {
 	                   , debug_reporter_flags_t report_flags
 					   , void* report_userdata
 	                   )
-	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info))
+	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info, _result))
 	   , _reporter(report_callback ? report_callback : debugReporter)
 	   , _reporter_cbk(registerReporter(_instance, _reporter,report_flags,report_userdata))
 	{}
@@ -182,11 +209,21 @@ namespace vuh {
 
 	/// @return vector of available vulkan devices
 	auto Instance::devices()-> std::vector<Device> {
-		auto physdevs = _instance.enumeratePhysicalDevices();
+		auto devs = _instance.enumeratePhysicalDevices();
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+        _result = devs.result;
+        VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+        auto physdevs = devs.value;
+#else
+        _result = vk::Result::eSuccess;
+        auto physdevs = devs;
+#endif
 		auto r = std::vector<Device>{};
-		for(auto pd: physdevs){
-			r.emplace_back(*this, pd);
-		}
+		if (vk::Result::eSuccess == _result) {
+            for (auto pd: physdevs) {
+                r.emplace_back(*this, pd);
+            }
+        }
 		return r;
 	}
 
@@ -198,5 +235,21 @@ namespace vuh {
 	                      ) const-> void
 	{
 		_reporter(flags, VkDebugReportObjectTypeEXT{}, 0, 0, 0 , prefix, message, nullptr);
+	}
+
+	Instance::operator bool() const {
+		return bool(_instance);
+	}
+
+	bool Instance::operator!() const {
+		return !_instance;
+	}
+
+	vk::Result Instance::error() const {
+		return _result;
+	}
+
+	std::string Instance::error_to_string() const {
+		return vk::to_string(_result);
 	}
 } // namespace vuh

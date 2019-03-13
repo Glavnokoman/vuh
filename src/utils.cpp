@@ -10,7 +10,12 @@ namespace vuh {
 	auto read_spirv(const char* filename)-> std::vector<char> {
 		auto fin = std::ifstream(filename, std::ios::binary);
 		if(!fin.is_open()){
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+			VULKAN_HPP_ASSERT(0);
+			return std::vector<char>();
+#else
 			throw FileReadFailure(std::string("could not open file ") + filename + " for reading");
+#endif
 		}
 		auto ret = std::vector<char>(std::istreambuf_iterator<char>(fin), std::istreambuf_iterator<char>());
 

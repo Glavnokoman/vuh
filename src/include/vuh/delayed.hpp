@@ -36,6 +36,14 @@ namespace vuh {
 		   : vk::Fence(fence)
 		   , Action(std::move(action))
 		   , _device(&device)
+		   , _result(vk::Result::eSuccess)
+		{}
+
+		explicit Delayed(vk::Fence fence, vuh::Device& device,vk::Result result, Action action={})
+				: vk::Fence(fence)
+				, Action(std::move(action))
+				, _device(&device)
+				, _result(result)
 		{}
 
         explicit Delayed(vk::Fence fence, vk::Event event, vuh::Device& device, Action action={})
@@ -43,20 +51,48 @@ namespace vuh {
 				, vk::Event(event)
                 , Action(std::move(action))
                 , _device(&device)
+                , _result(vk::Result::eSuccess)
         {}
+
+		/// Constructs for VULKAN_HPP_NO_EXCEPTIONS
+		explicit Delayed(vuh::Device& device, vk::Result result, vk::Event event, Action action={})
+				: vk::Event(event)
+				, Action(std::move(action))
+				, _device(&device)
+				, _result(result)
+		{
+			auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+			_result = fen.result;
+		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+		    static_cast<vk::Fence&>(*this) = std::move(fen.value);
+#else
+			static_cast<vk::Fence&>(*this) = std::move(fen);
+#endif
+		}
 
 		/// Constructor. Creates the fence in a signalled state.
 		explicit Delayed(vuh::Device& device, Action action={})
-		   : vk::Fence(device.createFence({vk::FenceCreateFlagBits::eSignaled}))
-		   , Action(std::move(action))
-		   , _device(&device)
-		{}
+				: Action(std::move(action))
+				, _device(&device)
+				, _result(vk::Result::eSuccess)
+		{
+			auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		    _result = fen.result;
+		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+		    static_cast<vk::Fence&>(*this) = std::move(fen.value);
+#else
+			static_cast<vk::Fence&>(*this) = std::move(fen);
+#endif
+		}
+
 
 		/// Constructs from the object of Delayed<Noop> and inherits the state of that.
 		/// Takes over the undelying fence ownership.
 		/// Mostly substitute its own action in place of Noop.
 		explicit Delayed(Delayed<detail::Noop>&& noop, Action action={})
-		   : vk::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device))
+		   : vk::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device)), _result(vk::Result::eSuccess)
 		{}
 
 		/// Destructor. Blocks till the undelying fence is signalled (waits forever).
@@ -76,6 +112,7 @@ namespace vuh {
 			static_cast<vk::Fence&>(*this) = std::move(static_cast<vk::Fence&>(other));
 			static_cast<Action&>(*this) = std::move(static_cast<Action&>(other));
 			_device = std::move(other._device);
+			_result = other._result;
 			return *this;
 		}
 
@@ -91,13 +128,25 @@ namespace vuh {
 		         ) noexcept-> void
 		{
 			if(_device){
-				_device->waitForFences({*this}, true, period);
-				if(_device->getFenceStatus(*this) == vk::Result::eSuccess){
-					_device->destroyFence(*this);
-					if(bool(vk::Event(*this))) {
+				bool release = false;
+				if (bool(vk::Fence(*this))) {
+					if (vk::Result::eSuccess == _result) {
+						_device->waitForFences({*this}, true, period);
+						if (vk::Result::eSuccess == _device->getFenceStatus(*this)) {
+							_device->destroyFence(*this);
+							release = true;
+						}
+					} else {
+						_device->destroyFence(*this);
+						release = true;
+					}
+				}
+
+				if(release) {
+					if (bool(vk::Event(*this))) {
 						_device->destroyEvent(*this);
 					}
-					static_cast<Action&>(*this)(); // exercise action
+					static_cast<Action &>(*this)(); // exercise action
 					_device.release();
 				}
 			}
@@ -115,8 +164,36 @@ namespace vuh {
 			}
 			return false;
 		}
+
+		// if fenceFd is support, we can use epoll or select wait for fence complete
+		bool supportFenceFd() {
+			return _device->supportFenceFd();
+		}
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+        auto fenceFd(HANDLE& fd)-> vk::Result {
+			vk::FenceGetWin32HandleInfoKHR info(*this);
+			auto res = _device->getFenceWin32HandleKHR(info);
+#else
+		auto fenceFd(int& fd)-> vk::Result {
+			vk::FenceGetFdInfoKHR info(*this);
+			auto res = _device->getFenceFdKHR(info);
+#endif
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+			fd = res.value;
+			return res.result;
+#else
+			return vk::Result(res);
+#endif
+		}
+
+		vk::Result error() const { return _result; };
+		bool success() const { return vk::Result::eSuccess == _result; }
+		std::string error_to_string() const { return vk::to_string(_result); };
+
 	private: // data
 		std::unique_ptr<Device, util::NoopDeleter<Device>> _device; ///< refers to the device owning corresponding the underlying fence.
+		vk::Result _result;
 	}; // class Delayed
 
 	/// Delayed No-Action. Just a synchronization point.
