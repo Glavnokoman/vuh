@@ -178,6 +178,9 @@ namespace vuh {
 		auto fenceFd(int& fd)-> vk::Result {
 			// following https://www.khronos.org/registry/vulkan/specs/1.0-wsi_extensions/html/vkspec.html
 			// current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+			// If handleType is VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
+			// the special value -1 for fd is treated like a valid sync file descriptor referring to an object that has already signaled.
+			// The import operation will succeed and the VkFence will have a temporarily imported payload as if a valid file descriptor had been provided.
 			vk::FenceGetFdInfoKHR info(*this,vk::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
 		#ifdef VK_USE_PLATFORM_ANDROID_KHR /* Android need dynamic load KHR extension */
 			auto res = _device->getFenceFdKHR(info,vk::DispatchLoaderDynamic(vk::Instance(_device->instance()),*_device));
