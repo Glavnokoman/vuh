@@ -176,14 +176,21 @@ namespace vuh {
 			auto res = _device->getFenceWin32HandleKHR(info);
 #else
 		auto fenceFd(int& fd)-> vk::Result {
-			vk::FenceGetFdInfoKHR info(*this);
+			// following https://www.khronos.org/registry/vulkan/specs/1.0-wsi_extensions/html/vkspec.html
+			// current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+			vk::FenceGetFdInfoKHR info(*this,vk::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
+		#ifdef VK_USE_PLATFORM_ANDROID_KHR /* Android need dynamic load KHR extension */
+			auto res = _device->getFenceFdKHR(info,vk::DispatchLoaderDynamic(vk::Instance(_device->instance()),*_device));
+        #else
 			auto res = _device->getFenceFdKHR(info);
+        #endif
 #endif
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			fd = res.value;
 			return res.result;
 #else
-			return vk::Result(res);
+			fd = res;
+			return vk::Result::eSuccess;
 #endif
 		}
 

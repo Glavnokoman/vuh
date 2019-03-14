@@ -39,6 +39,7 @@ namespace vuh {
 		auto report(const char* prefix, const char* message
 		            , VkDebugReportFlagsEXT flags=VK_DEBUG_REPORT_INFORMATION_BIT_EXT) const-> void;
 
+		VULKAN_HPP_TYPESAFE_EXPLICIT operator vk::Instance() const { return _instance; }
 		explicit operator bool() const;
 		bool operator!() const;
 
