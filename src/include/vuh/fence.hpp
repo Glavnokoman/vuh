@@ -83,6 +83,11 @@ namespace vuh {
 			return success();
 		}
 
+		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkFence () const
+		{
+			return VkFence(static_cast<const VULKAN_HPP_NAMESPACE::Fence&>(*this));
+		}
+
 		auto wait(size_t period=size_t(-1))-> bool {
 			if(success()) {
 				_device->waitForFences({*this}, true, period);
@@ -134,7 +139,7 @@ namespace vuh {
 		}
 		
 		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
-		bool success() const { return (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) && bool(VULKAN_HPP_NAMESPACE::Fence(*this)) && (nullptr != _device) ; }
+		bool success() const { return (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) && bool(static_cast<const VULKAN_HPP_NAMESPACE::Fence&>(*this)) && (nullptr != _device) ; }
 		std::string error_to_string() const { return VULKAN_HPP_NAMESPACE::to_string(_result); };			
 
 	private: // data
