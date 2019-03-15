@@ -58,7 +58,7 @@ namespace vuh {
 
 		/// Constructs for VULKAN_HPP_NO_EXCEPTIONS
 		explicit Delayed(vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, vuh::Event& event, Action action={})
-				: vuh::Fence(device)
+				: vuh::Fence()
 				, vuh::Event(event)
 				, Action(std::move(action))
 				, _device(&device)
@@ -67,7 +67,7 @@ namespace vuh {
 
 		/// Constructor. Creates the fence in a signalled state.
 		explicit Delayed(vuh::Device& device, Action action={})
-				: vuh::Fence(device)
+				: vuh::Fence(device, true)
 				, Action(std::move(action))
 				, _device(&device)
 				, _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)

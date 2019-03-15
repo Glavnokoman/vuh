@@ -9,7 +9,11 @@ namespace vuh {
 	/// vulkan fence  
 	class Fence : public VULKAN_HPP_NAMESPACE::Fence {
 	public:
-		explicit Fence(vuh::Device& device)
+		Fence() : VULKAN_HPP_NAMESPACE::Fence() {
+
+		}
+
+		explicit Fence(vuh::Device& device, bool signaled=false)
 				: _device(&device)
 				, _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
 		{
@@ -30,7 +34,10 @@ namespace vuh {
 			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
 	#endif
 #endif			
-			VULKAN_HPP_NAMESPACE::FenceCreateInfo fci = VULKAN_HPP_NAMESPACE::FenceCreateInfo(VULKAN_HPP_NAMESPACE::FenceCreateFlagBits::eSignaled);
+			VULKAN_HPP_NAMESPACE::FenceCreateInfo fci;
+			if (signaled) {
+				fci.setFlags(VULKAN_HPP_NAMESPACE::FenceCreateFlagBits::eSignaled);
+			}
 			if(_device->supportFenceFd()) {
 				fci.setPNext(&efci);
 			}
