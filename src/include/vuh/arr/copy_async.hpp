@@ -16,26 +16,26 @@ namespace vuh {
 		struct _CmdBuffer {
 			/// Constructor. Creates the new command buffer on a provided device and manages its resources.
 			_CmdBuffer(vuh::Device& device): device(&device){
-				auto bufferAI = vk::CommandBufferAllocateInfo(device.transferCmdPool()
-																			 , vk::CommandBufferLevel::ePrimary, 1);
+				auto bufferAI = VULKAN_HPP_NAMESPACE::CommandBufferAllocateInfo(device.transferCmdPool()
+																			 , VULKAN_HPP_NAMESPACE::CommandBufferLevel::ePrimary, 1);
 				auto buffer = device.allocateCommandBuffers(bufferAI);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				result = buffer.result;
-				VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
-				if(vk::Result::eSuccess == result) {
+				VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == result);
+				if(VULKAN_HPP_NAMESPACE::Result::eSuccess == result) {
 					cmd_buffer = buffer.value[0];
 				} else {
-					cmd_buffer = vk::CommandBuffer();
+					cmd_buffer = VULKAN_HPP_NAMESPACE::CommandBuffer();
 				}
 #else
-				result = vk::Result::eSuccess;
+				result = VULKAN_HPP_NAMESPACE::Result::eSuccess;
 				cmd_buffer = buffer[0];
 #endif
 			}
 
 			/// Constructor. Takes ownership over the provided buffer.
 			/// @pre buffer should belong to the provided device. No check is made even in a debug build.
-			_CmdBuffer(vuh::Device& device, vk::CommandBuffer buffer)
+			_CmdBuffer(vuh::Device& device, VULKAN_HPP_NAMESPACE::CommandBuffer buffer)
 				: cmd_buffer(buffer), device(&device)
 			{}
 
@@ -46,9 +46,9 @@ namespace vuh {
 				}
 			}
 		public: // data
-			vk::CommandBuffer cmd_buffer; ///< command buffer managed by this wrapper class
+			VULKAN_HPP_NAMESPACE::CommandBuffer cmd_buffer; ///< command buffer managed by this wrapper class
 			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< device holding the buffer
-			vk::Result result;
+			VULKAN_HPP_NAMESPACE::Result result;
 		}; // struct _CmdBuffer
 
 		/// Movable command buffer class.
@@ -77,26 +77,19 @@ namespace vuh {
 				              , "array value types should be the same");
 				static constexpr auto tsize = sizeof(value_type_src);
 
-				cmd_buffer.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-				auto region = vk::BufferCopy(tsize*src_begin.offset(), tsize*dst_begin.offset()
+				cmd_buffer.begin({VULKAN_HPP_NAMESPACE::CommandBufferUsageFlagBits::eOneTimeSubmit});
+				auto region = VULKAN_HPP_NAMESPACE::BufferCopy(tsize*src_begin.offset(), tsize*dst_begin.offset()
 				                            , tsize*(src_end - src_begin));
 				cmd_buffer.copyBuffer(src_begin.array(), dst_begin.array(), 1, &region);
 				cmd_buffer.end();
 
 				auto queue = device->transferQueue();
-				auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buffer);
-				auto result = vk::Result::eSuccess;
-				auto fen = device->createFence(vk::FenceCreateInfo());
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				result = fen.result;
-				VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
-				auto fence = fen.value;
-#else
-				auto fence = fen;
-#endif
-				queue.submit({submit_info}, fence);
-
-				return Delayed<>{fence, *device,result};
+				auto submit_info = VULKAN_HPP_NAMESPACE::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buffer);
+				vuh::Fence fence(*device);
+				if(bool(fence)) {
+					queue.submit({submit_info}, fence);
+				}
+				return Delayed<>{fence, *device,fence.error()};
 			}
 		}; // struct CopyDevice
 

@@ -23,43 +23,43 @@ public:
 	/// Create buffer on a device.
 	static auto makeBuffer(vuh::Device& device   ///< device to create buffer on
 	                      , size_t size_bytes    ///< desired size in bytes
-	                      , vk::BufferUsageFlags flags ///< additional (to the ones defined in Props) buffer usage flags
-	                      , vk::Result& result
-	                      )-> vk::Buffer
+	                      , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags ///< additional (to the ones defined in Props) buffer usage flags
+	                      , VULKAN_HPP_NAMESPACE::Result& result
+	                      )-> VULKAN_HPP_NAMESPACE::Buffer
 	{
-		const auto flags_combined = flags | vk::BufferUsageFlags(Props::buffer);
+		const auto flags_combined = flags | VULKAN_HPP_NAMESPACE::BufferUsageFlags(Props::buffer);
 
 		auto buffer = device.createBuffer({ {}, size_bytes, flags_combined});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = buffer.result;
-		VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
+		VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == result);
 		return buffer.value;
 #else
-		result = vk::Result::eSuccess;
+		result = VULKAN_HPP_NAMESPACE::Result::eSuccess;
 		return buffer;
 #endif
 	}
 
 	/// Allocate memory for the buffer.
 	auto allocMemory(vuh::Device& device  ///< device to allocate memory
-	                 , vk::Buffer buffer  ///< buffer to allocate memory for
-	                 , vk::MemoryPropertyFlags flags_memory={} ///< additional (to the ones defined in Props) memory property flags
-	                 )-> vk::DeviceMemory 
+	                 , VULKAN_HPP_NAMESPACE::Buffer buffer  ///< buffer to allocate memory for
+	                 , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to the ones defined in Props) memory property flags
+	                 )-> VULKAN_HPP_NAMESPACE::DeviceMemory
 	{
 		_memid = findMemory(device, buffer, flags_memory);
-		auto mem = vk::DeviceMemory{};
+		auto mem = VULKAN_HPP_NAMESPACE::DeviceMemory{};
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		auto alloc_mem = device.allocateMemory({device.getBufferMemoryRequirements(buffer).size, _memid});
-		VULKAN_HPP_ASSERT(vk::Result::eSuccess == alloc_mem.result);
-		if (vk::Result::eSuccess == alloc_mem.result) {
+		VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == alloc_mem.result);
+		if (VULKAN_HPP_NAMESPACE::Result::eSuccess == alloc_mem.result) {
 			mem = alloc_mem.value;
 		} else {
-			device.instance().report("AllocDevice failed to allocate memory, using fallback", vk::to_string(alloc_mem.result).c_str()
+			device.instance().report("AllocDevice failed to allocate memory, using fallback", VULKAN_HPP_NAMESPACE::to_string(alloc_mem.result).c_str()
 					, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 #else
 		try{
 			mem = device.allocateMemory({device.getBufferMemoryRequirements(buffer).size, _memid});
-		} catch (vk::Error& e){
+		} catch (VULKAN_HPP_NAMESPACE::Error& e){
 			device.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 			                         , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 #endif
@@ -78,7 +78,7 @@ public:
 	}
 
 	/// @return memory property flags of the memory on which actual allocation took place.
-	auto memoryProperties(vuh::Device& device) const-> vk::MemoryPropertyFlags {
+	auto memoryProperties(vuh::Device& device) const-> VULKAN_HPP_NAMESPACE::MemoryPropertyFlags {
 		return device.memoryProperties(_memid);
 	}
 
@@ -90,12 +90,12 @@ public:
 	/// This would only be reported through reporter associated with Instance, and no error
 	/// raised.
 	static auto findMemory(const vuh::Device& device ///< device on which to search for suitable memory
-	                       , vk::Buffer buffer       ///< buffer to find suitable memory for
-	                       , vk::MemoryPropertyFlags flags_memory={} ///< additional memory flags
+	                       , VULKAN_HPP_NAMESPACE::Buffer buffer       ///< buffer to find suitable memory for
+	                       , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional memory flags
 	                       )-> uint32_t 
 	{
 		auto memid = device.selectMemory(buffer
-		                           , vk::MemoryPropertyFlags(vk::MemoryPropertyFlags(Props::memory)
+		                           , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags(VULKAN_HPP_NAMESPACE::MemoryPropertyFlags(Props::memory)
 		                             | flags_memory));
 		if(memid != uint32_t(-1)){
 			return memid;
@@ -116,19 +116,19 @@ class AllocDevice<void>{
 public:
 	using properties_t = void;
 	
-	/// @throws vk::OutOfDeviceMemoryError
-	auto allocMemory(vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags)-> vk::DeviceMemory {
+	/// @throws VULKAN_HPP_NAMESPACE::OutOfDeviceMemoryError
+	auto allocMemory(vuh::Device&, VULKAN_HPP_NAMESPACE::Buffer, VULKAN_HPP_NAMESPACE::MemoryPropertyFlags)-> VULKAN_HPP_NAMESPACE::DeviceMemory {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		VULKAN_HPP_ASSERT(0);
-		return vk::DeviceMemory();
+		return VULKAN_HPP_NAMESPACE::DeviceMemory();
 #else
-		throw vk::OutOfDeviceMemoryError("failed to allocate device memory"
+		throw VULKAN_HPP_NAMESPACE::OutOfDeviceMemoryError("failed to allocate device memory"
 		                                 " and no fallback available");
 #endif
 	}
 	
 	/// @throws vuh::NoSuitableMemoryFound
-	static auto findMemory(const vuh::Device&, vk::Buffer, vk::MemoryPropertyFlags flags
+	static auto findMemory(const vuh::Device&, VULKAN_HPP_NAMESPACE::Buffer, VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags
 	                       )-> uint32_t
 	{
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
@@ -143,27 +143,27 @@ public:
 	/// Create buffer. Normally this should only be called in tests.
 	static auto makeBuffer(vuh::Device& device ///< device to create buffer on
 	                      , size_t size_bytes  ///< desired size in bytes
-	                      , vk::BufferUsageFlags flags ///< additional buffer usage flags
-	                      , vk::Result& result
-	                      )-> vk::Buffer
+	                      , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags ///< additional buffer usage flags
+	                      , VULKAN_HPP_NAMESPACE::Result& result
+	                      )-> VULKAN_HPP_NAMESPACE::Buffer
 	{
-		vk::ResultValueType<vk::Buffer>::type buffer = device.createBuffer({ {}, size_bytes, flags});
+		VULKAN_HPP_NAMESPACE::ResultValueType<VULKAN_HPP_NAMESPACE::Buffer>::type buffer = device.createBuffer({ {}, size_bytes, flags});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = buffer.result;
-		VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
+		VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == result);
 		return buffer.value;
 #else
-		result = vk::Result::eSuccess;
+		result = VULKAN_HPP_NAMESPACE::Result::eSuccess;
 		return buffer;
 #endif
 	}
 	
 	/// @throw std::logic_error
 	/// Should not normally be called.
-	auto memoryProperties(vuh::Device&) const-> vk::MemoryPropertyFlags {
+	auto memoryProperties(vuh::Device&) const-> VULKAN_HPP_NAMESPACE::MemoryPropertyFlags {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		VULKAN_HPP_ASSERT(0);
-		return vk::MemoryPropertyFlags();
+		return VULKAN_HPP_NAMESPACE::MemoryPropertyFlags();
 #else
 		throw std::logic_error("this functions is not supposed to be called");
 #endif

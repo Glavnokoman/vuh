@@ -11,39 +11,39 @@ namespace arr {
 /// being void if fall-back is not available.
 namespace properties {
 
-	using memflags_t = std::underlying_type_t<vk::MemoryPropertyFlagBits>;
-	using bufflags_t = std::underlying_type_t<vk::BufferUsageFlagBits>;
+	using memflags_t = std::underlying_type_t<VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits>;
+	using bufflags_t = std::underlying_type_t<VULKAN_HPP_NAMESPACE::BufferUsageFlagBits>;
 
 	/// Flags for buffer in host-visible memory.
 	/// This is the fallback of most other usage flags, and has no fall-back itself.
 	struct Host {
 	   using fallback_t = void;
-	   static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eHostVisible);
+	   static constexpr memflags_t memory = memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eHostVisible);
 	   static constexpr bufflags_t buffer = {};
 	};
 
 	/// Flags for buffer used as a staging buffer to transfer data to GPU.
 	struct HostCoherent {
 	   using fallback_t = Host;
-	   static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eHostVisible )
-	                                      | memflags_t(vk::MemoryPropertyFlagBits::eHostCoherent);
-	   static constexpr bufflags_t buffer = bufflags_t(vk::BufferUsageFlagBits::eTransferSrc);
+	   static constexpr memflags_t memory = memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eHostVisible )
+	                                      | memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eHostCoherent);
+	   static constexpr bufflags_t buffer = bufflags_t(VULKAN_HPP_NAMESPACE::BufferUsageFlagBits::eTransferSrc);
 	};
 
 	/// Flags for buffer used as a staging buffer to transfer data from GPU.
 	struct HostCached {
 	   using fallback_t = Host;
-	   static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eHostVisible)
-	                                      | memflags_t(vk::MemoryPropertyFlagBits::eHostCached );
-	   static constexpr bufflags_t buffer = bufflags_t(vk::BufferUsageFlagBits::eTransferDst);
+	   static constexpr memflags_t memory = memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eHostVisible)
+	                                      | memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eHostCached );
+	   static constexpr bufflags_t buffer = bufflags_t(VULKAN_HPP_NAMESPACE::BufferUsageFlagBits::eTransferDst);
 	};
 
 	/// Flags for buffer in both device-local and host-visible memory if such exists.
 	/// There is no fall-back for this.
 	struct Unified {
 	  using fallback_t = void;
-	  static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eDeviceLocal)
-	                                     | memflags_t(vk::MemoryPropertyFlagBits::eHostVisible);
+	  static constexpr memflags_t memory = memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eDeviceLocal)
+	                                     | memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eHostVisible);
 	  static constexpr bufflags_t buffer = {};
 	};
 
@@ -52,9 +52,9 @@ namespace properties {
 	/// The fall-back is Host.
 	struct Device {
 	   using fallback_t = Host;
-	   static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eDeviceLocal);
-	   static constexpr bufflags_t buffer = bufflags_t(vk::BufferUsageFlagBits::eTransferSrc)
-	                                      | bufflags_t(vk::BufferUsageFlagBits::eTransferDst);
+	   static constexpr memflags_t memory = memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eDeviceLocal);
+	   static constexpr bufflags_t buffer = bufflags_t(VULKAN_HPP_NAMESPACE::BufferUsageFlagBits::eTransferSrc)
+	                                      | bufflags_t(VULKAN_HPP_NAMESPACE::BufferUsageFlagBits::eTransferDst);
 	};
 
 	/// Flags for buffer in device-local memory which is not supposed to take part in data 
@@ -62,7 +62,7 @@ namespace properties {
 	/// as an input or output parameter.
 	struct DeviceOnly {
 	   using fallback_t = Host;
-	   static constexpr memflags_t memory = memflags_t(vk::MemoryPropertyFlagBits::eDeviceLocal);
+	   static constexpr memflags_t memory = memflags_t(VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eDeviceLocal);
 	   static constexpr bufflags_t buffer = {};
 	};
 } // namespace props
