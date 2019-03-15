@@ -40,7 +40,7 @@ namespace vuh {
 
 		// helper
 		template<class... Ts>
-		auto typesToDscTypes()->std::array<vk::DescriptorType, sizeof...(Ts)> {
+		auto typesToDscTypes()->std::array<VULKAN_HPP_NAMESPACE::DescriptorType, sizeof...(Ts)> {
 			return {detail::DictTypeToDsc<Ts>::value...};
 		}
 
@@ -64,12 +64,12 @@ namespace vuh {
 
 		// helper
 		template<class T, size_t... I>
-		auto dscinfos2writesets(vk::DescriptorSet dscset, const T& infos
+		auto dscinfos2writesets(VULKAN_HPP_NAMESPACE::DescriptorSet dscset, const T& infos
 		                        , std::index_sequence<I...>
 		                        )-> std::array<vk::WriteDescriptorSet, sizeof...(I)>
 		{
 			auto r = std::array<vk::WriteDescriptorSet, sizeof...(I)>{{
-				{dscset, uint32_t(I), 0, 1, vk::DescriptorType::eStorageBuffer, nullptr, &infos[I]}...
+				{dscset, uint32_t(I), 0, 1, VULKAN_HPP_NAMESPACE::DescriptorType::eStorageBuffer, nullptr, &infos[I]}...
 			}};
 			return r;
 		}
@@ -88,7 +88,7 @@ namespace vuh {
 				}
 			}
 		public: // data
-			vk::CommandBuffer cmd_buffer; ///< command buffer to submit async computation commands
+			VULKAN_HPP_NAMESPACE::CommandBuffer cmd_buffer; ///< command buffer to submit async computation commands
 			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< underlying device
 		}; // struct ComputeData
 
@@ -112,7 +112,7 @@ namespace vuh {
 			/// @pre bacth sizes should be specified before calling this.
 			/// @pre all paramerters should be specialized, pushed and bound before calling this.
 			auto run()-> void {
-				auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
+				auto submitInfo = VULKAN_HPP_NAMESPACE::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
 
 				// submit the command buffer to the queue and set up a fence.
 				auto queue = _device.computeQueue();
@@ -128,24 +128,24 @@ namespace vuh {
 			/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later on android
 			/// @return Delayed<Compute> object used for synchronization with host
 			auto run_async(bool suspend=false)-> vuh::Delayed<Compute> {
-				vk::Result res = vk::Result::eSuccess;
-				vk::Event event;
+				VULKAN_HPP_NAMESPACE::Result res = VULKAN_HPP_NAMESPACE::Result::eSuccess;
+				VULKAN_HPP_NAMESPACE::Event event;
 				auto buffer = _device.releaseComputeCmdBuffer(res);
-				if (vk::Result::eSuccess == res) {
-					auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1,
+				if (VULKAN_HPP_NAMESPACE::Result::eSuccess == res) {
+					auto submitInfo = VULKAN_HPP_NAMESPACE::SubmitInfo(0, nullptr, nullptr, 1,
 													 &buffer); // submit a single command buffer
 					if (suspend) {
-						auto ev = _device.createEvent(vk::EventCreateInfo());
+						auto ev = _device.createEvent(VULKAN_HPP_NAMESPACE::EventCreateInfo());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 						res = ev.result;
-						VULKAN_HPP_ASSERT(vk::Result::eSuccess == res);
+						VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == res);
 						event = ev.value;
 #else
 						event = ev;
 #endif
 						if (bool(event)) {
-							buffer.waitEvents(1, &event, vk::PipelineStageFlagBits::eHost,
-											  vk::PipelineStageFlagBits::eTopOfPipe, 0, NULL, 0,
+							buffer.waitEvents(1, &event, VULKAN_HPP_NAMESPACE::PipelineStageFlagBits::eHost,
+											  VULKAN_HPP_NAMESPACE::PipelineStageFlagBits::eTopOfPipe, 0, NULL, 0,
 											  NULL,
 											  0,
 											  NULL);
@@ -154,13 +154,13 @@ namespace vuh {
 					if ((!suspend) || bool(event)) {
 						// submit the command buffer to the queue and set up a fence.
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-                        vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
+						VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
 #elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
-                        vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
+						VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
 #else
-						vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
+						VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
 #endif
-                        vk::FenceCreateInfo fci = vk::FenceCreateInfo();
+                        vk::FenceCreateInfo fci = VULKAN_HPP_NAMESPACE::FenceCreateInfo();
                         if(_device.supportFenceFd()) {
                             fci.setPNext(&efci);
                         }
@@ -168,7 +168,7 @@ namespace vuh {
 						auto fen = _device.createFence(fci); // fence makes sure the control is not returned to CPU till command buffer is depleted
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 						res = fen.result;
-						VULKAN_HPP_ASSERT(vk::Result::eSuccess == res);
+						VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == res);
 						auto fence = fen.value;
 #else
 						auto fence = fen;
@@ -195,7 +195,7 @@ namespace vuh {
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
 			ProgramBase(vuh::Device& device        ///< device used to run the code
 			            , const char* filepath     ///< file path to SPIR-V shader code
-			            , vk::ShaderModuleCreateFlags flags={}
+			            , VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags flags={}
 			            )
 				: ProgramBase(device, read_spirv(filepath), flags)
 			{}
@@ -203,17 +203,17 @@ namespace vuh {
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
 			ProgramBase(vuh::Device& device              ///< device used to run the code
 			            , const std::vector<char>& code  ///< actual binary SPIR-V shader code
-			            , vk::ShaderModuleCreateFlags flags={}
+			            , VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags flags={}
 			            )
 			   : _device(device)
-			   , _result(vk::Result::eSuccess)
+			   , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
 			{
 				auto shader = device.createShaderModule({ flags, uint32_t(code.size())
 																 , reinterpret_cast<const uint32_t*>(code.data())
 														 });
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				_result = shader.result;
-				VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+				VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
 				_shader = shader.value;
 #else
 				_shader = shader;
@@ -286,7 +286,7 @@ namespace vuh {
 				                                       });
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				_result = layout.result;
-				VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+				VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
 				_dsclayout = layout.value;
 #else
 				_dsclayout = layout;
@@ -295,7 +295,7 @@ namespace vuh {
 					auto pipe_cache = _device.createPipelineCache({});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 					_result = pipe_cache.result;
-					VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+					VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
 					_pipecache = pipe_cache.value;
 #else
 					_pipecache = pipe_cache;
@@ -303,11 +303,11 @@ namespace vuh {
 				}
 				if(bool(_pipecache)) {
 					auto pipe_layout = _device.createPipelineLayout(
-							{vk::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N),
+							{VULKAN_HPP_NAMESPACE::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N),
 							 psrange.data()});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 					_result = pipe_layout.result;
-					VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+					VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
 					_pipelayout = pipe_layout.value;
 #else
 					_pipelayout = pipe_layout;
@@ -319,17 +319,17 @@ namespace vuh {
 			template<class... Arrs>
 			auto alloc_descriptor_sets(Arrs&...)-> void {
 				assert(_dsclayout);
-				auto sbo_descriptors_size = vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer
+				auto sbo_descriptors_size = VULKAN_HPP_NAMESPACE::DescriptorPoolSize(VULKAN_HPP_NAMESPACE::DescriptorType::eStorageBuffer
 				                                                   , sizeof...(Arrs));
-				auto descriptor_sizes = std::array<vk::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
+				auto descriptor_sizes = std::array<VULKAN_HPP_NAMESPACE::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
 				auto pool =  _device.createDescriptorPool(
-						{vk::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
+						{VULKAN_HPP_NAMESPACE::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
 								, uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
 						});
-				_result = vk::Result::eSuccess;
+				_result = VULKAN_HPP_NAMESPACE::Result::eSuccess;
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				_result = pool.result;
-				VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+				VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
 				_dscpool = pool.value;
 #else
 				_dscpool = pool;
@@ -338,7 +338,7 @@ namespace vuh {
 					auto desc_set = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 					_result = pool.result;
-					VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+					VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
 					_dscset = desc_set.value[0];
 #else
 					_dscset = desc_set[0];
@@ -353,7 +353,7 @@ namespace vuh {
 				assert(_pipeline); /// pipeline supposed to be initialized before this
 
 				constexpr auto N = sizeof...(arrs);
-				auto dscinfos = std::array<vk::DescriptorBufferInfo, N>{
+				auto dscinfos = std::array<VULKAN_HPP_NAMESPACE::DescriptorBufferInfo, N>{
 					                           {{arrs.buffer()
 				                               , arrs.offset()*sizeof(typename Arrs::value_type)
 				                               , arrs.size_bytes()}... }
@@ -365,12 +365,12 @@ namespace vuh {
 				// Start recording commands into the newly allocated command buffer.
 				//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
 				auto cmdbuf = _device.computeCmdBuffer();
-				auto beginInfo = vk::CommandBufferBeginInfo();
+				auto beginInfo = VULKAN_HPP_NAMESPACE::CommandBufferBeginInfo();
 				cmdbuf.begin(beginInfo);
 
 				// Before dispatch bind a pipeline, AND a descriptor set.
-				cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, _pipeline);
-				cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, _pipelayout
+				cmdbuf.bindPipeline(VULKAN_HPP_NAMESPACE::PipelineBindPoint::eCompute, _pipeline);
+				cmdbuf.bindDescriptorSets(VULKAN_HPP_NAMESPACE::PipelineBindPoint::eCompute, _pipelayout
 				                          , 0, {_dscset}, {});
 			}
 
@@ -381,18 +381,18 @@ namespace vuh {
 				cmdbuf.end(); // end recording commands
 			}
 		protected: // data
-			vk::ShaderModule _shader;            ///< compute shader to execute
-			vk::DescriptorSetLayout _dsclayout;  ///< descriptor set layout. This defines the kernel's array parameters interface.
-			vk::DescriptorPool _dscpool;         ///< descitptor ses pool. Descriptors are allocated on this pool.
-			vk::DescriptorSet _dscset;           ///< descriptors set
-			vk::PipelineCache _pipecache;        ///< pipeline cache
-			vk::PipelineLayout _pipelayout;      ///< pipeline layout
-			mutable vk::Pipeline _pipeline;      ///< pipeline itself
+			VULKAN_HPP_NAMESPACE::ShaderModule _shader;            ///< compute shader to execute
+			VULKAN_HPP_NAMESPACE::DescriptorSetLayout _dsclayout;  ///< descriptor set layout. This defines the kernel's array parameters interface.
+			VULKAN_HPP_NAMESPACE::DescriptorPool _dscpool;         ///< descitptor ses pool. Descriptors are allocated on this pool.
+			VULKAN_HPP_NAMESPACE::DescriptorSet _dscset;           ///< descriptors set
+			VULKAN_HPP_NAMESPACE::PipelineCache _pipecache;        ///< pipeline cache
+			VULKAN_HPP_NAMESPACE::PipelineLayout _pipelayout;      ///< pipeline layout
+			mutable VULKAN_HPP_NAMESPACE::Pipeline _pipeline;      ///< pipeline itself
 
 			vuh::Device& _device;                ///< refer to device to run shader on
 			std::array<uint32_t, 3> _batch={0, 0, 0}; ///< 3D evaluation grid dimensions (number of workgroups to run)
 
-			vk::Result	_result;
+			VULKAN_HPP_NAMESPACE::Result	_result;
 		}; // class ProgramBase
 
 		/// Part of Program handling specialization constants.
@@ -406,12 +406,12 @@ namespace vuh {
 		class SpecsBase<Specs<Spec_Ts...>>: public ProgramBase {
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
-			SpecsBase(Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
+			SpecsBase(Device& device, const char* filepath, VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags flags={})
 			   : ProgramBase(device, filepath, flags)
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
-			SpecsBase(Device& device, const std::vector<char>& code, vk::ShaderModuleCreateFlags f={})
+			SpecsBase(Device& device, const std::vector<char>& code, VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags f={})
 			   : ProgramBase(device, code, f)
 			{}
 
@@ -419,12 +419,12 @@ namespace vuh {
 			/// Specialization constants interface is defined here.
 			auto init_pipeline()-> void {
 				auto specEntries = specs2mapentries(_specs);
-				auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
+				auto specInfo = VULKAN_HPP_NAMESPACE::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
 																	, sizeof(_specs), &_specs);
 
 				// Specify the compute shader stage, and it's entry point (main), and specializations
-				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
-																				 , vk::ShaderStageFlagBits::eCompute
+				auto stageCI = VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo(VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateFlags()
+																				 , VULKAN_HPP_NAMESPACE::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", &specInfo);
 				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _result);
 			}
@@ -437,19 +437,19 @@ namespace vuh {
 		class SpecsBase<typelist<>>: public ProgramBase{
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
-			SpecsBase(Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
+			SpecsBase(Device& device, const char* filepath, VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags flags={})
 			   : ProgramBase(device, filepath, flags)
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
-			SpecsBase(Device& device, const std::vector<char>& code, vk::ShaderModuleCreateFlags f={})
+			SpecsBase(Device& device, const std::vector<char>& code, VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags f={})
 			   : ProgramBase(device, code, f)
 			{}
 
 			/// Initialize the pipeline with empty specialialization constants interface.
 			auto init_pipeline()-> void {
-				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
-																				 , vk::ShaderStageFlagBits::eCompute
+				auto stageCI = VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo(VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateFlags()
+																				 , VULKAN_HPP_NAMESPACE::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", nullptr);
 
 				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _result);
@@ -472,13 +472,13 @@ namespace vuh {
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;
 	public:
 		/// Initialize program on a device using SPIR-V code at a given path
-		Program(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
+		Program(vuh::Device& device, const char* filepath, VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags flags={})
 		   : Base(device, read_spirv(filepath), flags)
 		{}
 
 		/// Initialize program on a device from binary SPIR-V code
 		Program(vuh::Device& device, const std::vector<char>& code
-		        , vk::ShaderModuleCreateFlags flags={}
+		        , VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags flags={}
 		        )
 		   : Base(device, code, flags)
 		{}
@@ -558,8 +558,8 @@ namespace vuh {
 		/// Initizalizes the pipeline layout, declares the push constants interface.
 		template<class... Arrs>
 		auto init_pipelayout(Arrs&... args)-> void {
-			auto psranges = std::array<vk::PushConstantRange, 1>{{
-					vk::PushConstantRange(vk::ShaderStageFlagBits::eCompute, 0, sizeof(Params))}};
+			auto psranges = std::array<VULKAN_HPP_NAMESPACE::PushConstantRange, 1>{{
+				VULKAN_HPP_NAMESPACE::PushConstantRange(VULKAN_HPP_NAMESPACE::ShaderStageFlagBits::eCompute, 0, sizeof(Params))}};
 			Base::init_pipelayout(psranges, args...);
 		}
 
@@ -569,7 +569,7 @@ namespace vuh {
 		auto create_command_buffer(const Params& p, Arrs&... args)-> void {
 			Base::command_buffer_begin(args...);
 			Base::_device.computeCmdBuffer().pushConstants(Base::_pipelayout
-			                           , vk::ShaderStageFlagBits::eCompute , 0, sizeof(p), &p);
+			                           , VULKAN_HPP_NAMESPACE::ShaderStageFlagBits::eCompute , 0, sizeof(p), &p);
 			Base::command_buffer_end();
 		}
 	}; // class Program
@@ -580,13 +580,13 @@ namespace vuh {
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;
 	public:
 		/// Initialize program on a device using SPIR-V code at a given path
-		Program(vuh::Device& device, const char* filepath, vk::ShaderModuleCreateFlags flags={})
+		Program(vuh::Device& device, const char* filepath, VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags flags={})
 		   : Base(device, filepath, flags)
 		{}
 
 		/// Initialize program on a device from binary SPIR-V code
 		Program(vuh::Device& device, const std::vector<char>& code
-		        , vk::ShaderModuleCreateFlags flags={}
+		        , VULKAN_HPP_NAMESPACE::ShaderModuleCreateFlags flags={}
 		        )
 		   : Base (device, code, flags)
 		{}
