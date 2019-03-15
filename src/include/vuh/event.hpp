@@ -58,7 +58,7 @@ namespace vuh {
 		}
 		
 		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
-		bool success() const { return (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) && bool(VULKAN_HPP_NAMESPACE::Event(*this)); }
+		bool success() const { return (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) && bool(VULKAN_HPP_NAMESPACE::Event(*this)) && (nullptr != _device); }
 		std::string error_to_string() const { return VULKAN_HPP_NAMESPACE::to_string(_result); };			
 
 	private: // data
