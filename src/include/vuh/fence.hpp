@@ -63,6 +63,7 @@ namespace vuh {
 			if(success()) {
 				_device->destroyFence(*this);
 			}
+			_device.release();
 		}
 
 		auto operator= (const vuh::Fence&)-> vuh::Fence& = delete;
@@ -80,6 +81,15 @@ namespace vuh {
 
 		explicit operator bool() const {
 			return success();
+		}
+
+		auto wait(size_t period=size_t(-1))-> bool {
+			if(success()) {
+				_device->waitForFences({*this}, true, period);
+				auto result = _device->getFenceStatus(*this);
+				return (VULKAN_HPP_NAMESPACE::Result::eSuccess == result);
+			}
+			return false;
 		}
 		
 		// if fenceFd is support, we can use epoll or select wait for fence complete

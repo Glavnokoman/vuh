@@ -38,6 +38,7 @@ namespace vuh {
 			if(success()) {
 				_device->destroyEvent(*this);
 			}
+			_device.release();
 		}
 
 		auto operator= (const vuh::Event&)-> vuh::Event& = delete;
@@ -55,6 +56,14 @@ namespace vuh {
 
 		explicit operator bool() const {
 			return success();
+		}
+
+		bool setEvent() const {
+			if(success()) {
+				_device->setEvent(*this);
+				return true;
+			}
+			return false;
 		}
 		
 		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };

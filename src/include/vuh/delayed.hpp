@@ -115,15 +115,10 @@ namespace vuh {
 		{
 			if(_device){
 				bool release = false;
-				if (bool(vuh::Fence(*this))) {
-					if (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) {
-						_device->waitForFences({*this}, true, period);
-						if (VULKAN_HPP_NAMESPACE::Result::eSuccess == _device->getFenceStatus(*this)) {
-							release = true;
-						}
-					} else {
-						release = true;
-					}
+				if (success()) {
+					release = static_cast<vuh::Fence&>(*this).wait(period);
+				} else {
+					release = true;
 				}
 
 				if(release) {
@@ -139,11 +134,7 @@ namespace vuh {
 		/// it's not thread safe , please call resume on the thread who create the program
 		/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later on android
 		bool resume() {
-			if(bool(vuh::Event(*this))) {
-				_device->setEvent(*this);
-				return true;
-			}
-			return false;
+			return static_cast<vuh::Event&>(*this).setEvent();
 		}
 
 		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
