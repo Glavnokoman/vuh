@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.hpp>
 #include <vuh/device.h>
 #include <vuh/resource.hpp>
+#include <vuh/fence.hpp>
+#include <vuh/event.hpp>
 
 #include <cassert>
 
@@ -27,94 +29,56 @@ namespace vuh {
 	/// The corresponding action will necessarily take place once and only once, whether
 	/// it is at the explicit wait() call or at object destruction.
 	template<class Action=detail::Noop>
-	class Delayed: public vk::Fence, vk::Event, private Action {
+	class Delayed: public vuh::Fence, vuh::Event, private Action {
 		template<class> friend class Delayed;
 	public:
 		/// Constructor. Takes ownership of the fence.
 		/// It is assumed that the fence belongs to the same device that is passed together with it.
-		Delayed(VULKAN_HPP_NAMESPACE::Fence fence, vuh::Device& device, Action action={})
-		   : VULKAN_HPP_NAMESPACE::Fence(fence)
+		Delayed(vuh::Fence& fence, vuh::Device& device, Action action={})
+		   : vuh::Fence(fence)
 		   , Action(std::move(action))
 		   , _device(&device)
-		   , _result(vk::Result::eSuccess)
+		   , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
 		{}
 
-		explicit Delayed(VULKAN_HPP_NAMESPACE::Fence fence, vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, Action action={})
-				: VULKAN_HPP_NAMESPACE::Fence(fence)
+		explicit Delayed(vuh::Fence& fence, vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, Action action={})
+				: vuh::Fence(fence)
 				, Action(std::move(action))
 				, _device(&device)
 				, _result(result)
 		{}
 
-        explicit Delayed(vk::Fence fence, VULKAN_HPP_NAMESPACE::Event event, vuh::Device& device, Action action={})
-                : VULKAN_HPP_NAMESPACE::Fence(fence)
-				, VULKAN_HPP_NAMESPACE::Event(event)
+        explicit Delayed(vuh::Fence& fence, vuh::Event& event, vuh::Device& device, Action action={})
+                : vuh::Fence(fence)
+				, vuh::Event(event)
                 , Action(std::move(action))
                 , _device(&device)
                 , _result(vk::Result::eSuccess)
         {}
 
 		/// Constructs for VULKAN_HPP_NO_EXCEPTIONS
-		explicit Delayed(vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, VULKAN_HPP_NAMESPACE::Event event, Action action={})
-				: VULKAN_HPP_NAMESPACE::Event(event)
+		explicit Delayed(vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, vuh::Event& event, Action action={})
+				: vuh::Fence(device)
+				, vuh::Event(event)
 				, Action(std::move(action))
 				, _device(&device)
 				, _result(result)
-		{
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
-#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
-#else
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
-#endif
-			VULKAN_HPP_NAMESPACE::FenceCreateInfo fci = VULKAN_HPP_NAMESPACE::FenceCreateInfo();
-			if(_device->supportFenceFd()) {
-				fci.setPNext(&efci);
-			}
-			auto fen = device.createFence(fci);
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-			_result = fen.result;
-		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
-		    static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(fen.value);
-#else
-			static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(fen);
-#endif
-		}
+		{}
 
 		/// Constructor. Creates the fence in a signalled state.
 		explicit Delayed(vuh::Device& device, Action action={})
-				: Action(std::move(action))
+				: vuh::Fence(device)
+				, Action(std::move(action))
 				, _device(&device)
 				, _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
-		{
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
-#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
-#else
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
-#endif
-			VULKAN_HPP_NAMESPACE::FenceCreateInfo fci = VULKAN_HPP_NAMESPACE::FenceCreateInfo(VULKAN_HPP_NAMESPACE::FenceCreateFlagBits::eSignaled);
-			if(_device->supportFenceFd()) {
-				fci.setPNext(&efci);
-			}
-			auto fen = device.createFence(fci);
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-		    _result = fen.result;
-		    VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
-		    static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(fen.value);
-#else
-			static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(fen);
-#endif
-		}
+		{}
 
 
 		/// Constructs from the object of Delayed<Noop> and inherits the state of that.
 		/// Takes over the undelying fence ownership.
 		/// Mostly substitute its own action in place of Noop.
 		explicit Delayed(Delayed<detail::Noop>&& noop, Action action={})
-		   : VULKAN_HPP_NAMESPACE::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device)), _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
+		   : vuh::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device)), _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
 		{}
 
 		/// Destructor. Blocks till the undelying fence is signalled (waits forever).
@@ -131,10 +95,10 @@ namespace vuh {
 		/// till that is signalled and only then proceed to taking over the move-from object.
 		auto operator= (Delayed&& other) noexcept-> Delayed& {
 			wait();
-			static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(static_cast<VULKAN_HPP_NAMESPACE::Fence&>(other));
+			static_cast<vuh::Fence&>(*this) = std::move(static_cast<vuh::Fence&>(other));
 			static_cast<Action&>(*this) = std::move(static_cast<Action&>(other));
 			_device = std::move(other._device);
-			_result = other._result;
+			_result = std::move(other._result);
 			return *this;
 		}
 
@@ -151,23 +115,18 @@ namespace vuh {
 		{
 			if(_device){
 				bool release = false;
-				if (bool(VULKAN_HPP_NAMESPACE::Fence(*this))) {
+				if (bool(vuh::Fence(*this))) {
 					if (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) {
 						_device->waitForFences({*this}, true, period);
 						if (VULKAN_HPP_NAMESPACE::Result::eSuccess == _device->getFenceStatus(*this)) {
-							_device->destroyFence(*this);
 							release = true;
 						}
 					} else {
-						_device->destroyFence(*this);
 						release = true;
 					}
 				}
 
 				if(release) {
-					if (bool(VULKAN_HPP_NAMESPACE::Event(*this))) {
-						_device->destroyEvent(*this);
-					}
 					static_cast<Action &>(*this)(); // exercise action
 					_device.release();
 				}
@@ -180,44 +139,11 @@ namespace vuh {
 		/// it's not thread safe , please call resume on the thread who create the program
 		/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later on android
 		bool resume() {
-			if(bool(VULKAN_HPP_NAMESPACE::Event(*this))) {
+			if(bool(vuh::Event(*this))) {
 				_device->setEvent(*this);
 				return true;
 			}
 			return false;
-		}
-
-		// if fenceFd is support, we can use epoll or select wait for fence complete
-		bool supportFenceFd() {
-			return _device->supportFenceFd();
-		}
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-        auto fenceFd(HANDLE& fd)-> VULKAN_HPP_NAMESPACE::Result {
-			VULKAN_HPP_NAMESPACE::FenceGetWin32HandleInfoKHR info(*this);
-			auto res = _device->getFenceWin32HandleKHR(info);
-#else
-		auto fenceFd(int& fd)-> VULKAN_HPP_NAMESPACE::Result {
-			// following https://www.khronos.org/registry/vulkan/specs/1.0-wsi_extensions/html/vkspec.html
-			// current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
-			// If handleType is VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
-			// the special value -1 for fd is treated like a valid sync file descriptor referring to an object that has already signaled.
-			// The import operation will succeed and the VkFence will have a temporarily imported payload as if a valid file descriptor had been provided.
-		#ifdef VK_USE_PLATFORM_ANDROID_KHR /* Android need dynamic load KHR extension */
-			VULKAN_HPP_NAMESPACE::FenceGetFdInfoKHR info(*this,VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
-			auto res = _device->getFenceFdKHR(info,vk::DispatchLoaderDynamic(vk::Instance(_device->instance()),*_device));
-        #else
-			VULKAN_HPP_NAMESPACE::FenceGetFdInfoKHR info(*this,VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
-			auto res = _device->getFenceFdKHR(info);
-        #endif
-#endif
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-			fd = res.value;
-			return res.result;
-#else
-			fd = res;
-			return VULKAN_HPP_NAMESPACE::Result::eSuccess;
-#endif
 		}
 
 		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
@@ -228,7 +154,4 @@ namespace vuh {
 		std::unique_ptr<Device, util::NoopDeleter<Device>> _device; ///< refers to the device owning corresponding the underlying fence.
 		VULKAN_HPP_NAMESPACE::Result _result;
 	}; // class Delayed
-
-	/// Delayed No-Action. Just a synchronization point.
-	using Fence = Delayed<detail::Noop>;
 } // namespace vuh

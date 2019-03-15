@@ -85,18 +85,11 @@ namespace vuh {
 
 				auto queue = device->transferQueue();
 				auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buffer);
-				auto result = vk::Result::eSuccess;
-				auto fen = device->createFence(vk::FenceCreateInfo());
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				result = fen.result;
-				VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
-				auto fence = fen.value;
-#else
-				auto fence = fen;
-#endif
-				queue.submit({submit_info}, fence);
-
-				return Delayed<>{fence, *device,result};
+				vuh::Fence fence(*device);
+				if(bool(fence)) {
+					queue.submit({submit_info}, fence);
+				}
+				return Delayed<>{fence, *device,fence.error()};
 			}
 		}; // struct CopyDevice
 

@@ -129,20 +129,13 @@ namespace vuh {
 			/// @return Delayed<Compute> object used for synchronization with host
 			auto run_async(bool suspend=false)-> vuh::Delayed<Compute> {
 				VULKAN_HPP_NAMESPACE::Result res = VULKAN_HPP_NAMESPACE::Result::eSuccess;
-				VULKAN_HPP_NAMESPACE::Event event;
+				vuh::Event event;
 				auto buffer = _device.releaseComputeCmdBuffer(res);
 				if (VULKAN_HPP_NAMESPACE::Result::eSuccess == res) {
 					auto submitInfo = VULKAN_HPP_NAMESPACE::SubmitInfo(0, nullptr, nullptr, 1,
 													 &buffer); // submit a single command buffer
 					if (suspend) {
-						auto ev = _device.createEvent(VULKAN_HPP_NAMESPACE::EventCreateInfo());
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-						res = ev.result;
-						VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == res);
-						event = ev.value;
-#else
-						event = ev;
-#endif
+						event = vuh::Event(_device);
 						if (bool(event)) {
 							buffer.waitEvents(1, &event, VULKAN_HPP_NAMESPACE::PipelineStageFlagBits::eHost,
 											  VULKAN_HPP_NAMESPACE::PipelineStageFlagBits::eTopOfPipe, 0, NULL, 0,
@@ -153,26 +146,8 @@ namespace vuh {
 					}
 					if ((!suspend) || bool(event)) {
 						// submit the command buffer to the queue and set up a fence.
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-						VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
-#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
-						VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
-#else
-						VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
-#endif
-                        vk::FenceCreateInfo fci = VULKAN_HPP_NAMESPACE::FenceCreateInfo();
-                        if(_device.supportFenceFd()) {
-                            fci.setPNext(&efci);
-                        }
 						auto queue = _device.computeQueue();
-						auto fen = _device.createFence(fci); // fence makes sure the control is not returned to CPU till command buffer is depleted
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-						res = fen.result;
-						VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == res);
-						auto fence = fen.value;
-#else
-						auto fence = fen;
-#endif
+						vuh::Fence fence(_device);  // fence makes sure the control is not returned to CPU till command buffer is deplet
 						if (bool(fence)) {
 							queue.submit({submitInfo}, fence);
 
