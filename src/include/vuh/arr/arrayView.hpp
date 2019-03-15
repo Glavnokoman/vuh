@@ -19,7 +19,7 @@ namespace vuh {
 		{}
 
 		/// @return reference to Vulkan buffer of the corresponding array
-		auto buffer()-> vk::Buffer& { return *_array; }
+		auto buffer()-> VULKAN_HPP_NAMESPACE::Buffer& { return *_array; }
 		/// @return offset (number of elements) of the beggining of the span wrt to buffer
 		auto offset() const-> std::size_t {return _offset_begin;}
 		/// @return number of elements in the view

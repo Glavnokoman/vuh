@@ -30,7 +30,7 @@ namespace vuh {
 		// helper
 		template<class T, size_t... I>
 		constexpr auto spec2entries(const T& specs, std::index_sequence<I...>
-		                            )-> std::array<vk::SpecializationMapEntry, sizeof...(I)>
+		                            )-> std::array<VULKAN_HPP_NAMESPACE::SpecializationMapEntry, sizeof...(I)>
 		{
 			return {{ { uint32_t(I)
 			          , uint32_t(tuple_element_offset<I>(specs))
@@ -46,10 +46,10 @@ namespace vuh {
 
 		// helper
 		template<size_t N>
-		auto dscTypesToLayout(const std::array<vk::DescriptorType, N>& dsc_types) {
-			auto r = std::array<vk::DescriptorSetLayoutBinding, N>{};
+		auto dscTypesToLayout(const std::array<VULKAN_HPP_NAMESPACE::DescriptorType, N>& dsc_types) {
+			auto r = std::array<VULKAN_HPP_NAMESPACE::DescriptorSetLayoutBinding, N>{};
 			for(size_t i = 0; i < N; ++i){ // can be expanded compile-time
-				r[i] = {uint32_t(i), dsc_types[i], 1, vk::ShaderStageFlagBits::eCompute};
+				r[i] = {uint32_t(i), dsc_types[i], 1, VULKAN_HPP_NAMESPACE::ShaderStageFlagBits::eCompute};
 			}
 			return r;
 		}
@@ -57,7 +57,7 @@ namespace vuh {
 		/// @return specialization map array
 		template<class... Ts>
 		auto specs2mapentries(const std::tuple<Ts...>& specs
-		                      )-> std::array<vk::SpecializationMapEntry, sizeof...(Ts)>
+		                      )-> std::array<VULKAN_HPP_NAMESPACE::SpecializationMapEntry, sizeof...(Ts)>
 		{
 			return spec2entries(specs, std::make_index_sequence<sizeof...(Ts)>{});
 		}
@@ -66,9 +66,9 @@ namespace vuh {
 		template<class T, size_t... I>
 		auto dscinfos2writesets(VULKAN_HPP_NAMESPACE::DescriptorSet dscset, const T& infos
 		                        , std::index_sequence<I...>
-		                        )-> std::array<vk::WriteDescriptorSet, sizeof...(I)>
+		                        )-> std::array<VULKAN_HPP_NAMESPACE::WriteDescriptorSet, sizeof...(I)>
 		{
-			auto r = std::array<vk::WriteDescriptorSet, sizeof...(I)>{{
+			auto r = std::array<VULKAN_HPP_NAMESPACE::WriteDescriptorSet, sizeof...(I)>{{
 				{dscset, uint32_t(I), 0, 1, VULKAN_HPP_NAMESPACE::DescriptorType::eStorageBuffer, nullptr, &infos[I]}...
 			}};
 			return r;
@@ -77,7 +77,7 @@ namespace vuh {
 		/// Transient command buffer data with a releaseable interface.
 		struct ComputeBuffer {
 			/// Constructor. Takes ownership over provided buffer.
-			ComputeBuffer(vuh::Device& device, vk::CommandBuffer buffer)
+			ComputeBuffer(vuh::Device& device, VULKAN_HPP_NAMESPACE::CommandBuffer buffer)
 			   : cmd_buffer(buffer), device(&device){}
 
 			/// Release resources associated with owned command buffer.
@@ -96,7 +96,7 @@ namespace vuh {
 		/// buffer and a noop triggered action.
 		struct Compute: private util::Resource<ComputeBuffer> {
 			/// Constructor
-			explicit Compute(vuh::Device& device, vk::CommandBuffer buffer)
+			explicit Compute(vuh::Device& device, VULKAN_HPP_NAMESPACE::CommandBuffer buffer)
 			   : Resource<ComputeBuffer>(device, std::move(buffer))
 			{}
 
@@ -162,9 +162,9 @@ namespace vuh {
 			explicit operator bool() const { return bool(_device); };
 			bool operator!() const {return !_device; };
 
-			vk::Result error() const { return _result; };
-			bool success() const { return (vk::Result::eSuccess == _result); };
-			std::string error_to_string() const {return vk::to_string(_result); };
+			VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
+			bool success() const { return (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result); };
+			std::string error_to_string() const {return VULKAN_HPP_NAMESPACE::to_string(_result); };
 
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
@@ -252,11 +252,11 @@ namespace vuh {
 			/// Initialize the pipeline.
 			/// Creates descriptor set layout, pipeline cache and the pipeline layout.
 			template<size_t N, class... Arrs>
-			auto init_pipelayout(const std::array<vk::PushConstantRange, N>& psrange, Arrs&...)-> void {
+			auto init_pipelayout(const std::array<VULKAN_HPP_NAMESPACE::PushConstantRange, N>& psrange, Arrs&...)-> void {
 				auto dscTypes = typesToDscTypes<Arrs...>();
 				auto bindings = dscTypesToLayout(dscTypes);
 				auto layout = _device.createDescriptorSetLayout(
-				                                       { vk::DescriptorSetLayoutCreateFlags()
+				                                       { VULKAN_HPP_NAMESPACE::DescriptorSetLayoutCreateFlags()
 				                                       , uint32_t(bindings.size()), bindings.data()
 				                                       });
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
@@ -338,7 +338,7 @@ namespace vuh {
 				_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 				// Start recording commands into the newly allocated command buffer.
-				//	auto beginInfo = vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
+				//	auto beginInfo = VULKAN_HPP_NAMESPACE::CommandBufferBeginInfo(VULKAN_HPP_NAMESPACE::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
 				auto cmdbuf = _device.computeCmdBuffer();
 				auto beginInfo = VULKAN_HPP_NAMESPACE::CommandBufferBeginInfo();
 				cmdbuf.begin(beginInfo);
@@ -590,7 +590,7 @@ namespace vuh {
 		template<class... Arrs>
 		auto bind(Arrs&&... args)-> const Program& {
 			if(!Base::_pipeline){ // handle multiple rebind
-				Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
+				Base::init_pipelayout(std::array<VULKAN_HPP_NAMESPACE::PushConstantRange, 0>{}, args...);
 				Base::alloc_descriptor_sets(args...);
 				Base::init_pipeline();
 			}

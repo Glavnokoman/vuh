@@ -220,8 +220,8 @@ private: // helpers
 		assert(Base::isHostVisible());
         auto data = Base::_dev.mapMemory(Base::_mem, 0, size_bytes());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-        VULKAN_HPP_ASSERT(vk::Result::eSuccess == data.result);
-        if (vk::Result::eSuccess == data.result) {
+        VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == data.result);
+        if (VULKAN_HPP_NAMESPACE::Result::eSuccess == data.result) {
             return static_cast<T *>(data.value);
         }
         return nullptr;
@@ -234,8 +234,8 @@ private: // helpers
 		assert(Base::isHostVisible());
         auto data = Base::_dev.mapMemory(Base::_mem, 0, size_bytes());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-        VULKAN_HPP_ASSERT(vk::Result::eSuccess == data.result);
-		if (vk::Result::eSuccess == data.result) {
+        VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == data.result);
+		if (VULKAN_HPP_NAMESPACE::Result::eSuccess == data.result) {
             return static_cast<const T *>(data.value);
         }
         return nullptr;

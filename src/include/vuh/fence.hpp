@@ -97,7 +97,7 @@ namespace vuh {
             #else
 				VULKAN_HPP_NAMESPACE::FenceGetFdInfoKHR info(*this,VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
             #endif
-			auto res = _device->getFenceFdKHR(info,vk::DispatchLoaderDynamic(vk::Instance(_device->instance()),*_device));
+			auto res = _device->getFenceFdKHR(info,VULKAN_HPP_NAMESPACE::DispatchLoaderDynamic(VULKAN_HPP_NAMESPACE::Instance(_device->instance()),*_device));
         #else
 			#if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
 				VULKAN_HPP_NAMESPACE::FenceGetFdInfoKHR info(*this,VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eOpaqueFd);

@@ -53,7 +53,7 @@ namespace vuh {
 				, vuh::Event(event)
                 , Action(std::move(action))
                 , _device(&device)
-                , _result(vk::Result::eSuccess)
+                , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
         {}
 
 		/// Constructs for VULKAN_HPP_NO_EXCEPTIONS

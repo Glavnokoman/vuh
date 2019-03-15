@@ -23,17 +23,17 @@ public:
 	/// Memory is not initialized with any data.
 	HostArray(vuh::Device& device  ///< device to create array on
 	          , size_t n_elements  ///< number of elements
-	          , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	          , vk::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
+	          , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	          , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	          )
 	   : BasicArray<Alloc>(device, n_elements*sizeof(T), flags_memory, flags_buffer)
-	   , _result(vk::Result::eSuccess)
+	   , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
 	   , _size(n_elements)
 	{
 		auto data = Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T));
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		_result = data.result;
-		VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+		VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
 		_data = static_cast<T*>(data.value);
 #else
 		_data = static_cast<T*>(data);
@@ -44,8 +44,8 @@ public:
 	HostArray( vuh::Device& device ///< device to create array on
 	         , size_t n_elements   ///< number of elements
 	         , T value             ///< initializer value
-	         , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	         , vk::BufferUsageFlags flags_buffer={}	   ///< additional (to defined by allocator) buffer usage flags
+	         , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	         , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={}	   ///< additional (to defined by allocator) buffer usage flags
 	         )
 	   : HostArray(device, n_elements, flags_memory, flags_buffer)
 	{
@@ -57,8 +57,8 @@ public:
 	HostArray(vuh::Device& device ///< device to create array on
 	         , It1 begin          ///< beginning of initialization range
 	         , It2 end            ///< end (one past end) of initialization range
-	         , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	         , vk::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
+	         , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	         , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	         )
 	   : HostArray(device, std::distance(begin, end), flags_memory, flags_buffer)
 	{
@@ -123,7 +123,7 @@ public:
 private: // data
    T* _data;       ///< host accessible pointer to the beginning of corresponding memory chunk.
    size_t _size;  ///< Number of elements. Actual allocated memory may be a bit bigger then necessary.
-   vk::Result _result;
+   VULKAN_HPP_NAMESPACE::Result _result;
 }; // class HostArray
 } // namespace arr
 } // namespace vuh
