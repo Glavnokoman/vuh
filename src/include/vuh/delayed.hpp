@@ -61,7 +61,18 @@ namespace vuh {
 				, _device(&device)
 				, _result(result)
 		{
-			auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+			vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
+#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+			vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
+#else
+			vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
+#endif
+			vk::FenceCreateInfo fci = vk::FenceCreateInfo();
+			if(_device->supportFenceFd()) {
+				fci.setPNext(&efci);
+			}
+			auto fen = device.createFence(fci);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			_result = fen.result;
 		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
@@ -77,7 +88,18 @@ namespace vuh {
 				, _device(&device)
 				, _result(vk::Result::eSuccess)
 		{
-			auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+			vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
+#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+			vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
+#else
+			vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
+#endif
+			vk::FenceCreateInfo fci = vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
+			if(_device->supportFenceFd()) {
+				fci.setPNext(&efci);
+			}
+			auto fen = device.createFence(fci);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		    _result = fen.result;
 		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
@@ -181,10 +203,11 @@ namespace vuh {
 			// If handleType is VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
 			// the special value -1 for fd is treated like a valid sync file descriptor referring to an object that has already signaled.
 			// The import operation will succeed and the VkFence will have a temporarily imported payload as if a valid file descriptor had been provided.
-			vk::FenceGetFdInfoKHR info(*this,vk::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
 		#ifdef VK_USE_PLATFORM_ANDROID_KHR /* Android need dynamic load KHR extension */
+			vk::FenceGetFdInfoKHR info(*this,vk::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
 			auto res = _device->getFenceFdKHR(info,vk::DispatchLoaderDynamic(vk::Instance(_device->instance()),*_device));
         #else
+			vk::FenceGetFdInfoKHR info(*this,vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
 			auto res = _device->getFenceFdKHR(info);
         #endif
 #endif

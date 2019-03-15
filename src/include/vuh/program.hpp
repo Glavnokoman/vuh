@@ -153,9 +153,19 @@ namespace vuh {
 					}
 					if ((!suspend) || bool(event)) {
 						// submit the command buffer to the queue and set up a fence.
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+                        vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
+#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+                        vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
+#else
+						vk::ExportFenceCreateInfoKHR efci(vk::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
+#endif
+                        vk::FenceCreateInfo fci = vk::FenceCreateInfo();
+                        if(_device.supportFenceFd()) {
+                            fci.setPNext(&efci);
+                        }
 						auto queue = _device.computeQueue();
-						auto fen = _device.createFence(
-								vk::FenceCreateInfo()); // fence makes sure the control is not returned to CPU till command buffer is depleted
+						auto fen = _device.createFence(fci); // fence makes sure the control is not returned to CPU till command buffer is depleted
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 						res = fen.result;
 						VULKAN_HPP_ASSERT(vk::Result::eSuccess == res);
