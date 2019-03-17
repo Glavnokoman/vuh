@@ -18,10 +18,12 @@ TEST_CASE("initialization & system info", "[correctness]"){
 		for(const auto& pd: instance.physicalDevices()){
 			std::cout << "physical device: " << pd.getProperties().deviceName << "\n";
 
+			auto i = size_t(0);
 			for(const auto& qf: pd.queueFamilies()){
-				std::cout << "\tfamily " << qf.id() << "\n"
+				std::cout << "\tfamily " << i++ << "\n"
 				          << "\tsupports compute: " << (qf.canCompute() ? "yes" : "no") << "\n"
 				          << "\tsupports transfer: " << (qf.canTransfer() ? "yes" : "no") << "\n"
+				          << "\tis unified: " << (qf.isUnified() ? "yes" : "no") << "\n"
 				          << "\thas queues: " << qf.queueCount << "\n"
 				          << "\tflags: " << std::hex << unsigned(qf.queueFlags) << "\n";
 			}
@@ -32,13 +34,15 @@ TEST_CASE("initialization & system info", "[correctness]"){
 		auto dev0 = pd.computeDevice(); // default, best allocation of 1 transport and 1 compute queue
 		auto dev1 = pd.computeDevice(vuh::queueOptions::Default);    // same default
 		auto dev2 = pd.computeDevice(vuh::queueOptions::AllQueues);  // claim all queues
-		auto dev3 = pd.computeDevice(vuh::queueOptions::Streams{4}); // best possible allocation of queues to support 4 streams
-		auto dev4 = pd.computeDevice(vuh::queueOptions::Specs
+		auto dev3 = pd.computeDevice(vuh::queueOptions::Streams{pd.maxStreamCount()}); // best possible allocation of queues to support 4 streams
+		auto dev4 = pd.computeDevice(vuh::queueOptions::Specs // TODO: fix this to hand-rolled AllQueues
 		                             { {0 /*family_id*/, 4 /*number queues*/, {/*priorities*/}}
 		                             , {1, 2, {}}
 		                             , {2, 1, {}} });
-		for(size_t i = 0; i < dev4.queueCount(); ++i){
-			auto q_i = dev4.queue(i);
+		for(auto& q: dev2.queues()){
+			std::cout << (q.canCompute() ? "can compute " :
+			              q.canTransfer() ? "can transfer " :
+			              q.isUnified() ? "is  unified " : "") << "\n";
 		}
 	}
 }

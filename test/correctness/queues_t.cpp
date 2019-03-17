@@ -34,21 +34,25 @@ TEST_CASE("queues", "[correctness][async]"){
 	struct Params{uint32_t size; float a;};
 	auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv");
 
+	SECTION("queues"){
+
+	}
 	SECTION("streams"){
 		auto streams = device.streams();
 		const auto n_streams = streams.size();
 
-		const auto patch_size = arr_size/n_streams;
+		const auto patch_size = uint32_t(arr_size/n_streams);
 		const auto block_size = 128;
 		auto h_out = vuh::Array<float, vuh::mem::HostCached>(device, arr_size);
 		SECTION("fine-grained stream config"){
 			auto transfer_queue_ids = std::vector<size_t>{};
 			auto compute_queue_ids = std::vector<size_t>{};
-			for(size_t i = 0; i < device.queueCount(); ++i){
-				if(device.queue(i).canCompute()){
+			for(size_t i = 0; i < device.queues().size(); ++i){
+				const auto& q_i = device.queues()[i];
+				if(q_i.canCompute()){
 					compute_queue_ids.push_back(i);
 				}
-				if(device.queue(i).canTransfer()){
+				if(q_i.canTransfer()){
 					compute_queue_ids.push_back(i);
 				}
 			}
@@ -57,8 +61,8 @@ TEST_CASE("queues", "[correctness][async]"){
 				queue_config.push_back({ compute_queue_ids[i % compute_queue_ids.size()]
 				                       , transfer_queue_ids[i % transfer_queue_ids.size()]});
 			}
-			auto fine_queues = device.mixedQueues(queue_config);
-			REQUIRE(fine_queues.size() == n_queues);
+			auto fine_streams = device.streams(queue_config);
+			REQUIRE(fine_streams.size() == n_streams);
 		}
 		SECTION("streams 1"){
 			auto off = size_t(0);
