@@ -92,6 +92,8 @@ namespace vuh {
 			return VkFence(static_cast<const VULKAN_HPP_NAMESPACE::Fence&>(*this));
 		}
 
+		/// if fenceFd() is called ,do'nt use this function wait, this function will blocked and never return
+		/// please call epoll_wait/select/poll wait for fd's signal
 		auto wait(size_t period=size_t(-1))-> bool {
 			if(success()) {
 				_device->waitForFences({*this}, true, period);
@@ -101,7 +103,7 @@ namespace vuh {
 			return false;
 		}
 		
-		// if fenceFd is support, we can use epoll or select wait for fence complete
+		/// if fenceFd is support, we can use epoll or select wait for fence complete
 		bool supportFenceFd() {
 			return _device->supportFenceFd();
 		}		
