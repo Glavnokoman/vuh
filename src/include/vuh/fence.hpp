@@ -19,7 +19,7 @@ namespace vuh {
 		{
 #if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
 	#ifdef VK_USE_PLATFORM_WIN32_KHR
-		VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
+		VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
 	#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 		VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eSyncFd);
 	#else
@@ -27,7 +27,7 @@ namespace vuh {
 	#endif
 #else									
 	#ifdef VK_USE_PLATFORM_WIN32_KHR
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
+			VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
 	#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
 	#else
