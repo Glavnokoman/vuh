@@ -19,7 +19,9 @@ namespace vuh {
 		{
 #if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
 	#ifdef VK_USE_PLATFORM_WIN32_KHR
+		// which one is correct on windows ?	
 		VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
+		//VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
 	#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 		VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eSyncFd);
 	#else
@@ -27,7 +29,9 @@ namespace vuh {
 	#endif
 #else									
 	#ifdef VK_USE_PLATFORM_WIN32_KHR
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueWin32);
+			// which one is correct on windows ?
+			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
+			//VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
 	#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
 	#else
@@ -88,6 +92,8 @@ namespace vuh {
 			return VkFence(static_cast<const VULKAN_HPP_NAMESPACE::Fence&>(*this));
 		}
 
+		/// if fenceFd() is called ,do'nt use this function wait, this function will blocked and never return
+		/// please call epoll_wait/select/poll wait for fd's signal
 		auto wait(size_t period=size_t(-1))-> bool {
 			if(success()) {
 				_device->waitForFences({*this}, true, period);
@@ -97,7 +103,7 @@ namespace vuh {
 			return false;
 		}
 		
-		// if fenceFd is support, we can use epoll or select wait for fence complete
+		/// if fenceFd is support, we can use epoll or select wait for fence complete
 		bool supportFenceFd() {
 			return _device->supportFenceFd();
 		}		
