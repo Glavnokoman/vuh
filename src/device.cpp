@@ -4,6 +4,10 @@
 #include <cstdint>
 #include <limits>
 
+#ifndef VK_API_VERSION_1_1
+#define VK_API_VERSION_1_1 VK_MAKE_VERSION(1, 1, 0)// Patch version should always be set to 0
+#endif
+
 namespace {
 	/// Create logical device.
 	/// Compute and transport queue family id may point to the same queue.
@@ -103,11 +107,12 @@ namespace vuh {
 	Device::Device(Instance& instance, vk::PhysicalDevice physdevice
 	               , uint32_t computeFamilyId, uint32_t transferFamilyId
 	               )
-	  : vk::Device(createDevice(physdevice, computeFamilyId, transferFamilyId,_result))
+	  : vk::Device(createDevice(physdevice, computeFamilyId, transferFamilyId, _result))
 	  , _instance(instance)
 	  , _physdev(physdevice)
 	  , _cmp_family_id(computeFamilyId)
 	  , _tfr_family_id(transferFamilyId)
+	  , _support_fence_fd(fenceFdSupported())
 	{
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		auto pool = createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer
@@ -180,6 +185,40 @@ namespace vuh {
 		}
 	}
 
+	// if fenceFd is support, we can use epoll or select wait for fence complete
+	// following https://www.khronos.org/registry/vulkan/specs/1.0-extensions/html/vkspec.html#VK_KHR_external_fence
+	// vulkan 1.1 support VK_KHR_external_fence default (Promoted to Vulkan 1.1)
+	// vulkan 1.0 ,need VK_KHR_external_fence extension on Android 1.0.54 import this extension
+	// following https://android.googlesource.com/platform/frameworks%2Fnative/+/9492f99cb57d97aa5df908773738fe7fe6a86acf
+	auto Device::fenceFdSupported() noexcept-> bool {
+		auto props = properties();
+		if (props.apiVersion >= VK_API_VERSION_1_1) {
+			return true;
+		} else {
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+			const auto em_extensions = _physdev.enumerateDeviceExtensionProperties();
+			auto avail_extensions = em_extensions.value;
+			VULKAN_HPP_ASSERT(vk::Result::eSuccess == em_extensions.result);
+			if(vk::Result::eSuccess != em_extensions.result) {
+				avail_extensions.clear();
+			}
+#else
+			const auto avail_extensions = _physdev.enumerateDeviceExtensionProperties();
+#endif
+			for(int i = 0; i< avail_extensions.size(); i++) {
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+				if(0 == strcmp(avail_extensions[i].extensionName,VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME)) {
+#else
+				if(0 == strcmp(avail_extensions[i].extensionName,VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME)) {
+#endif
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	/// Release resources associated with a logical device
 	Device::~Device() noexcept {
 		release();
@@ -207,6 +246,7 @@ namespace vuh {
 	   , _cmdbuf_transfer(other._cmdbuf_transfer)
 	   , _cmp_family_id(other._cmp_family_id)
 	   , _tfr_family_id(other._tfr_family_id)
+	   , _support_fence_fd(other._support_fence_fd)
 	{
 		static_cast<vk::Device&>(other)= nullptr;
 	}
@@ -228,6 +268,7 @@ namespace vuh {
 		swap(d1._cmdbuf_transfer , d2._cmdbuf_transfer );
 		swap(d1._cmp_family_id   , d2._cmp_family_id   );
 		swap(d1._tfr_family_id   , d2._tfr_family_id   );
+		swap(d1._support_fence_fd, d2._support_fence_fd);
 	}
 
 	/// @return physical device properties
@@ -301,6 +342,10 @@ namespace vuh {
 			}
 		}
 		return new_buffer;
+	}
+
+	auto Device::supportFenceFd()-> bool {
+		return _support_fence_fd;
 	}
 
 	/// @return i-th queue in the family supporting transfer commands.

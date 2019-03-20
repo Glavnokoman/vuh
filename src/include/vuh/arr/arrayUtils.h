@@ -7,7 +7,8 @@
 namespace vuh{
 namespace arr {
 	auto copyBuf(vuh::Device& device
-	             , vk::Buffer src, vk::Buffer dst
+	             , VULKAN_HPP_NAMESPACE::Buffer src
+	             , VULKAN_HPP_NAMESPACE::Buffer dst
 	             , size_t size_bytes
 	             , size_t src_offset=0
 	             , size_t dst_offset=0

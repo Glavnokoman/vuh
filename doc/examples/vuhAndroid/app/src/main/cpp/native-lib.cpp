@@ -8,6 +8,8 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include "log.h"
+#include <sys/epoll.h>
+#include <unistd.h>
 
 static char * loadFromAsset(AAssetManager* mgr,const char* file,size_t& len) {
     AAsset * asset = AAssetManager_open(mgr, file, AASSET_MODE_BUFFER);
@@ -241,6 +243,89 @@ static auto saxpyAsync(AAssetManager* mgr,bool comp)-> bool {
     return false;
 }
 
+static auto saxpy_epoll(AAssetManager* mgr)-> bool {
+    /*Since Linux 2.6.8,the size argument is ignored, but must be greater than zero;*/
+    int efd = epoll_create1(0);
+    if(-1 == efd) {
+        int err = errno;
+        LOGE("saxpy epoll create failed error =%d(%s)", err, strerror(err));
+    }
+
+    auto y = std::vector<float>(128, 1.0f);
+    auto x = std::vector<float>(128, 2.0f);
+    const auto a = 0.1f; // saxpy scaling constant
+    auto instance = vuh::Instance();
+    if (instance.devices().size() > 0) {
+        auto device = instance.devices().at(0);  // just get the first compute-capable device
+
+        auto d_y = vuh::Array<float>(device,
+                                     y); // allocate memory on device and copy data from host
+        auto d_x = vuh::Array<float>(device, x); // same for x
+
+        using Specs = vuh::typelist<uint32_t>;
+        struct Params {
+            uint32_t size;
+            float a;
+        };
+        LOGD("saxpy epoll before %f",y[0]);
+        std::vector<char> code;
+        bool suc = loadSaxpySpv(mgr, code);
+        if (suc) {
+            auto program = vuh::Program<Specs, Params>(device,
+                                                       code); // define the kernel by linking interface and spir-v implementation
+            auto delay = program.grid(128 / 64).spec(64).run_async({128, a}, true, d_y, d_x); // run once, wait for completion
+            LOGD("saxpy epoll supportFenceFd=%d",delay.supportFenceFd());
+            if(delay.supportFenceFd() && (-1 != efd)) {
+                int fd;
+                auto result = delay.fenceFd(fd);
+                if(vk::Result::eSuccess == result) {
+                    struct epoll_event ev;
+                    ev.data.fd = fd;
+                    ev.events = EPOLLIN /*| EPOLLET*/ | EPOLLONESHOT;
+                    int s = epoll_ctl(efd, EPOLL_CTL_ADD, fd, &ev);
+                    if(-1 == s) {
+                        int err = errno;
+                        LOGE("saxpy epoll_ctrl failed error =%d(%s)!", err, strerror(err));
+                        delay.resume();
+                        delay.wait();
+                    } else {
+                        delay.resume();
+                        struct epoll_event evs;
+                        int n = epoll_wait(efd, &evs, 1, -1);
+                        if((n <=0) || (evs.events & EPOLLERR) || (evs.events & EPOLLHUP) || (!(evs.events & EPOLLIN))) {
+                            /* An error has occured on this fd, or the socket is not
+                            ready for reading (why were we notified then?) */
+                            int err = errno;
+                            LOGE("saxpy epoll error =%d(%s)\n",err,strerror(err));
+                            close(evs.data.fd);
+                        } else if(fd == evs.data.fd) {
+                            close(evs.data.fd);
+                            LOGI("saxpy epoll wait success \n");
+                        } else {
+                            LOGE("saxpy epoll error fd incorrect\n");
+                        }
+                    }
+                } else {
+                    delay.resume();
+                    delay.wait();
+                }
+            } else {
+                delay.resume();
+                delay.wait();
+            }
+            d_y.toHost(begin(y));                              // copy data back to host
+            LOGD("saxpy epoll after %f",y[0]);
+        }
+
+        return suc;
+    }
+
+    if(-1 != efd) {
+        close(efd);
+    }
+    return false;
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_mobibrw_vuhandroid_MainActivity_stringFromJNI(
         JNIEnv *env,
@@ -252,5 +337,6 @@ Java_com_mobibrw_vuhandroid_MainActivity_stringFromJNI(
     saxpy(assetMgr, false);
     saxpyValidationLayers(assetMgr);
     saxpyAsync(assetMgr, false);
+    saxpy_epoll(assetMgr);
     return env->NewStringUTF(hello.c_str());
 }

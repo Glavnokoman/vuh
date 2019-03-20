@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.hpp>
 #include <vuh/device.h>
 #include <vuh/resource.hpp>
+#include <vuh/fence.hpp>
+#include <vuh/event.hpp>
 
 #include <cassert>
 
@@ -27,72 +29,56 @@ namespace vuh {
 	/// The corresponding action will necessarily take place once and only once, whether
 	/// it is at the explicit wait() call or at object destruction.
 	template<class Action=detail::Noop>
-	class Delayed: public vk::Fence, vk::Event, private Action {
+	class Delayed: public vuh::Fence, vuh::Event, private Action {
 		template<class> friend class Delayed;
 	public:
 		/// Constructor. Takes ownership of the fence.
 		/// It is assumed that the fence belongs to the same device that is passed together with it.
-		Delayed(vk::Fence fence, vuh::Device& device, Action action={})
-		   : vk::Fence(fence)
+		Delayed(vuh::Fence& fence, vuh::Device& device, Action action={})
+		   : vuh::Fence(fence)
 		   , Action(std::move(action))
 		   , _device(&device)
-		   , _result(vk::Result::eSuccess)
+		   , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
 		{}
 
-		explicit Delayed(vk::Fence fence, vuh::Device& device,vk::Result result, Action action={})
-				: vk::Fence(fence)
+		explicit Delayed(vuh::Fence& fence, vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, Action action={})
+				: vuh::Fence(fence)
 				, Action(std::move(action))
 				, _device(&device)
 				, _result(result)
 		{}
 
-        explicit Delayed(vk::Fence fence, vk::Event event, vuh::Device& device, Action action={})
-                : vk::Fence(fence)
-				, vk::Event(event)
+        explicit Delayed(vuh::Fence& fence, vuh::Event& event, vuh::Device& device, Action action={})
+                : vuh::Fence(fence)
+				, vuh::Event(event)
                 , Action(std::move(action))
                 , _device(&device)
-                , _result(vk::Result::eSuccess)
+                , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
         {}
 
 		/// Constructs for VULKAN_HPP_NO_EXCEPTIONS
-		explicit Delayed(vuh::Device& device, vk::Result result, vk::Event event, Action action={})
-				: vk::Event(event)
+		explicit Delayed(vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, vuh::Event& event, Action action={})
+				: vuh::Fence()
+				, vuh::Event(event)
 				, Action(std::move(action))
 				, _device(&device)
 				, _result(result)
-		{
-			auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-			_result = fen.result;
-		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
-		    static_cast<vk::Fence&>(*this) = std::move(fen.value);
-#else
-			static_cast<vk::Fence&>(*this) = std::move(fen);
-#endif
-		}
+		{}
 
 		/// Constructor. Creates the fence in a signalled state.
 		explicit Delayed(vuh::Device& device, Action action={})
-				: Action(std::move(action))
+				: vuh::Fence(device, true)
+				, Action(std::move(action))
 				, _device(&device)
-				, _result(vk::Result::eSuccess)
-		{
-			auto fen = device.createFence({vk::FenceCreateFlagBits::eSignaled});
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-		    _result = fen.result;
-		    VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
-		    static_cast<vk::Fence&>(*this) = std::move(fen.value);
-#else
-			static_cast<vk::Fence&>(*this) = std::move(fen);
-#endif
-		}
+				, _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
+		{}
 
 
 		/// Constructs from the object of Delayed<Noop> and inherits the state of that.
 		/// Takes over the undelying fence ownership.
 		/// Mostly substitute its own action in place of Noop.
 		explicit Delayed(Delayed<detail::Noop>&& noop, Action action={})
-		   : vk::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device)), _result(vk::Result::eSuccess)
+		   : vuh::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device)), _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
 		{}
 
 		/// Destructor. Blocks till the undelying fence is signalled (waits forever).
@@ -109,10 +95,10 @@ namespace vuh {
 		/// till that is signalled and only then proceed to taking over the move-from object.
 		auto operator= (Delayed&& other) noexcept-> Delayed& {
 			wait();
-			static_cast<vk::Fence&>(*this) = std::move(static_cast<vk::Fence&>(other));
+			static_cast<vuh::Fence&>(*this) = std::move(static_cast<vuh::Fence&>(other));
 			static_cast<Action&>(*this) = std::move(static_cast<Action&>(other));
 			_device = std::move(other._device);
-			_result = other._result;
+			_result = std::move(other._result);
 			return *this;
 		}
 
@@ -129,23 +115,13 @@ namespace vuh {
 		{
 			if(_device){
 				bool release = false;
-				if (bool(vk::Fence(*this))) {
-					if (vk::Result::eSuccess == _result) {
-						_device->waitForFences({*this}, true, period);
-						if (vk::Result::eSuccess == _device->getFenceStatus(*this)) {
-							_device->destroyFence(*this);
-							release = true;
-						}
-					} else {
-						_device->destroyFence(*this);
-						release = true;
-					}
+				if (success()) {
+					release = static_cast<vuh::Fence&>(*this).wait(period);
+				} else {
+					release = true;
 				}
 
 				if(release) {
-					if (bool(vk::Event(*this))) {
-						_device->destroyEvent(*this);
-					}
 					static_cast<Action &>(*this)(); // exercise action
 					_device.release();
 				}
@@ -158,22 +134,15 @@ namespace vuh {
 		/// it's not thread safe , please call resume on the thread who create the program
 		/// do'nt wait for too long time ,as we know timeout may occur about 2-3 seconds later on android
 		bool resume() {
-			if(bool(vk::Event(*this))) {
-				_device->setEvent(*this);
-				return true;
-			}
-			return false;
+			return static_cast<vuh::Event&>(*this).setEvent();
 		}
 
-		vk::Result error() const { return _result; };
-		bool success() const { return vk::Result::eSuccess == _result; }
-		std::string error_to_string() const { return vk::to_string(_result); };
+		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
+		bool success() const { return VULKAN_HPP_NAMESPACE::Result::eSuccess == _result; }
+		std::string error_to_string() const { return VULKAN_HPP_NAMESPACE::to_string(_result); };
 
 	private: // data
 		std::unique_ptr<Device, util::NoopDeleter<Device>> _device; ///< refers to the device owning corresponding the underlying fence.
-		vk::Result _result;
+		VULKAN_HPP_NAMESPACE::Result _result;
 	}; // class Delayed
-
-	/// Delayed No-Action. Just a synchronization point.
-	using Fence = Delayed<detail::Noop>;
 } // namespace vuh
