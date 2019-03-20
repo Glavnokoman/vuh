@@ -16,6 +16,8 @@ public:
 
 	auto queueFamilies() const-> std::vector<QueueFamily>;
 	template<class... Ts> auto computeDevice(Ts&&... opts)-> vuh::Device;
+
+	auto streamCount() const-> std::uint32_t; ///< return max number of "streams" the device can support
 private: // data
 }; // class PhysicalDevice
 

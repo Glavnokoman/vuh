@@ -4,8 +4,18 @@
 
 namespace vuh {
 
-class BarrierTransfer;
-class BarrierCompute;
+/// Sync point to initiate the transfer operation
+class BarrierTransfer{
+public:
+	template<class... Ts> auto copy(Ts&&...)->vuh::Queue&;
+};
+
+/// Sync point to initiate the compute operation
+class BarrierCompute {
+public:
+	template<class P> auto run(P& program)-> vuh::Queue&;
+};
+
 class BarrierQueue;
 class BarrierHost;
 

@@ -38,15 +38,15 @@ TEST_CASE("queues", "[correctness][async]"){
 
 	}
 	SECTION("streams"){
-		auto streams = device.streams();
+		auto streams = device.makeStreams();
 		const auto n_streams = streams.size();
 
 		const auto patch_size = uint32_t(arr_size/n_streams);
 		const auto block_size = 128;
 		auto h_out = vuh::Array<float, vuh::mem::HostCached>(device, arr_size);
 		SECTION("fine-grained stream config"){
-			auto transfer_queue_ids = std::vector<size_t>{};
-			auto compute_queue_ids = std::vector<size_t>{};
+			auto transfer_queue_ids = std::vector<uint32_t>{};
+			auto compute_queue_ids = std::vector<uint32_t>{};
 			for(size_t i = 0; i < device.queues().size(); ++i){
 				const auto& q_i = device.queues()[i];
 				if(q_i.canCompute()){
@@ -61,7 +61,7 @@ TEST_CASE("queues", "[correctness][async]"){
 				queue_config.push_back({ compute_queue_ids[i % compute_queue_ids.size()]
 				                       , transfer_queue_ids[i % transfer_queue_ids.size()]});
 			}
-			auto fine_streams = device.streams(queue_config);
+			auto fine_streams = device.makeStreams(queue_config);
 			REQUIRE(fine_streams.size() == n_streams);
 		}
 		SECTION("streams 1"){

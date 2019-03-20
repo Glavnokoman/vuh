@@ -8,6 +8,7 @@ namespace vuh {
 	class Instance;
 	class Queue;
 	class Stream;
+	struct StreamSpec;
 	class PhysicalDevice;
 
 	/// construction options for compute device
@@ -62,8 +63,8 @@ namespace vuh {
 		auto hasSeparateQueues() const-> bool;
 		auto queueCount() const-> uint32_t;
 
-		auto streams()-> std::vector<vuh::Stream>;
-		auto queues()-> std::vector<vuh::Queue>; //& ??
+		auto makeStreams(const std::vector<StreamSpec>& specs={})-> std::vector<vuh::Stream>;
+		auto queues()-> std::vector<vuh::Queue>&;
 		auto queues(uint32_t i)-> vuh::Queue;
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;

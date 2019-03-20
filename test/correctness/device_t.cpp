@@ -34,7 +34,7 @@ TEST_CASE("initialization & system info", "[correctness]"){
 		auto dev0 = pd.computeDevice(); // default, best allocation of 1 transport and 1 compute queue
 		auto dev1 = pd.computeDevice(vuh::queueOptions::Default);    // same default
 		auto dev2 = pd.computeDevice(vuh::queueOptions::AllQueues);  // claim all queues
-		auto dev3 = pd.computeDevice(vuh::queueOptions::Streams{pd.maxStreamCount()}); // best possible allocation of queues to support 4 streams
+		auto dev3 = pd.computeDevice(vuh::queueOptions::Streams{pd.streamCount()}); // best possible allocation of queues to support 4 streams
 		auto dev4 = pd.computeDevice(vuh::queueOptions::Specs // TODO: fix this to hand-rolled AllQueues
 		                             { {0 /*family_id*/, 4 /*number queues*/, {/*priorities*/}}
 		                             , {1, 2, {}}
