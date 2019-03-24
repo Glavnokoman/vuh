@@ -203,9 +203,20 @@ namespace vuh {
 		return _cmp_family_id == _tfr_family_id;
 	}
 
-	/// @return id of the queue family supporting compute operations
+	/// @return vector of streams operating on the device
+	auto Device::makeStreams(const std::vector<StreamSpec>& specs)-> std::vector<Stream> {
+		throw "not implemented";
+	}
+
+	/// @return default compute queue of the device
 	auto Device::computeQueue(uint32_t i)-> vk::Queue {
 		return getQueue(_cmp_family_id, i);
+	}
+
+	/// @return queues available on the logical device
+	auto Device::queues()-> std::vector<vuh::Queue>& {
+		// \TODO(slava): switch from vector to span as a return value
+		throw "not implemented";
 	}
 
 	/// Create compute pipeline with a given layout.

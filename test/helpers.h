@@ -10,7 +10,8 @@ template<class T>
 auto random_vector(size_t size, T low, T high)-> std::vector<T> {
 	static auto gen = std::mt19937(42);
 	auto dis = std::uniform_real_distribution<T>(low, high);
-	auto ret = std::vector<T>{}.reserve(size);
+	auto ret = std::vector<T>{};
+	ret.reserve(size);
 	for(size_t i = size; i != 0u; --i){
 		ret.push_back(dis(gen));
 	}

@@ -1,5 +1,6 @@
 #include "vuh/instance.h"
 #include "vuh/device.h"
+#include "vuh/physicalDevice.h"
 
 #include <algorithm>
 #include <array>
@@ -167,7 +168,7 @@ namespace vuh {
 		}
 	}
 
-	/// @return vector of available vulkan devices
+	/// @return vector of logical vulkan devices, default constructed from each available physical devices
 	auto Instance::devices()-> std::vector<Device> {
 		auto physdevs = this->enumeratePhysicalDevices();
 		auto r = std::vector<Device>{};
@@ -175,6 +176,11 @@ namespace vuh {
 			r.emplace_back(*this, pd);
 		}
 		return r;
+	}
+
+	/// doc me
+	auto Instance::physicalDevices()-> std::vector<PhysicalDevice> {
+		throw "not implemented";
 	}
 
 	/// Log message using the reporter callback registered with the Vulkan instance.

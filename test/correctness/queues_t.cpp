@@ -1,3 +1,4 @@
+#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
 #include "helpers.h"
@@ -67,8 +68,8 @@ TEST_CASE("queues", "[correctness][async]"){
 		SECTION("streams 1"){
 			auto off = size_t(0);
 			for(auto& q: streams){
-				auto cb = q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size))
-				           .copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size))
+				auto cb = q.copy(&hy[off], &hy[off]+patch_size, d_y.device_begin() + off)
+				           .copy(&hx[off], &hx[off]+patch_size, d_x.device_begin() + off)
 				           .cb();
 				auto tb = cb.run(program.grid(patch_size/block_size).spec(block_size)
 				                        .bind( {patch_size, scale_mult}
@@ -85,11 +86,11 @@ TEST_CASE("queues", "[correctness][async]"){
 		SECTION("streams 2"){
 			auto off = size_t(0);
 			for(auto& q: streams){
-				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size))
-				 .copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size))
+				q.copy(&hy[off], &hy[off]+patch_size, d_y.device_begin() + off)
+				 .copy(&hx[off], &hx[off]+patch_size, d_x.device_begin() + off)
 				 .cb()
 				 .run(program.grid(patch_size/block_size).spec(block_size)
-				             .push(patch_size, scale_mult)
+				             .push({patch_size, scale_mult})
 				             .bind( vuh::array_view(d_y, off, off + patch_size)
 				                  , vuh::array_view(d_x, off, off + patch_size)))
 				 .tb()
@@ -101,18 +102,20 @@ TEST_CASE("queues", "[correctness][async]"){
 			REQUIRE(h_out == test::approx(out_ref).eps(1e-5));
 		}
 		SECTION("streams 3"){
-			auto cbs = std::vector<vuh::BarrierCompute>{};
+			auto cbs = std::vector<vuh::BarrierCompute<vuh::Stream>>{};
 			auto off = size_t(0);
 			for(auto& q: streams){
-				q.copy(&hy[off], &hy[off+patch_size], vuh::array_view(d_y, off, off+patch_size));
-				q.copy(&hx[off], &hx[off+patch_size], vuh::array_view(d_x, off, off+patch_size));
+				q.copy(&hy[off], &hy[off]+patch_size, d_y.device_begin() + off);
+				q.copy(&hx[off], &hx[off]+patch_size, d_x.device_begin() + off);
 				cbs.push_back(q.cb());
 				off += patch_size;
 			}
 			
-			auto tbs = std::vector<vuh::BarrierTransfer>{};
+			auto tbs = std::vector<vuh::BarrierTransfer<vuh::Stream>>{};
 			off = 0;
-			program.grid(patch_size/block_size).spec(block_size).push(patch_size, scale_mult);
+			program.grid(patch_size/block_size)
+			       .spec(block_size)
+			       .push({patch_size, scale_mult});
 			for(auto& cb: cbs){
 				program.bind( vuh::array_view(d_y, off, off + patch_size)
 				            , vuh::array_view(d_x, off, off + patch_size));
@@ -123,31 +126,30 @@ TEST_CASE("queues", "[correctness][async]"){
 			auto hbs = std::vector<vuh::BarrierHost>{};
 			off = 0;
 			for(auto& tb: tbs){
-				hbs.push_back(tb.copy(vuh::array_view(d_y, off, patch_size)
-				                      , vuh::array_view(h_out, off)).hb());
+				hbs.push_back(tb.copy( vuh::array_view(d_y, off, patch_size)
+				                     , vuh::array_view(h_out, off, patch_size)).hb());
 				off += patch_size;
 			}
 			for(auto& hb: hbs){ hb.wait(); }
 			
 			REQUIRE(h_out == test::approx(out_ref).eps(1e-5));
 		}
-		SECTION("inter-queue sync"){
-			program.grid(patch_size/block_size).spec(block_size).push(patch_size, scale_mult);
+		SECTION("inter-stream sync"){
+			program.grid(patch_size/block_size).spec(block_size).push({patch_size, scale_mult});
 			
-			auto e1 = queues[0].copy(&hy[0], &hy[arr_size], d_y).qb(); // vuh::BarrierQueue
-			auto e2 = queues[1].copy(&hx[0], &hx[arr_size], d_x).qb();
-			auto e3 = queues[2].on(e1, e2).run(
+			auto e1 = streams[0].copy(&hy[0], &hy[arr_size], d_y.device_begin()).qb(); // vuh::BarrierQueue
+			auto e2 = streams[1].copy(&hx[0], &hx[arr_size], d_x.device_begin()).qb();
+			auto e3 = streams[2].on(e1, e2).run(
 			             program.bind( vuh::array_view(d_y, 0, arr_size/2)
 			                         , vuh::array_view(d_x, 0, arr_size/2))
 			             ).qb();
-			auto e4 = queues[3].on(e1, e2).run(
+			auto e4 = streams[3].on(e1, e2).run(
 			             program.bind( vuh::array_view(d_y, arr_size/2, arr_size)
 			                         , vuh::array_view(d_x, arr_size/2, arr_size))
 			             ).qb();
-			auto hb = queues[0].on(e3).copy( vuh::array_view(d_y, 0, arr_size/2) 
-			                               , vuh::array_view(h_out, 0, arr_size/2)).hb();
-			queues[1].on(e4).copy( vuh::array_view(d_y, arr_size/2, arr_size) 
-			                     , vuh::array_view(h_out, arr_size/2, arr_size)).hb();
+			auto hb = streams[0].on(e3).copy(vuh::array_view(d_y, 0, arr_size/2), &h_out[0]).hb();
+			streams[1].on(e4).copy( vuh::array_view(d_y, arr_size/2, arr_size)
+			                      , &h_out[0] + arr_size/2).hb();
 			hb.wait();
 			
 			REQUIRE(h_out == test::approx(out_ref).eps(1e-5));

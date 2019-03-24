@@ -9,15 +9,38 @@ namespace vuh {
 class Device;
 class QueueFamily;
 
+/// construction options for compute device
+namespace queueOptions {
+	enum Simple {Default, AllQueues};
+
+	/// doc me
+	struct Streams {
+		const unsigned number;
+	};
+
+	/// doc me
+	struct Spec {
+		unsigned family_id;
+		unsigned num_queues;
+		std::vector<float> priorities;
+	};
+
+	using Specs = std::vector<Spec>;
+} // namespace devOpts
+
 /// doc me
 class PhysicalDevice: public vk::PhysicalDevice {
 public:
 	explicit PhysicalDevice();
 
 	auto queueFamilies() const-> std::vector<QueueFamily>;
-	template<class... Ts> auto computeDevice(Ts&&... opts)-> vuh::Device;
 
-	auto streamCount() const-> std::uint32_t; ///< return max number of "streams" the device can support
+	auto computeDevice()-> vuh::Device;
+	auto computeDevice(queueOptions::Simple)-> vuh::Device;
+	auto computeDevice(queueOptions::Streams)-> vuh::Device;
+	auto computeDevice(const queueOptions::Specs& specs)-> vuh::Device;
+
+	auto streamCount() const-> std::uint32_t;
 private: // data
 }; // class PhysicalDevice
 

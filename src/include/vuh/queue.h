@@ -4,28 +4,44 @@
 
 namespace vuh {
 
-/// Sync point to initiate the transfer operation
+class Queue;
+
+/// Sync point to initiate the transfer operation using the same queue that initially issued it.
+template<class Q>
 class BarrierTransfer{
 public:
-	template<class... Ts> auto copy(Ts&&...)->vuh::Queue&;
+	template<class... Ts> auto copy(Ts&&...)->Q& {
+		throw "not implemented";
+	}
 };
 
-/// Sync point to initiate the compute operation
+/// Sync point to initiate the compute operation using the same queue that initially issued it.
+template<class Q>
 class BarrierCompute {
 public:
-	template<class P> auto run(P& program)-> vuh::Queue&;
+	template<class P> auto run(P& program)-> Q& {
+		throw "not implemented";
+	}
 };
 
-class BarrierQueue;
-class BarrierHost;
+/// Token used to synchronize operations between different queues
+class BarrierQueue{
+	explicit BarrierQueue(){ throw "not implemented"; }
+};
+
+/// Token to use for host-device synchronization
+class BarrierHost {
+public:
+	auto wait() const { throw "not implemented"; }
+};
 
 /// doc me
 class QueueFamily: public vk::QueueFamilyProperties {
 public:
 	explicit QueueFamily(uint32_t id, vk::QueueFamilyProperties properties);
 
-	auto canCompute() const-> bool;
-	auto canTransfer() const-> bool;
+	auto canCompute() const-> bool { throw "not implemented"; }
+	auto canTransfer() const-> bool { throw "not implemented"; }
 	auto isUnified() const-> bool { return canCompute() && canTransfer(); }
 //	auto id() const-> uint32_t;
 private: // data
@@ -37,15 +53,16 @@ class Queue: public vk::Queue {
 public:
 	explicit Queue();
 
-	auto canCompute() const-> bool;
-	auto canTransfer() const-> bool;
+	auto canCompute() const-> bool { throw "not implemented"; }
+	auto canTransfer() const-> bool { throw "not implemented"; }
 	auto isUnified() const-> bool { return canCompute() && canTransfer(); }
 
 	template<class... Ts> auto copy(Ts... ts)-> Queue&;
+
 	template<class... Ts> auto run(Ts... ts)-> Queue&;
 
-	auto tb()-> vuh::BarrierTransfer;
-	auto cb()-> vuh::BarrierCompute;
+	auto tb()-> vuh::BarrierTransfer<Queue>;
+	auto cb()-> vuh::BarrierCompute<Queue>;
 	auto qb()-> vuh::BarrierQueue;
 	auto hb()-> vuh::BarrierHost;
 	auto wait()-> void;

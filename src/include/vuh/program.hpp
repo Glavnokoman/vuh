@@ -104,7 +104,8 @@ namespace vuh {
 			constexpr auto operator()() noexcept-> void {}
 		}; // struct Compute
 
-		/// Program base functionality.
+		/// Program base functionality
+		/// (runnable interface with supporting functions and initialization from shader code).
 		/// Initializes and keeps most state variables, and array argument handling building blocks.
 		class ProgramBase {
 		public:
@@ -402,6 +403,17 @@ namespace vuh {
 			}
 			create_command_buffer(p, args...);
 			return *this;
+		}
+
+		/// doc me
+		template<class... Arrs>
+		auto bind(Arrs&&... args)-> const Program& {
+			throw "not implemented";
+		}
+
+		/// doc me
+		auto push(const Params& params)-> Program& {
+			throw "not implemented";
 		}
 
 		/// Run program with provided parameters.

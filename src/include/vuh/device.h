@@ -11,25 +11,6 @@ namespace vuh {
 	struct StreamSpec;
 	class PhysicalDevice;
 
-	/// construction options for compute device
-	namespace queueOptions {
-		enum Simple {Default, AllQueues};
-
-		/// doc me
-		struct Streams {
-			const unsigned number;
-		};
-
-		/// doc me
-		struct Spec {
-			unsigned family_id;
-			unsigned num_queues;
-			std::vector<float> priorities;
-		};
-
-		using Specs = std::vector<Spec>;
-	} // namespace devOpts
-
 	/// Logical device packed with associated command pools and buffers.
 	/// Holds the pool(s) for transfer and compute operations as well as command
 	/// buffers for sync operations.
@@ -42,9 +23,6 @@ namespace vuh {
 	public:
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice);
 		explicit Device(vuh::PhysicalDevice& physdevice);
-		explicit Device(vuh::PhysicalDevice& physdevice, queueOptions::Simple);
-		explicit Device(vuh::PhysicalDevice& physdevice, queueOptions::Streams nstreams);
-		explicit Device(vuh::PhysicalDevice& physdevice, const queueOptions::Specs& specs);
 
 		~Device() noexcept;
 
@@ -65,7 +43,7 @@ namespace vuh {
 
 		auto makeStreams(const std::vector<StreamSpec>& specs={})-> std::vector<vuh::Stream>;
 		auto queues()-> std::vector<vuh::Queue>&;
-		auto queues(uint32_t i)-> vuh::Queue;
+		auto queues(uint32_t i)-> vuh::Queue&;
 		auto computeQueue(uint32_t i = 0)-> vk::Queue;
 		auto transferQueue(uint32_t i = 0)-> vk::Queue;
 		auto alloc(vk::Buffer buf, uint32_t memory_id)-> vk::DeviceMemory;
