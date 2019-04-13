@@ -4,7 +4,7 @@ INPUT                  = @PROJECT_SOURCE_DIR@/readme.md \
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
 STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@/src
 PROJECT_NUMBER         = @PROJECT_VERSION@
-PROJECT_BRIEF          = "A Vulkan-based GPGPU computing framework"
+PROJECT_BRIEF          = "Vulkan Compute for people"
 PROJECT_LOGO           =
 
 INTERNAL_DOCS          = NO

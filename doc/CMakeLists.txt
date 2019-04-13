@@ -1,4 +1,4 @@
-add_subdirectory(examples)
+# add_subdirectory(examples)
 
 if(NOT VUH_BUILD_DOCS)
 	return()
