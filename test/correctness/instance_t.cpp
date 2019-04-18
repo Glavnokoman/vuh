@@ -23,7 +23,7 @@ unsigned StubLogger::call_count = 0;
 std::string StubLogger::last_message = {};
 } // namespace
 
-TEST_CASE("test vuh::Instance"){
+TEST_CASE("test vuh::Instance", "[Instance]"){
 	SECTION("default instance"){
 		REQUIRE_NOTHROW([]{
 			auto instance = vuh::Instance();
