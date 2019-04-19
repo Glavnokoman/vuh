@@ -5,9 +5,9 @@
 #include <vector>
 
 namespace vuh {
-struct PhysicalDevice;
-
 using logger_t = PFN_vkDebugReportCallbackEXT;
+
+struct PhysicalDevice;
 
 /// doc me
 class Instance: public detail::Resource<VkInstance, vkDestroyInstance>
@@ -22,7 +22,6 @@ public:
 	~Instance() noexcept;
 
 	auto devices() const->std::vector<PhysicalDevice>;
-
 	auto logger_attach(logger_t logger)-> void;
 	auto log( const char* prefix, const char* message
 	        , VkDebugReportFlagsEXT flags=VK_DEBUG_REPORT_INFORMATION_BIT_EXT) const-> void;

@@ -5,5 +5,13 @@ In particular this rewrite emphasizes:
 - all wrapper classes should allow for easy assimilating the underlying Vulkan resource
 - option to build with exceptions disabled
 - no dependency on vulkan.hpp
-- ?
+- compliance to vulkan 1.0 (nice to have an option to use later standards functionality when available)
+- better testing
+
+target audience
+ - embedded
+ - android/iOS cross-platform development
+ - more general cross-platform development including Apple-made targets
+
+
 

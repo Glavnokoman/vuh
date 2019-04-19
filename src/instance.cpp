@@ -1,5 +1,6 @@
 #include "instance.hpp"
 #include "error.hpp"
+#include "physicalDevice.hpp"
 #include "utils.hpp"
 
 #include <algorithm>
@@ -28,13 +29,18 @@ static auto VKAPI_ATTR default_logger(
 }
 
 namespace {
+	static const auto default_layers = std::vector<const char*>{
 #ifndef NDEBUG
-	static const auto default_layers = std::vector<const char*>{"VK_LAYER_LUNARG_standard_validation"};
-	static const auto default_extensions = std::vector<const char*>{VK_EXT_DEBUG_REPORT_EXTENSION_NAME};
-#else
-	static const auto default_layers = std::vector<const char*>{};
-	static const auto default_extensions = std::vector<const char*>{};
+	     "VK_LAYER_LUNARG_standard_validation",
 #endif
+	};
+	static const auto default_extensions = std::vector<const char*>{
+#ifndef NDEBUG
+	     VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+#endif
+	     "VK_KHR_device_group"
+	   , "VK_KHR_variable_pointers"
+};
 
 //
 auto properties_contain_name(const std::vector<VkLayerProperties>& properties, const char* name
@@ -141,6 +147,18 @@ Instance::Instance(const std::vector<const char*>& layers
 Instance::~Instance() noexcept
 {
 	logger_release();
+}
+
+///
+std::vector<PhysicalDevice> Instance::devices() const
+{
+	uint32_t num_devices = 0;
+	vkEnumeratePhysicalDevices(*this, &num_devices, nullptr);
+	auto ret = std::vector<PhysicalDevice>(num_devices);
+	auto err = vkEnumeratePhysicalDevices( *this, &num_devices
+	                                     , reinterpret_cast<VkPhysicalDevice*>(ret.data()));
+	VUH_CHECK_RET(err, ret);
+	return ret;
 }
 
 ///

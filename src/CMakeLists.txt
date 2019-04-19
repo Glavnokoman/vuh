@@ -7,6 +7,7 @@ target_sources(vuh
 	PRIVATE 
 		error_noexcept.cpp
 		instance.cpp
+		physicalDevice.cpp
 		utils.cpp
 )
 target_link_libraries(vuh PUBLIC Vulkan::Vulkan)
