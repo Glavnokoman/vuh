@@ -1,3 +1,2 @@
-add_subdirectory(correctness)
-add_subdirectory(performance)
+add_subdirectory(tests)
 add_subdirectory(shaders)
