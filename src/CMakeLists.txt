@@ -6,6 +6,7 @@ add_library(vuh)
 target_sources(vuh
 	PRIVATE 
 		error_noexcept.cpp
+		device.cpp
 		instance.cpp
 		physicalDevice.cpp
 		utils.cpp

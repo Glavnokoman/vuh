@@ -6,6 +6,7 @@ In particular this rewrite emphasizes:
 - option to build with exceptions disabled
 - no dependency on vulkan.hpp
 - compliance to vulkan 1.0 (nice to have an option to use later standards functionality when available)
+- more consistent copy routines
 - better testing
 
 target audience

@@ -10,8 +10,7 @@ using logger_t = PFN_vkDebugReportCallbackEXT;
 struct PhysicalDevice;
 
 /// doc me
-class Instance: public detail::Resource<VkInstance, vkDestroyInstance>
-{
+class Instance: public detail::Resource<VkInstance, vkDestroyInstance> {
 public:
 	using Base::Resource;
 	explicit Instance( const std::vector<const char*>& layers={}

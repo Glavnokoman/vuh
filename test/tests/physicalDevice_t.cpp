@@ -8,9 +8,17 @@
 
 TEST_CASE("test physical devices", "[physicalDevice]"){
 	auto instance = vuh::Instance();
-	SECTION("physical devices"){
+	SECTION("enumerate devices"){
 		for(auto d: instance.devices()){
 			std::cout << d.properties().deviceName << "\n";
+		}
+	}
+	SECTION("enumerate queues"){
+		auto total_queues = uint32_t(0);
+		for(auto d: instance.devices()){
+			for(auto q: d.queueFamilies()){
+				total_queues += q.queueCount;
+			}
 		}
 	}
 }
