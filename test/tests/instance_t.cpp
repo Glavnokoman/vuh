@@ -23,7 +23,7 @@ unsigned StubLogger::call_count = 0;
 std::string StubLogger::last_message = {};
 } // namespace
 
-TEST_CASE("test vuh::Instance", "[Instance]"){
+TEST_CASE("test vuh::Instance", "[.Instance]"){
 	SECTION("default instance"){
 		REQUIRE_NOTHROW([]{
 			auto instance = vuh::Instance();
@@ -71,6 +71,11 @@ TEST_CASE("test vuh::Instance", "[Instance]"){
 		instance.log("qwe", "asd");
 		REQUIRE(StubLogger::last_message.find("qwe") != std::string::npos);
 		REQUIRE(StubLogger::last_message.find("asd") != std::string::npos);
+	}
+}
+TEST_CASE("benchmark instance creation", "[instance][benchmark]"){
+	BENCHMARK("once"){
+		auto instance = vuh::Instance();
 	}
 }
 

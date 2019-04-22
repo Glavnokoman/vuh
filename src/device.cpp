@@ -18,7 +18,7 @@ auto make_device( Instance& instance
                 , const PhysicalDevice& phys_dev
                 , const std::vector<QueueSpec>& specs
                 , const std::vector<const char*> extensions
-                )-> Device
+                )-> VkDevice
 {
 	auto queue_info = std::vector<VkDeviceQueueCreateInfo>{};
 	for(const auto& spec: specs){
@@ -42,9 +42,8 @@ auto make_device( Instance& instance
 	   , &features
 	};
 	const auto err = vkCreateDevice(phys_dev, &createInfo, nullptr, &dev);
-	auto ret = Device(dev, instance, phys_dev, specs);
-	VUH_CHECK_RET(err, ret);
-	return ret;
+	VUH_CHECK_RET(err, dev);
+	return dev;
 }
 
 ///
@@ -148,7 +147,7 @@ Device::Device( VkDevice device
               , const PhysicalDevice& phys_device
               , const std::vector<QueueSpec>& queue_specs ///< each family_id can have only one corresponding entry
               )
-   : Device::Base(device), _instance(instance)
+   : Device::Base(device) //, _instance(instance)
 {
 	const auto queue_families = phys_device.queueFamilies(); // all queue families on a device
 	_command_pools = {};
@@ -190,8 +189,8 @@ Device::Device(Instance& instance
                , const std::vector<QueueSpec>& specs
                , const std::vector<const char*>& extensions
                )
-   : Device(Device(make_device(instance, physical_device, specs, extensions)
-                  , instance, physical_device, specs))
+   : Device(make_device(instance, physical_device, specs, extensions)
+           , instance, physical_device, specs)
 {}
 
 ///
@@ -214,4 +213,16 @@ Device::~Device() noexcept {
 		vkDestroyCommandPool(*this, pool, nullptr);
 	}
 }
+
+///
+Device::Device(Device&& other) noexcept
+   : Device::Resource(std::move(static_cast<Device::Resource&>(other)))
+   , _queues(std::move(other._queues))
+   , _command_pools(std::move(other._command_pools))
+   , _default_compute(other._default_compute)
+   , _default_transfer(other._default_transfer)
+{
+}
+
+
 } // namespace vuh

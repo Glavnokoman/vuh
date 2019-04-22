@@ -46,11 +46,10 @@ public:
 
 	Device(const Device&) = delete;
 	auto operator= (const Device&)->Device& = delete;
-	Device(Device&&) = default; // noexcept;
+	Device(Device&&) noexcept; // noexcept;
 	auto operator= (Device&&)-> Device& = delete; // noexcept-> Device&;
 private: // helpers
 private: // data
-	Instance& _instance;         ///< non-null
 	std::vector<Queue> _queues;  ///< doc me
 	std::vector<VkCommandPool> _command_pools; ///< one pool per queue family in use
 	Queue* _default_compute;     ///< doc me
