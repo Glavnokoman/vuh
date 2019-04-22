@@ -29,21 +29,32 @@ TEST_CASE("test vuh::Instance", "[Instance]"){
 			auto instance = vuh::Instance();
 		}());
 	}
-	SECTION("instance with some layers and extensions"){
+	SECTION("list extensions and layers, create instance with some"){
 		const auto available_layers = vuh::available_layers();
 		const auto available_extensions = vuh::available_extensions();
 
-		auto layer_names = std::vector<const char*>{};
-		if(	!available_layers.empty()){
-			layer_names = std::vector<const char*>{available_layers[0].layerName};
+		const char* test_layer = "VK_LAYER_LUNARG_core_validation";
+		if(std::find_if(begin(available_layers), end(available_layers)
+		                , [test_layer](VkLayerProperties lpt){
+		                      return std::strcmp(lpt.layerName, test_layer) == 0;})
+		   == end(available_layers))
+		{
+			std::cerr << "test layer " << test_layer << " is not available. skipping test" << std::endl;
+			return;
 		}
 
-		auto ext_names = std::vector<const char*>{};
-		if(!available_extensions.empty()){
-			ext_names = std::vector<const char*>{available_extensions[0].extensionName};
+		const char* test_ext = "VK_KHR_surface";
+		if(std::find_if(begin(available_extensions), end(available_extensions)
+		                , [test_ext](VkExtensionProperties ex){
+		                    return std::strcmp(ex.extensionName, test_ext) == 0;})
+		   == end(available_extensions))
+		{
+			std::cerr << "test extension " << test_ext << "is not available. skipping test" << std::endl;
+			return;
 		}
+
 		REQUIRE_NOTHROW([&]{
-			auto instance = vuh::Instance(layer_names, ext_names);
+			auto instance = vuh::Instance({test_layer}, {test_ext});
 		}());
 	}
 	SECTION("instance with missing layers/extensions"){

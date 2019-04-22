@@ -29,17 +29,23 @@ static auto VKAPI_ATTR default_logger(
 }
 
 namespace {
+	//
 	static const auto default_layers = std::vector<const char*>{
 #ifndef NDEBUG
 	     "VK_LAYER_LUNARG_standard_validation",
+	     "VK_LAYER_RENDERDOC_Capture",
 #endif
 	};
+	//
 	static const auto default_extensions = std::vector<const char*>{
 #ifndef NDEBUG
 	     VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+	     "VK_EXT_debug_utils",
 #endif
-	     "VK_KHR_device_group"
-	   , "VK_KHR_variable_pointers"
+	   "VK_KHR_device_group_creation"
+	 , "VK_KHR_external_fence_capabilities"
+	 , "VK_KHR_external_memory_capabilities"
+	 , "VK_KHR_external_semaphore_capabilities"
 };
 
 //
