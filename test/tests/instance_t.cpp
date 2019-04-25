@@ -23,7 +23,7 @@ unsigned StubLogger::call_count = 0;
 std::string StubLogger::last_message = {};
 } // namespace
 
-TEST_CASE("test vuh::Instance", "[.Instance]"){
+TEST_CASE("test vuh::Instance", "[Instance]"){
 	SECTION("default instance"){
 		REQUIRE_NOTHROW([]{
 			auto instance = vuh::Instance();
@@ -74,8 +74,14 @@ TEST_CASE("test vuh::Instance", "[.Instance]"){
 	}
 }
 TEST_CASE("benchmark instance creation", "[instance][benchmark]"){
-	BENCHMARK("once"){
+	BENCHMARK("vuh instance"){
 		auto instance = vuh::Instance();
+	}
+	BENCHMARK("vulkan instance"){
+		auto instance = VkInstance{};
+		auto create_info = VkInstanceCreateInfo{};
+		(void)vkCreateInstance(&create_info, nullptr, &instance);
+		vkDestroyInstance(instance, nullptr);
 	}
 }
 

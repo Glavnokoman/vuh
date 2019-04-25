@@ -46,8 +46,8 @@ public:
 
 	Device(const Device&) = delete;
 	auto operator= (const Device&)->Device& = delete;
-	Device(Device&&) noexcept; // noexcept;
-	auto operator= (Device&&)-> Device& = delete; // noexcept-> Device&;
+	Device(Device&&) = default;
+	auto operator= (Device&&)-> Device& = delete;
 private: // helpers
 private: // data
 	std::vector<Queue> _queues;  ///< doc me

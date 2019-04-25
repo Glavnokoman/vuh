@@ -14,8 +14,7 @@ using std::begin; using std::end;
 namespace vuh {
 namespace {
 ///
-auto make_device( Instance& instance
-                , const PhysicalDevice& phys_dev
+auto make_device( const PhysicalDevice& phys_dev
                 , const std::vector<QueueSpec>& specs
                 , const std::vector<const char*> extensions
                 )-> VkDevice
@@ -185,11 +184,11 @@ Device::Device( VkDevice device
 
 ///
 Device::Device(Instance& instance
-               , const PhysicalDevice& physical_device
-               , const std::vector<QueueSpec>& specs
-               , const std::vector<const char*>& extensions
-               )
-   : Device(make_device(instance, physical_device, specs, extensions)
+              , const PhysicalDevice& physical_device
+              , const std::vector<QueueSpec>& specs
+              , const std::vector<const char*>& extensions
+              )
+   : Device(make_device(physical_device, specs, extensions)
            , instance, physical_device, specs)
 {}
 
@@ -213,16 +212,4 @@ Device::~Device() noexcept {
 		vkDestroyCommandPool(*this, pool, nullptr);
 	}
 }
-
-///
-Device::Device(Device&& other) noexcept
-   : Device::Resource(std::move(static_cast<Device::Resource&>(other)))
-   , _queues(std::move(other._queues))
-   , _command_pools(std::move(other._command_pools))
-   , _default_compute(other._default_compute)
-   , _default_transfer(other._default_transfer)
-{
-}
-
-
 } // namespace vuh

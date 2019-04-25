@@ -14,4 +14,7 @@ TEST_CASE("test logical devices", "[device]"){
 	SECTION("create default device on a physical"){
 		auto device = vuh::Device(instance, pd, vuh::QueueSpec::Default);
 	}
+	SECTION("device with all queues from a physical"){
+		auto device2 = vuh::Device(instance, pd, vuh::QueueSpec::All);
+	}
 }
