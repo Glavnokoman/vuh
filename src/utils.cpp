@@ -38,4 +38,25 @@ auto available_extensions()-> std::vector<VkExtensionProperties> {
 	}
 	return ret;
 }
+
+/// Find memory id-s matching desired properties and requirements.
+/// @return array of suitable memory indicies
+auto selectMemory( VkPhysicalDevice device
+                 , VkMemoryRequirements requirements
+                 , VkMemoryPropertyFlags properties
+                 )-> std::vector<std::uint32_t>
+{
+	auto ret = std::vector<std::uint32_t>{};
+	auto mem_available = VkPhysicalDeviceMemoryProperties{};
+	vkGetPhysicalDeviceMemoryProperties(device, &mem_available);
+	for(uint32_t i = 0; i < mem_available.memoryTypeCount; ++i){
+		if( (requirements.memoryTypeBits & (1u << i))
+		    && ((properties & mem_available.memoryTypes[i].propertyFlags) == properties))
+		{
+			ret.push_back(i);
+		}
+	}
+	return ret;
+}
+
 } // namespace vuh
