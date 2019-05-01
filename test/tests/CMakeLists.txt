@@ -18,6 +18,9 @@ add_catch_test(test_core
 	 physicalDevice_t.cpp
 )
 
+add_catch_test(test_buffer
+	 buffer_t.cpp
+)
 # add_catch_test(test_vuh)
 # add_dependencies(test_vuh test_shaders)
 

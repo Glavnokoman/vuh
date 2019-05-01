@@ -7,6 +7,7 @@ namespace vuh::error {
 enum VuhError: int32_t {
 	  NoComputeCapableQueueFamilySpecified = VK_RESULT_END_RANGE + 1
 	, NoTransferCapableQueueFamilySpecified
+	, NoSuitableMemoryFound
 };
 
 /// messages for vulkan and vuh error codes

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include <type_traits>
 
@@ -8,6 +8,8 @@ namespace vuh::detail {
 
 template<class T> using Deleter = void(T, const VkAllocationCallbacks*);
 template<class T> using DeleterPtr = Deleter<T>*;
+template<class T> using DeviceDeleter = void(VkDevice, T, const VkAllocationCallbacks*);
+template<class T> using DeviceDeleterPtr = DeviceDeleter<T>*;
 
 ///
 template<class T, DeleterPtr<T> D>
@@ -33,5 +35,4 @@ public:
 protected: // data
 	T _base_resource; ///< base resource
 }; // class Resource
-
 } // namespace vuh::detail
