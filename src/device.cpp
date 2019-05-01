@@ -146,7 +146,7 @@ Device::Device( VkDevice device
               , const PhysicalDevice& phys_device
               , const std::vector<QueueSpec>& queue_specs ///< each family_id can have only one corresponding entry
               )
-   : Device::Base(device) //, _instance(instance)
+   : Device::Base(device), _instance(instance), _physical{phys_device}
 {
 	const auto queue_families = phys_device.queueFamilies(); // all queue families on a device
 	_command_pools = {};

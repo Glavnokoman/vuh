@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "buffer.hpp"
 
 #include <vulkan/vulkan_core.h>
 
@@ -48,12 +49,16 @@ public:
 	auto operator= (const Device&)->Device& = delete;
 	Device(Device&&) = default;
 	auto operator= (Device&&)-> Device& = delete;
-private: // helpers
+
+	auto instance() const-> const Instance& {return _instance;}
+	auto physical() const-> const PhysicalDevice& {return _physical;}
 private: // data
-	std::vector<Queue> _queues;  ///< doc me
+	Instance& _instance;              ///< doc me
+	const PhysicalDevice& _physical;  ///< doc me
+	std::vector<Queue> _queues;       ///< doc me
 	std::vector<VkCommandPool> _command_pools; ///< one pool per queue family in use
-	Queue* _default_compute;     ///< doc me
-	Queue* _default_transfer;    ///< doc me
+	Queue* _default_compute;          ///< doc me
+	Queue* _default_transfer;         ///< doc me
 }; // class Device
 
 } // namespace vuh
