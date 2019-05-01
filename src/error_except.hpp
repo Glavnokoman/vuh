@@ -15,6 +15,12 @@ public:
 	explicit Error(VkResult err): std::runtime_error(error::text(err)){}
 }; //
 
+class ErrorVuh: std::runtime_error {
+public:
+	using std::runtime_error::runtime_error;
+	explicit ErrorVuh(error::VuhError err): std::runtime_error(error::text(err)) {}
+};
+
 ///
 inline auto VUH_CHECK(VkResult err) {
 	if(err != VK_SUCCESS){
@@ -37,9 +43,14 @@ inline auto VUH_CHECKOUT(){}
 template<class T>
 inline auto VUH_CHECKOUT_RET(T){}
 
-/// signal vuh specific error
-inline auto VUH_SIGNAL(std::int32_t err) {
+/// signal vulkan error
+[[noreturn]] inline auto VUH_SIGNAL(VkResult err) {
+	throw Error(err);
+}
 
+/// signal vuh specific error
+[[noreturn]] inline auto VUH_SIGNAL(error::VuhError err) {
+	throw ErrorVuh(err);
 }
 
 } // namespace vuh
