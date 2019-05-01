@@ -6,7 +6,6 @@
 #include "utils.hpp"
 
 #include <vulkan/vulkan_core.h>
-#include <vulkan/vulkan.hpp>
 
 #include <cassert>
 
