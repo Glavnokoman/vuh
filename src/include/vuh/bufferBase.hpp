@@ -2,6 +2,7 @@
 
 #include "allocatorDevice.hpp"
 #include "device.hpp"
+#include "physicalDevice.hpp"
 
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan.hpp>
@@ -10,7 +11,6 @@
 #include <cstdint>
 
 namespace vuh {
-VkDeviceSize a;
 /// Wraps the SBO buffer. Covers base buffer functionality.
 /// Keeps the data, handles initialization, copy/move, common interface,
 /// binding memory to buffer objects, etc...
@@ -28,33 +28,35 @@ public:
 	           )
 	   : _buffer(Alloc::makeBuffer(device, size_bytes, descriptor_flags | usage))
 	   , _dev(device)
-   {
-      try{
-         auto alloc = Alloc();
-         _mem = alloc.allocMemory(device, *this, properties);
-         _flags = alloc.memoryProperties(device);
-         _dev.bindBufferMemory(*this, _mem, 0);
-      } catch(std::runtime_error&){ // destroy buffer if memory allocation was not successful
-         release();
-         throw;
-      }
+	{
+		auto device_memory = Alloc::allocMemory(device, size_bytes, properties);
+		VUH_CHECKOUT();
+		_mem = device_memory.memory;
+		auto memory_properties = VkPhysicalDeviceMemoryProperties{};
+		vkGetPhysicalDeviceMemoryProperties(device.physical(), &memory_properties);
+		_flags = memory_properties.memoryTypes[device_memory.id].propertyFlags;
+		auto err = vkBindBufferMemory(device, _buffer, _mem, 0);
+		if(err != VK_SUCCESS){
+			release();
+			VUH_SIGNAL(err);
+		}
 	}
 
 	/// Release resources associated with current object.
 	~BufferBase() noexcept {release();}
    
-   BufferBase(const BufferBase&) = delete;
-   BufferBase& operator= (const BufferBase&) = delete;
-
 	/// Move constructor. Passes the underlying buffer ownership.
 	BufferBase(BufferBase&& other) noexcept
-	   : vk::Buffer(other), _mem(other._mem), _flags(other._flags), _dev(other._dev)
+	   : _buffer(other._buffer), _mem(other._mem), _flags(other._flags), _dev(other._dev)
 	{
-		static_cast<vk::Buffer&>(other) = nullptr;
+		other._buffer = nullptr;
 	}
 
+	auto operator= (BufferBase&& other)=delete;
+
 	/// @return underlying buffer
-	auto buffer()-> vk::Buffer { return *this; }
+	auto buffer()-> VkBuffer { return _buffer; }
+	operator VkBuffer() const {return _buffer;}
 
 	/// @return offset of the current buffer from the beginning of associated device memory.
 	/// For arrays managing their own memory this is always 0.
@@ -65,42 +67,20 @@ public:
 
 	/// @return true if array is host-visible, ie can expose its data via a normal host pointer.
 	auto isHostVisible() const-> bool {
-		return bool(_flags & vk::MemoryPropertyFlagBits::eHostVisible);
-	}
-
-	/// Move assignment. 
-	/// Resources associated with current array are released immidiately (and not when moved from
-	/// object goes out of scope).
-	auto operator= (BufferBase&& other) noexcept-> BufferBase& {
-		release();
-		_mem = other._mem;
-		_flags = other._flags;
-		_dev = other._dev;
-		reinterpret_cast<vk::Buffer&>(*this) = reinterpret_cast<vk::Buffer&>(other);
-		reinterpret_cast<vk::Buffer&>(other) = nullptr;
-		return *this;
-	}
-	
-	/// swap the guts of two basic arrays
-	auto swap(BufferBase& other) noexcept-> void {
-		using std::swap;
-		swap(static_cast<vk::Buffer&>(&this), static_cast<vk::Buffer&>(other));
-		swap(_mem, other._mem);
-		swap(_flags, other._flags);
-		swap(_dev, other._dev);
+		return (_flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
 	}
 private: // helpers
 	/// release resources associated with current BufferBase object
 	auto release() noexcept-> void {
-		if(static_cast<vk::Buffer&>(*this)){
-			_dev.freeMemory(_mem);
-			_dev.destroyBuffer(*this);
+		if(_buffer){
+			vkFreeMemory(_dev, _mem);
+			vkDestroyBuffer(_dev, _buffer);
 		}
 	}
 protected: // data
-	VkBuffer _buffer;
-	vk::DeviceMemory _mem;           ///< associated chunk of device memory
-	vk::MemoryPropertyFlags _flags;  ///< actual flags of allocated memory (may differ from those requested)
-	vuh::Device& _dev;               ///< referes underlying logical device
+	VkBuffer _buffer;              ///< doc me
+	VkDeviceMemory _mem;           ///< associated chunk of device memory
+	VkMemoryPropertyFlags _flags;  ///< actual flags of allocated memory (may differ from those requested)
+	vuh::Device& _dev;             ///< referes underlying logical device
 }; // class BufferBase
 } // namespace vuh
