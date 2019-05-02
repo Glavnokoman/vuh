@@ -58,7 +58,7 @@ public:
 	auto buffer()-> VkBuffer { return _buffer; }
 	operator VkBuffer() const {return _buffer;}
 
-	/// @return offset of the current buffer from the beginning of associated device memory.
+	/// @return offset (in bytes) of the current buffer from the beginning of associated device memory.
 	/// For arrays managing their own memory this is always 0.
 	auto offset() const-> std::size_t { return 0;}
 
@@ -69,12 +69,13 @@ public:
 	auto isHostVisible() const-> bool {
 		return (_flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
 	}
-private: // helpers
+protected: // helpers
 	/// release resources associated with current BufferBase object
 	auto release() noexcept-> void {
 		if(_buffer){
 			vkFreeMemory(_dev, _mem);
 			vkDestroyBuffer(_dev, _buffer);
+			_buffer = nullptr;
 		}
 	}
 protected: // data

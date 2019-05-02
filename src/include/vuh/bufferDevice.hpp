@@ -1,10 +1,10 @@
 #pragma once
 
+#include "allocatorDevice.hpp"
 #include "allocatorTraits.hpp"
 #include "bufferBase.hpp"
+#include "bufferHost.hpp"
 //#include "arrayUtils.h"
-//#include "allocDevice.hpp"
-//#include "hostArray.hpp"
 
 //#include <vuh/traits.hpp>
 
@@ -26,9 +26,10 @@ public:
    /// Memory is left unintitialized.
    BufferDeviceOnly( vuh::Device& device       ///< deice to create array on
 	                , std::uint32_t n_elements  ///< number of elements
-	                , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	                , vk::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
-	   : BasicArray<Alloc>(device, n_elements*sizeof(T), flags_memory, flags_buffer)
+	                , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	                , VkBufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
+	                )
+	   : BufferBase<Alloc>(device, n_elements*sizeof(T), flags_memory, flags_buffer)
 	   , _size(n_elements)
 	{}
 
@@ -51,49 +52,39 @@ class BufferDevice: public BufferBase<Alloc>{
 public:
 	using value_type = T;
 	/// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
-	BufferDevice( vuh::Device& device   ///< device to create array on
-	           , size_t n_elements     ///< number of elements
-	           , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	           , vk::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
+	BufferDevice( vuh::Device& device        ///< device to create array on
+	            , std::size_t n_elements     ///< number of elements
+	            , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	            , VkBufferUsageFlags flags_buffer={}   ///< additional (to defined by allocator) buffer usage flags
+	            )
 	   : Base(device, n_elements*sizeof(T), flags_memory, flags_buffer)
 	   , _size(n_elements)
 	{}
 
-	/// Create an instance of DeviceArray and initialize memory by content of some host iterable.
-	template<class C, class=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
-	DeviceArray(vuh::Device& device  ///< device to create array on
-	           , const C& c          ///< iterable to initialize from
-	           , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	           , vk::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
-	   : BufferDevice(device, c.size(), flags_memory, flags_buffer)
-	{
-		using std::begin; using std::end;
-		fromHost(begin(c), end(c));
-	}
-
 	/// Create an instance of DeviceArray and initialize it from a range of values.
 	template<class It1, class It2>
-   DeviceArray(vuh::Device& device   ///< device to create array on
+   BufferDevice(vuh::Device& device   ///< device to create array on
 	            , It1 begin           ///< range begin
 	            , It2 end             ///< range end (points to one past the last element of the range)
-	            , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	            , vk::BufferUsageFlags flags_buffer={})	///< additional (to defined by allocator) buffer usage flags
+	            , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	            , VkBufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
 	   : BufferDevice(device, std::distance(begin, end), flags_memory, flags_buffer)
 	{
-		fromHost(begin, end);
+		fromHost(begin, end); // !
 	}
 
 	/// Create an instance of DeviceArray of given size and initialize it using index based initializer function.
 	template<class F>
-	DeviceArray( vuh::Device& device  ///< device to create array on
+	BufferDevice( vuh::Device& device  ///< device to create array on
 	           , size_t n_elements    ///< number of elements
 	           , F&& fun              ///< callable of a form function<T(size_t)> mapping an offset to array value
-	           , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	           , vk::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
+	           , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	           , VkBufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
 	   : BufferDevice(device, n_elements, flags_memory, flags_buffer)
 	{
 		using std::begin;
-		auto stage_buffer = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, n_elements);
+		using stage_t = BufferHost<T, AllocatorDevice<allocator::traits::HostCoherent>>;
+		auto stage_buffer = stage_t(Base::_dev, n_elements);
 		auto stage_it = begin(stage_buffer);
 		for(size_t i = 0; i < n_elements; ++i, ++stage_it){
 			*stage_it = fun(i);
@@ -108,7 +99,7 @@ public:
 			std::copy(begin, end, host_data());
 			Base::_dev.unmapMemory(Base::_mem);
 		} else { // memory is not host visible, use staging buffer
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, begin, end);
+			auto stage_buf = BufferHost<T, AllocDevice<properties::HostCoherent>>(Base::_dev, begin, end);
 			copyBuf(Base::_dev, stage_buf, *this, size_bytes());
 		}
 	}
@@ -120,7 +111,7 @@ public:
 			std::copy(begin, end, host_data() + offset);
 			Base::_dev.unmapMemory(Base::_mem);
 		} else { // memory is not host visible, use staging buffer
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, begin, end);
+			auto stage_buf = BufferHost<T, AllocDevice<properties::HostCoherent>>(Base::_dev, begin, end);
 			copyBuf(Base::_dev, stage_buf, *this, size_bytes(), 0u, offset*sizeof(T));
 		}
 	}
@@ -134,7 +125,7 @@ public:
          Base::_dev.unmapMemory(Base::_mem);
       } else {
          using std::begin; using std::end;
-         auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev, size());
+         auto stage_buf = BufferHost<T, AllocDevice<properties::HostCached>>(Base::_dev, size());
          copyBuf(Base::_dev, *this, stage_buf, size_bytes());
          std::copy(begin(stage_buf), end(stage_buf), copy_to);
       }
@@ -150,7 +141,7 @@ public:
          Base::_dev.unmapMemory(Base::_mem);
       } else {
          using std::begin; using std::end;
-         auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev, size());
+         auto stage_buf = BufferHost<T, AllocDevice<properties::HostCached>>(Base::_dev, size());
          copyBuf(Base::_dev, *this, stage_buf, size_bytes());
          std::transform(begin(stage_buf), end(stage_buf), copy_to, std::forward<F>(fun));
       }
@@ -169,7 +160,7 @@ public:
 			Base::_dev.unmapMemory(Base::_mem);
 		} else {
 			using std::begin; using std::end;
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev, size);
+			auto stage_buf = BufferHost<T, AllocDevice<properties::HostCached>>(Base::_dev, size);
 			copyBuf(Base::_dev, *this, stage_buf, size_bytes());
 			std::transform(begin(stage_buf), end(stage_buf), copy_to, std::forward<F>(fun));
 		}
@@ -184,7 +175,7 @@ public:
 			Base::_dev.unmapMemory(Base::_mem);
 		} else {
 			using std::begin; using std::end;
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev
+			auto stage_buf = BufferHost<T, AllocDevice<properties::HostCached>>(Base::_dev
 			                                                          , offset_end - offset_begin);
 			copyBuf(Base::_dev, *this, stage_buf, size_bytes(), offset_begin, 0u);
 			std::copy(begin(stage_buf), end(stage_buf), dst_begin);
@@ -206,14 +197,6 @@ public:
 	/// @return size of a memory chunk occupied by array elements
 	/// (not the size of actually allocated chunk, which may be a bit bigger).
 	auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
-
-	/// doc me
-	auto device_begin()-> ArrayIter<BufferDevice> { return ArrayIter<BufferDevice>(*this, 0); }
-	auto device_begin() const-> ArrayIter<BufferDevice> { return ArrayIter<BufferDevice>(*this, 0); }
-
-	/// doc me
-	auto device_end()-> ArrayIter<BufferDevice> {return ArrayIter<BufferDevice>(*this, _size);}
-	auto device_end() const-> ArrayIter<BufferDevice> {return ArrayIter<BufferDevice>(*this, _size);}
 private: // helpers
 	auto host_data()-> T* {
 		assert(Base::isHostVisible());
