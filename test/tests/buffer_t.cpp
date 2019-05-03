@@ -1,7 +1,9 @@
 #include <catch2/catch.hpp>
 
 //#include <vuh/vuh.h>
+#include <vuh/algorithm.hpp>
 #include <vuh/buffer.hpp>
+#include <vuh/bufferView.hpp>
 #include <vuh/device.hpp>
 #include <vuh/instance.hpp>
 

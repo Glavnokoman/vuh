@@ -26,7 +26,7 @@ public:
 	using AllocFallback = AllocatorDevice<typename Traits::fallback_t>; ///< fallback allocator
 
 	/// Create buffer on a device.
-	static auto makeBuffer( vuh::Device& device      ///< device to create buffer on
+	static auto makeBuffer( Device& device      ///< device to create buffer on
 	                      , std::size_t size_bytes   ///< desired size in bytes
 	                      , VkBufferUsageFlags flags ///< additional (to the ones defined in Props) buffer usage flags
 	                      )-> VkBuffer
@@ -65,7 +65,7 @@ public:
 		}
 		auto allocFallback = AllocFallback{};
 		device.instance().log("AllocatorDevice failed to allocate memory. Using the fallback"
-		                     , error::text(err)
+		                     , ""
 		                     , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		return allocFallback.allocMemory(device, buffer, flags_memory);
 	}
@@ -94,7 +94,7 @@ public:
 
 /// Specialize allocator for void properties type.
 /// Calls to this class methods basically means all other failed and nothing can be done.
-/// This means most its methods throw exceptions.
+/// This means most its methods just throw.
 template<>
 class AllocatorDevice<void>{
 public:

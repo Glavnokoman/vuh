@@ -4,8 +4,7 @@
 #include "device.hpp"
 #include "physicalDevice.hpp"
 
-#include <vulkan/vulkan_core.h>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 #include <cassert>
 #include <cstdint>
@@ -60,7 +59,7 @@ public:
 
 	/// @return offset (in bytes) of the current buffer from the beginning of associated device memory.
 	/// For arrays managing their own memory this is always 0.
-	auto offset() const-> std::size_t { return 0;}
+	constexpr auto offset() const-> std::size_t { return 0u;}
 
 	/// @return reference to device on which underlying buffer is allocated
 	auto device()-> vuh::Device& { return _dev; }

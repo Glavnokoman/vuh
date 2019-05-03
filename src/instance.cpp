@@ -176,9 +176,18 @@ void Instance::logger_attach(logger_t logger)
 }
 
 ///
-void Instance::log(const char* prefix, const char* message, VkDebugReportFlagsEXT flags) const
+auto Instance::log(const char* prefix, const char* message, VkDebugReportFlagsEXT flags) const-> void
 {
 	_logger(flags, VkDebugReportObjectTypeEXT{}, 0, 0, 0 , prefix, message, nullptr);
+}
+
+/// doc me
+auto Instance::log(const std::string& prefix
+                  , const std::string& message
+                  , VkDebugReportFlagsEXT flags
+                  ) const-> void
+{
+	log(prefix.c_str(), message.c_str(), flags);
 }
 
 ///

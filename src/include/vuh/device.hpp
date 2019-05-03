@@ -1,9 +1,8 @@
 #pragma once
 
 #include "common.hpp"
-#include "buffer.hpp"
 
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 
 #include <cstdint>
 #include <vector>

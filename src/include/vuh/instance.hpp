@@ -2,6 +2,7 @@
 
 #include "common.hpp"
 
+#include <string>
 #include <vector>
 
 namespace vuh {
@@ -24,6 +25,8 @@ public:
 	auto logger_attach(logger_t logger)-> void;
 	auto log( const char* prefix, const char* message
 	        , VkDebugReportFlagsEXT flags=VK_DEBUG_REPORT_INFORMATION_BIT_EXT) const-> void;
+	auto log(const std::string& prefix, const std::string& message
+	         , VkDebugReportFlagsEXT flags=VK_DEBUG_REPORT_INFORMATION_BIT_EXT) const-> void;
 private: // helpers
 	auto logger_release() noexcept-> void;
 private: // data
