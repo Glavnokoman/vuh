@@ -2,6 +2,8 @@
 #include "error.hpp"
 #include "defer.hpp"
 
+#include <vulkan/vulkan.h>
+
 namespace vuh {
 
 /// Synchronous copy chunk of memory between VkBuffer-s
@@ -18,22 +20,21 @@ auto Queue::copy( VkBuffer src
 	                     , VK_COMMAND_BUFFER_LEVEL_PRIMARY
 	                     , 1 };
 	auto cmd_buf = VkCommandBuffer{};
-	auto err = vkAllocateCommandBuffers(_device, &allocate_info, &cmd_buf);
-	VUH_CHECK(err);
+	VUH_CHECK(vkAllocateCommandBuffers(_device, &allocate_info, &cmd_buf));
 	auto buf_guard = utils::defer([&]{vkFreeCommandBuffers(_device, _command_pool, 1, &cmd_buf);});
 
-	auto begin_info = VkCommandBufferBeginInfo{}; // hierwasik
-	err = vkBeginCommandBuffer(cmd_buf, &begin_info);
-
-//	auto cmd_buf = device.transferCmdBuffer();
-//	cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-//	auto region = vk::BufferCopy(src_offset, dst_offset, size_bytes);
-//	cmd_buf.copyBuffer(src, dst, 1, &region);
-//	cmd_buf.end();
-//	auto queue = device.transferQueue();
-//	auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
-//	queue.submit({submit_info}, nullptr);
-//	queue.waitIdle();
+	auto begin_info = VkCommandBufferBeginInfo{};
+	VUH_CHECK(vkBeginCommandBuffer(cmd_buf, &begin_info));
+	auto region = VkBufferCopy{ src_offset, dst_offset, size_bytes };
+	vkCmdCopyBuffer(cmd_buf, src, dst, 1, &region);
+	VUH_CHECK(vkEndCommandBuffer(cmd_buf));
+	auto submit_info = VkSubmitInfo{
+	                   VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr
+	                   , 0, nullptr, nullptr
+	                   , 1, &cmd_buf
+	                   , 0, nullptr };
+	VUH_CHECK(vkQueueSubmit(_handle, 1, &submit_info, nullptr));
+	VUH_CHECK(vkQueueWaitIdle(_handle));
 }
 
 
