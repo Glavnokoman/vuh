@@ -172,7 +172,7 @@ Device::Device( VkDevice device
 		for(std::uint32_t i = 0; i < spec.queue_count; ++i){
 			auto queue = VkQueue{};
 			vkGetDeviceQueue(device, spec.family_id, i, &queue);
-			_queues.push_back(Queue(queue, pool, spec.family_id));
+			_queues.push_back(Queue(queue, *this, pool, spec.family_id));
 		}
 	}
 
