@@ -34,14 +34,12 @@ struct QueueSpec {
 class Device: public detail::Resource<VkDevice, vkDestroyDevice> {
 public:
 	explicit Device(Instance&, const std::vector<const char*>& extensions={});
+	Device( VkDevice device, Instance& instance
+	      , const PhysicalDevice& phys_device, const std::vector<QueueSpec>& queue_specs);
 	Device( Instance&, const PhysicalDevice&
 	      , QueueSpec::Preset=QueueSpec::Default, const std::vector<const char*>& extensions={});
 	Device( Instance& , const PhysicalDevice&
 	      , const std::vector<QueueSpec>& specs, const std::vector<const char*>& extensions={});
-
-	Device( VkDevice device, Instance& instance
-	      , const PhysicalDevice& phys_device, const std::vector<QueueSpec>& queue_specs);
-
 	~Device() noexcept;
 
 	Device(const Device&) = delete;
@@ -51,6 +49,7 @@ public:
 
 	auto instance() const-> const Instance& {return _instance;}
 	auto physical() const-> const PhysicalDevice& {return _physical;}
+	operator VkDevice() const {return Base::_base_resource;}
 private: // data
 	Instance& _instance;              ///< doc me
 	const PhysicalDevice& _physical;  ///< doc me

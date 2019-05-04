@@ -1,11 +1,8 @@
 #pragma once
 
-#include "allocatorDevice.hpp"
-#include "allocatorTraits.hpp"
+#include "device.hpp"
 #include "bufferBase.hpp"
-#include "bufferHost.hpp"
-#include "traits.hpp"
-//#include "arrayUtils.h"
+#include "bufferSpan.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -38,6 +35,16 @@ private:
 	std::uint32_t _size; ///< number of elements
 }; // class BufferDeviceOnly
 
+///
+template<class T>
+class HostData {
+public:
+	explicit HostData(VkDevice device, VkDeviceMemory memory, std::size_t size_bytes);
+private: // data
+	VkDevice _device;
+	VkDeviceMemory _memory;
+}; // class HostData
+
 /// Buffer with host data exchange interface suitable for memory allocated in device-local space.
 /// Memory allocation and underlying buffer creation is managed by allocator defined by a template parameter.
 /// Such allocator is expected to allocate memory in device local memory not mappable
@@ -60,36 +67,18 @@ public:
 	   , _size(n_elements)
 	{}
 
-	/// Create an instance of DeviceArray and initialize it from a range of values.
-	template<class It1, class It2>
-	BufferDevice(vuh::Device& device   ///< device to create array on
-	            , It1 begin           ///< range begin
-	            , It2 end             ///< range end (points to one past the last element of the range)
-	            , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	            , VkBufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
-	   : BufferDevice(device, std::distance(begin, end), flags_memory, flags_buffer)
-	{
-		fromHost(begin, end); // !
-	}
+	BufferDevice(vuh::Device& device , std::size_t count , T value
+	            , VkMemoryPropertyFlags flags_memory={}, VkBufferUsageFlags flags_buffer={});
 
-	/// Create an instance of DeviceArray of given size and initialize it using index based initializer function.
+	template<class InputIt>
+	BufferDevice( vuh::Device& device, InputIt begin, InputIt end
+	            , VkMemoryPropertyFlags flags_memory={}, VkBufferUsageFlags flags_buffer={});
+
 	template<class F>
-	BufferDevice( vuh::Device& device  ///< device to create array on
-	           , size_t n_elements    ///< number of elements
-	           , F&& fun              ///< callable of a form function<T(size_t)> mapping an offset to array value
-	           , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	           , VkBufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
-	   : BufferDevice(device, n_elements, flags_memory, flags_buffer)
-	{
-		using std::begin;
-		using stage_t = BufferHost<T, AllocatorDevice<allocator::traits::HostCoherent>>;
-		auto stage_buffer = stage_t(Base::_dev, n_elements);
-		auto stage_it = begin(stage_buffer);
-		for(size_t i = 0; i < n_elements; ++i, ++stage_it){
-			*stage_it = fun(i);
-		}
-		copyBuf(Base::_dev, stage_buffer, *this, Base::size_bytes());
-	}
+	BufferDevice( vuh::Device& device, size_t n_elements, F&& fun
+	            , VkMemoryPropertyFlags flags_memory={}, VkBufferUsageFlags flags_buffer={});
+
+
 
 	/// @return number of elements
 	auto size() const-> size_t {return _size;}
@@ -97,19 +86,25 @@ public:
 	/// @return size of a memory chunk occupied by array elements
 	/// (not the size of actually allocated chunk, which may be a bit bigger).
 	auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
-private: // helpers
-	auto host_data()-> T* {
-		assert(Base::isHostVisible());
-		return static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
+
+	///
+	auto span(std::size_t offset, std::size_t count)-> BufferSpan<BufferDevice>{
+		return vuh::span(*this, offset, count);
 	}
 
-	auto host_data() const-> const T* {
-		assert(Base::isHostVisible());
-		return static_cast<const T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
-	}
+	auto host_data()-> HostData<T>;
+	auto host_data() const-> HostData<const T>;
+private: // helpers
+//	auto host_data()-> T* {
+//		assert(Base::isHostVisible());
+//		return static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
+//	}
+
+//	auto host_data() const-> const T* {
+//		assert(Base::isHostVisible());
+//		return static_cast<const T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
+//	}
 private: // data
 	size_t _size; ///< number of elements. Actual allocated memory may be a bit bigger than necessary.
-}; // class DeviceArray
-
-
+}; // class BufferDevice
 } // namespace vuh

@@ -2,6 +2,7 @@
 
 #include "allocatorTraits.hpp"
 #include "bufferDevice.hpp"
+#include "bufferDeviceImpl.hpp"
 #include "bufferHost.hpp"
 
 namespace vuh {

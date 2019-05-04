@@ -3,7 +3,7 @@
 //#include <vuh/vuh.h>
 #include <vuh/algorithm.hpp>
 #include <vuh/buffer.hpp>
-#include <vuh/bufferView.hpp>
+#include <vuh/bufferSpan.hpp>
 #include <vuh/device.hpp>
 #include <vuh/instance.hpp>
 
@@ -50,14 +50,14 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 			auto buf = vuh::Buffer<float, vuh::mem::Device>(device, arr_size
 			                                               , [&](size_t i){return host_data[i];});
 			REQUIRE(vuh::to_host<std::vector<float>>(buf) == host_data);
-			REQUIRE(to_host<std::vector<float>>(buf, [](auto x){return 2.f*x;}) == host_data_doubled);
+			REQUIRE(vuh::to_host<std::vector<float>>(buf, [](auto x){return 2.f*x;}) == host_data_doubled);
 		}
 		SECTION("data transfer from host to device"){
 			auto buf = vuh::Buffer<float, vuh::mem::Device>(device, arr_size);
 			vuh::copy(begin(host_data), end(host_data), buf);
-			REQUIRE(to_host<std::vector<float>>(buf) == host_data);
+			REQUIRE(vuh::to_host<std::vector<float>>(buf) == host_data);
 			vuh::transform(begin(host_data), end(host_data), buf, [](auto x){return 2.f*x;});
-			REQUIRE(to_host<std::vector<float>>(buf) == host_data_doubled);
+			REQUIRE(vuh::to_host<std::vector<float>>(buf) == host_data_doubled);
 		}
 		SECTION("buffer transfer from device to host"){
 			auto buf = vuh::Buffer<float, vuh::mem::Device>(device, begin(host_data), end(host_data));
@@ -86,7 +86,7 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 		try{
 			auto d1 = vuh::Buffer<float, vuh::mem::Unified>(device, arr_size);
 		} catch (...){
-			std::cerr << "skipping unified memory array tests..." "\n";
+			Catch::cerr() << "skipping unified memory array tests..." "\n";
 			return;
 		}
 		SECTION("size constructor"){
@@ -96,11 +96,11 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 		}
 		SECTION("size constructor with value initialization"){
 			auto buf = vuh::Buffer<float, vuh::mem::Unified>(device, arr_size, 3.14f);
-			REQUIRE(array.size() == arr_size);
-			REQUIRE(std::vector<float>(begin(array), end(array)) == host_data);
+			REQUIRE(buf.size() == arr_size);
+			REQUIRE(std::vector<float>(begin(buf), end(buf)) == host_data);
 		}
 		SECTION("construct from range"){
-			auto buf = vuh::Buffer<float, vuh::mem::Unified>(device, begin(host_data), end(host_data));
+			auto buf = vuh::Buffer<float, vuh::mem::Unified>(device, std::begin(host_data), std::end(host_data));
 			REQUIRE(std::vector<float>(begin(buf), end(buf)) == host_data);
 		}
 		SECTION("random access with operator []"){
@@ -146,7 +146,7 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 	}
 	SECTION("void memory allocator should throw"){
 		REQUIRE_THROWS(([&](){
-			auto d_buf = vuh::Buffer<float, vuh::arr::AllocDevice<void>>(device, arr_size);
+			auto d_buf = vuh::Buffer<float, vuh::AllocatorDevice<void>>(device, arr_size);
 		}()));
 	}
 }

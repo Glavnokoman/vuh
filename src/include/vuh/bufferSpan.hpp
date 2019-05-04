@@ -1,22 +1,23 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+
 #include <cassert>
 
 namespace vuh {
 	/// Read-write view into the continuous portion of some vuh::Buffer
-	/// Maybe used in place of array references in copy routines and kernel invocations
-	/// to pass parts of the buffer data.
+	/// Maybe used in place of buffers in copy routines and kernel invocations
+	/// to pass a subset of the buffer data.
 	template<class Buf>
-	class BufferView {
+	class BufferSpan {
 	public:
 		using buffer_type = Buf;
 		using value_type = typename Buf::value_type;
 		static constexpr auto descriptor_class = Buf::descriptor_class;
 
-		BufferView(Buf& buf): _buf(buf), _offset(0u), _size(buf.size()){}
+		BufferSpan(const Buf& buf): _buf(buf), _offset(0u), _size(buf.size()){}
 
-		explicit BufferView(Buf& buffer, std::size_t offset, std::size_t num_elements)
+		explicit BufferSpan(Buf& buffer, std::size_t offset, std::size_t num_elements)
 		   : _buf(&buffer), _offset(offset), _size(num_elements)
 		{}
 
@@ -36,7 +37,7 @@ namespace vuh {
 
 	/// Create a ArrayView into given Array.
 	template<class Buf>
-	auto buffer_view(Buf& buf, std::size_t offset, size_t num_elements)-> BufferView<Buf>{
-		return BufferView<Buf>(buf, offset, num_elements);
+	auto span(Buf& buf, std::size_t offset, std::size_t num_elements)-> BufferSpan<Buf>{
+		return BufferSpan<Buf>(buf, offset, num_elements);
 	}
 } // namespace vuh

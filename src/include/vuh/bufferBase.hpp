@@ -28,7 +28,7 @@ public:
 	   : _buffer(Alloc::makeBuffer(device, size_bytes, descriptor_flags | usage))
 	   , _dev(device)
 	{
-		auto device_memory = Alloc::allocMemory(device, size_bytes, properties);
+		auto device_memory = Alloc::allocMemory(device, _buffer, properties);
 		VUH_CHECKOUT();
 		_mem = device_memory.memory;
 		auto memory_properties = VkPhysicalDeviceMemoryProperties{};
@@ -72,8 +72,8 @@ protected: // helpers
 	/// release resources associated with current BufferBase object
 	auto release() noexcept-> void {
 		if(_buffer){
-			vkFreeMemory(_dev, _mem);
-			vkDestroyBuffer(_dev, _buffer);
+			vkFreeMemory(_dev, _mem, nullptr);
+			vkDestroyBuffer(_dev, _buffer, nullptr);
 			_buffer = nullptr;
 		}
 	}

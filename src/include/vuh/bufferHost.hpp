@@ -22,8 +22,8 @@ public:
 	using value_type = T;
 	/// Construct object of the class on given device.
 	/// Memory is not initialized with any data.
-	BufferHost(vuh::Device& device  ///< device to create array on
-	          , size_t n_elements  ///< number of elements
+	BufferHost(vuh::Device& device      ///< device to create array on
+	          , std::size_t n_elements  ///< number of elements
 	          , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
 	          , VkBufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	          )
@@ -31,7 +31,7 @@ public:
 	   , _size(n_elements)
 	{
 		VUH_CHECKOUT();
-		auto err = vkMapMemory(device, Base::_mem, 0, n_elements*sizeof(T), {}, &_data);
+		auto err = vkMapMemory(device, Base::_mem, 0, n_elements*sizeof(T), {}, (void**)(&_data));
 		if(err != VK_SUCCESS){
 			Base::release();
 			VUH_SIGNAL(err);
@@ -52,17 +52,17 @@ public:
 	}
 
 	/// Construct array on given device and initialize it from range of values
-	template<class It1, class It2>
-	BufferHost(vuh::Device& device ///< device to create array on
-	          , It1 begin          ///< beginning of initialization range
-	          , It2 end            ///< end (one past end) of initialization range
+	template<class InputIt>
+	BufferHost(vuh::Device& device      ///< device to create array on
+	          , InputIt first           ///< beginning of initialization range
+	          , InputIt last            ///< end (one past end) of initialization range
 	          , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
 	          , VkBufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	          )
-	   : BufferHost(device, std::distance(begin, end), flags_memory, flags_buffer)
+	   : BufferHost(device, std::distance(first, last), flags_memory, flags_buffer)
 	{
 		VUH_CHECKOUT();
-		std::copy(begin, end, this->begin());
+		std::copy(first, last, this->begin());
 	}
 
 	BufferHost(BufferHost&& o) noexcept

@@ -30,8 +30,7 @@ public:
 		return *this;
 	}
 
-	operator T& () {return _base_resource;}
-	operator const T& () const {return _base_resource;}
+	operator T() const {return _base_resource;}
 protected: // data
 	T _base_resource; ///< base resource
 }; // class Resource

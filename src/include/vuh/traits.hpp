@@ -47,9 +47,10 @@ namespace vuh::traits {
 		              );
 	} // namespace detail
 	
-	/// Concept to check if given type is iterable
+	/// Concept to check if given type is host-iterable
 	/// (provides begin(), end(), op++(), and * operators).
 	template<class T> using is_iterable = decltype(detail::is_iterable_impl<T>(0));
+	template<class T> constexpr auto is_iterable_v = is_iterable<T>::value;
 	
 	/// Concept to check if given container is contiguously iterable
 	/// (provides data(), size() and * operator)
