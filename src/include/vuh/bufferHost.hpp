@@ -75,7 +75,7 @@ public:
 	/// Destroy array, and release all associated resources.
 	~BufferHost() noexcept {
 		if(_data) {
-			vkUnmapMemory(Base::_dev, Base::_mem);
+			vkUnmapMemory(Base::_device, Base::_mem);
 		}
 	}
 

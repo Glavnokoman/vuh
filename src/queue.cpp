@@ -7,7 +7,7 @@
 namespace vuh {
 
 /// Synchronous copy chunk of memory between VkBuffer-s
-auto Queue::copy( VkBuffer src
+auto Queue::copy_sync( VkBuffer src
                 , VkBuffer dst
                 , std::size_t size_bytes
                 , std::size_t src_offset

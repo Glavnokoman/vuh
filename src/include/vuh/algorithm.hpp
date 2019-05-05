@@ -1,29 +1,31 @@
 #pragma once
 
+#include "allocatorDevice.hpp"
+#include "allocatorTraits.hpp"
 #include "bufferDevice.hpp"
 #include "bufferHost.hpp"
 #include "bufferSpan.hpp"
+#include "queue.hpp"
 
 #include "traits.hpp"
 
 namespace vuh {
 
-///
-template<class T, class Alloc, class OutputIt>
-auto copy(BufferSpan<BufferDevice<T, Alloc>> view, OutputIt dst)-> OutputIt;
-
-///
-template<class T, class Alloc, class OutputIt>
-auto copy(BufferSpan<BufferHost<T, Alloc>> data, OutputIt dst)-> OutputIt;
-
-///
-template<class T, class Alloc, class OutputIt>
-auto copy(const BufferDevice<T, Alloc>& buf, OutputIt dst)-> OutputIt;
-
-///
-template<class T, class Alloc, class OutputIt>
-auto copy(const BufferHost<T, Alloc>& data, OutputIt dst)-> OutputIt;
-
+/// Synchronous copy of the data from the buffer to host iterable
+/// using the default transfer queue of the device to which the buffer belongs.
+template<class BufferView_t, class OutputIt>
+auto copy(const BufferView_t& view, OutputIt dst)-> OutputIt{
+	if(view.host_visible()){
+		const auto& data = view.host_data();
+		std::copy(std::begin(data), std::end(data), dst);
+	} else {
+		using Stage = BufferHost< typename BufferView_t::value_type
+		                        , AllocatorDevice<allocator::traits::HostCached>>;
+		auto stage = Stage(view.device(), view.size());
+		view.device().default_transfer().copy_sync(view, stage);
+		std::copy(std::begin(stage), std::end(stage), dst);
+	}
+}
 
 ///
 template<class T, class Alloc, class InputIt>

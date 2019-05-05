@@ -22,13 +22,19 @@ namespace vuh {
 		{}
 
 		/// @return reference to Vulkan buffer of the corresponding array
-		auto buffer()-> VkBuffer { return *_buf; }
+		auto buffer() const-> VkBuffer { return *_buf; }
+
 		/// @return offset (number of elements) of the beggining of the span wrt to buffer
 		auto offset() const-> std::size_t {return _offset;}
+		auto offset_bytes() const-> std::size_t { return _offset*sizeof(value_type);}
+
 		/// @return number of elements in the view
 		auto size() const-> std::size_t {return _size;}
-		/// @return number of bytes in the view
 		auto size_bytes() const-> std::size_t {return size()*sizeof(value_type);}
+
+		auto device() const {return _buf->device();}
+
+		auto host_visible() const-> bool { return _buf->host_visible();}
 	private: // data
 		Buf* _buf;            ///< referes to underlying array object
 		std::size_t _offset;  ///< offset (number of array elements) of the beginning of the span

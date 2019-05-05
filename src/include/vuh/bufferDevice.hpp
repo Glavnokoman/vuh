@@ -1,10 +1,10 @@
 #pragma once
 
-#include "device.hpp"
 #include "bufferBase.hpp"
 #include "bufferSpan.hpp"
+#include "device.hpp"
+#include "error.hpp"
 
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
 
@@ -35,16 +35,6 @@ private:
 	std::uint32_t _size; ///< number of elements
 }; // class BufferDeviceOnly
 
-///
-template<class T>
-class HostData {
-public:
-	explicit HostData(VkDevice device, VkDeviceMemory memory, std::size_t size_bytes);
-private: // data
-	VkDevice _device;
-	VkDeviceMemory _memory;
-}; // class HostData
-
 /// Buffer with host data exchange interface suitable for memory allocated in device-local space.
 /// Memory allocation and underlying buffer creation is managed by allocator defined by a template parameter.
 /// Such allocator is expected to allocate memory in device local memory not mappable
@@ -74,37 +64,33 @@ public:
 	BufferDevice( vuh::Device& device, InputIt begin, InputIt end
 	            , VkMemoryPropertyFlags flags_memory={}, VkBufferUsageFlags flags_buffer={});
 
-	template<class F>
-	BufferDevice( vuh::Device& device, size_t n_elements, F&& fun
+	template<class InputIt, class F>
+	BufferDevice( vuh::Device& device, InputIt first, InputIt last, F&& fun
 	            , VkMemoryPropertyFlags flags_memory={}, VkBufferUsageFlags flags_buffer={});
 
 
 
 	/// @return number of elements
-	auto size() const-> size_t {return _size;}
+	auto size() const-> std::size_t {return _size;}
 
 	/// @return size of a memory chunk occupied by array elements
 	/// (not the size of actually allocated chunk, which may be a bit bigger).
-	auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
+	auto size_bytes() const-> std::size_t {return _size*sizeof(T);}
 
 	///
 	auto span(std::size_t offset, std::size_t count)-> BufferSpan<BufferDevice>{
 		return vuh::span(*this, offset, count);
 	}
 
-	auto host_data()-> HostData<T>;
-	auto host_data() const-> HostData<const T>;
-private: // helpers
-//	auto host_data()-> T* {
-//		assert(Base::isHostVisible());
-//		return static_cast<T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
-//	}
-
-//	auto host_data() const-> const T* {
-//		assert(Base::isHostVisible());
-//		return static_cast<const T*>(Base::_dev.mapMemory(Base::_mem, 0, size_bytes()));
-//	}
+	auto host_data()-> HostData<T> {
+		assert(this->host_visible());
+		return HostData<T>(Base::_device, Base::_mem, size_bytes());
+	}
+	auto host_data() const-> HostData<const T> {
+		assert(this->host_visible());
+		return HostData<const T>(Base::_device, Base::_mem, size_bytes());
+	}
 private: // data
-	size_t _size; ///< number of elements. Actual allocated memory may be a bit bigger than necessary.
+	std::size_t _size; ///< number of elements. Actual allocated memory may be a bit bigger than necessary.
 }; // class BufferDevice
 } // namespace vuh

@@ -46,12 +46,6 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 			auto buf = vuh::Buffer<float, vuh::mem::Device>(device, begin(host_data), end(host_data));
 			REQUIRE(vuh::to_host<std::vector<float>>(buf) == host_data);
 		}
-		SECTION("size + index based lambda constructor"){
-			auto buf = vuh::Buffer<float, vuh::mem::Device>(device, arr_size
-			                                               , [&](size_t i){return host_data[i];});
-			REQUIRE(vuh::to_host<std::vector<float>>(buf) == host_data);
-			REQUIRE(vuh::to_host<std::vector<float>>(buf, [](auto x){return 2.f*x;}) == host_data_doubled);
-		}
 		SECTION("data transfer from host to device"){
 			auto buf = vuh::Buffer<float, vuh::mem::Device>(device, arr_size);
 			vuh::copy(begin(host_data), end(host_data), buf);
