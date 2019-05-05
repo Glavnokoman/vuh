@@ -13,7 +13,7 @@ namespace vuh {
 
 ///
 template<class T, class Alloc>
-BufferDevice<T, Alloc>::BufferDevice( Device& device
+BufferDevice<T, Alloc>::BufferDevice( const Device& device
                                     , std::size_t count
                                     , T value
                                     , VkMemoryPropertyFlags flags_memory
@@ -36,7 +36,7 @@ BufferDevice<T, Alloc>::BufferDevice( Device& device
 /// Create an instance of DeviceArray and initialize it from a range of values.
 template<class T, class Alloc>
 template<class InputIt>
-BufferDevice<T, Alloc>::BufferDevice(vuh::Device& device  ///< device to create array on
+BufferDevice<T, Alloc>::BufferDevice( const Device& device  ///< device to create array on
                                     , InputIt first       ///< range begin
                                     , InputIt last        ///< range end (points to one past the last element of the range)
                                     , VkMemoryPropertyFlags flags_memory  ///< additional (to defined by allocator) memory usage flags
@@ -58,7 +58,8 @@ BufferDevice<T, Alloc>::BufferDevice(vuh::Device& device  ///< device to create 
 /// Create an instance of DeviceArray of given size and initialize it using index based initializer function.
 template<class T, class Alloc>
 template<class InputIt, class F>
-BufferDevice<T, Alloc>::BufferDevice(vuh::Device& device  ///< device to create array on
+BufferDevice<T, Alloc>::BufferDevice(
+              const Device& device  ///< device to create array on
             , InputIt first
             , InputIt last
             , F&& fun                             ///< callable of a form function<T(size_t)> mapping an offset to array value

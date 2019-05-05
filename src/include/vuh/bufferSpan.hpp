@@ -1,5 +1,7 @@
 #pragma once
 
+#include "device.hpp"
+
 #include <vulkan/vulkan.h>
 
 #include <cassert>
@@ -32,8 +34,9 @@ namespace vuh {
 		auto size() const-> std::size_t {return _size;}
 		auto size_bytes() const-> std::size_t {return size()*sizeof(value_type);}
 
-		auto device() const {return _buf->device();}
+		auto device() const-> const vuh::Device& {return _buf->device();}
 
+		auto host_data() const { return _buf->host_data();}
 		auto host_visible() const-> bool { return _buf->host_visible();}
 	private: // data
 		Buf* _buf;            ///< referes to underlying array object

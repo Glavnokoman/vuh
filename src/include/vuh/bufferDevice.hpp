@@ -48,7 +48,7 @@ class BufferDevice: public BufferBase<Alloc>{
 public:
 	using value_type = T;
 	/// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
-	BufferDevice( vuh::Device& device        ///< device to create array on
+	BufferDevice(const Device& device        ///< device to create array on
 	            , std::size_t n_elements     ///< number of elements
 	            , VkMemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
 	            , VkBufferUsageFlags flags_buffer={}   ///< additional (to defined by allocator) buffer usage flags
@@ -57,15 +57,15 @@ public:
 	   , _size(n_elements)
 	{}
 
-	BufferDevice(vuh::Device& device , std::size_t count , T value
+	BufferDevice(const Device& device , std::size_t count , T value
 	            , VkMemoryPropertyFlags flags_memory={}, VkBufferUsageFlags flags_buffer={});
 
 	template<class InputIt>
-	BufferDevice( vuh::Device& device, InputIt begin, InputIt end
+	BufferDevice( const Device& device, InputIt begin, InputIt end
 	            , VkMemoryPropertyFlags flags_memory={}, VkBufferUsageFlags flags_buffer={});
 
 	template<class InputIt, class F>
-	BufferDevice( vuh::Device& device, InputIt first, InputIt last, F&& fun
+	BufferDevice( const Device& device, InputIt first, InputIt last, F&& fun
 	            , VkMemoryPropertyFlags flags_memory={}, VkBufferUsageFlags flags_buffer={});
 
 
@@ -82,13 +82,13 @@ public:
 		return vuh::span(*this, offset, count);
 	}
 
-	auto host_data()-> HostData<T> {
+	auto host_data()-> HostData<T, Base> {
 		assert(this->host_visible());
-		return HostData<T>(Base::_device, Base::_mem, size_bytes());
+		return HostData<T, Base>(*this, size_bytes());
 	}
-	auto host_data() const-> HostData<const T> {
+	auto host_data() const-> HostData<const T, const Base> {
 		assert(this->host_visible());
-		return HostData<const T>(Base::_device, Base::_mem, size_bytes());
+		return HostData<const T, const Base>(*this, size_bytes());
 	}
 private: // data
 	std::size_t _size; ///< number of elements. Actual allocated memory may be a bit bigger than necessary.

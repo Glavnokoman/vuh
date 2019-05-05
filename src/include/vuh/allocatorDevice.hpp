@@ -26,7 +26,7 @@ public:
 	using AllocFallback = AllocatorDevice<typename Traits::fallback_t>; ///< fallback allocator
 
 	/// Create buffer on a device.
-	static auto makeBuffer( Device& device      ///< device to create buffer on
+	static auto makeBuffer(const Device& device      ///< device to create buffer on
 	                      , std::size_t size_bytes   ///< desired size in bytes
 	                      , VkBufferUsageFlags flags ///< additional (to the ones defined in Props) buffer usage flags
 	                      )-> VkBuffer
@@ -45,7 +45,7 @@ public:
 	}
 
 	/// Allocate memory for the buffer.
-	static auto allocMemory( vuh::Device& device  ///< device to allocate memory
+	static auto allocMemory( const Device& device  ///< device to allocate memory
 	                       , VkBuffer buffer      ///< buffer to allocate memory for
 	                       , VkMemoryPropertyFlags flags_memory={} ///< additional (to the ones defined in Props) memory property flags
 	                       )-> DeviceMemory
@@ -76,7 +76,7 @@ public:
 	/// This may cause for example allocation in the host-visible memory when device-local
 	/// was originally requested but not available on a given device.
 	/// In such scenario the log message will be issued but no error raised.
-	static auto findMemory( const vuh::Device& device  ///< device to search for suitable memory
+	static auto findMemory( const Device& device  ///< device to search for suitable memory
 	                      , VkMemoryRequirements requirements     ///< buffer to find suitable memory for
 	                      , VkMemoryPropertyFlags flags_memory={} ///< additional memory flags
 	                      )-> std::vector<std::uint32_t>
@@ -101,12 +101,12 @@ public:
 	using properties_t = void;
 	
 	/// @throws vk::OutOfDeviceMemoryError
-	static auto allocMemory(vuh::Device&, VkBuffer, VkMemoryPropertyFlags)-> DeviceMemory {
+	static auto allocMemory(const Device&, VkBuffer, VkMemoryPropertyFlags)-> DeviceMemory {
 		VUH_SIGNAL(VK_ERROR_OUT_OF_DEVICE_MEMORY);
 	}
 	
 	/// @throws vuh::NoSuitableMemoryFound
-	static auto findMemory(const vuh::Device& device, VkMemoryRequirements
+	static auto findMemory(const Device& device, VkMemoryRequirements
 	                       , VkMemoryPropertyFlags flags
 	                       )-> std::vector<std::uint32_t>
 	{
@@ -117,7 +117,7 @@ public:
 	}
 
 	/// Create buffer. Normally this should only get called in tests.
-	static auto makeBuffer( vuh::Device& device      ///< device to create buffer on
+	static auto makeBuffer( const Device& device      ///< device to create buffer on
 	                      , std::size_t size_bytes   ///< desired size in bytes
 	                      , VkBufferUsageFlags flags ///< additional buffer usage flags
 	                      )-> VkBuffer

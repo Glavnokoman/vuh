@@ -50,8 +50,8 @@ public:
 	auto instance() const-> const Instance& {return _instance;}
 	auto physical() const-> const PhysicalDevice& {return _physical;}
 	operator VkDevice() const {return Base::_base_resource;}
-	auto default_compute()-> Queue& { return *_default_compute;}
-	auto default_transfer()-> Queue& { return *_default_transfer;}
+	auto default_compute() const-> Queue& { return *_default_compute;}
+	auto default_transfer() const-> Queue& { return *_default_transfer;}
 private: // data
 	Instance& _instance;              ///< doc me
 	const PhysicalDevice& _physical;  ///< doc me

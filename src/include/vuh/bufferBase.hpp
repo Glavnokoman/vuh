@@ -20,7 +20,7 @@ public:
 	static constexpr auto descriptor_class = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
 	/// Construct SBO array of given size in device memory
-	BufferBase(vuh::Device& device                   ///< device to allocate array
+	BufferBase(const Device& device                  ///< device to allocate array
 	           , std::size_t size_bytes              ///< size in bytes
 	           , VkMemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
 	           , VkBufferUsageFlags usage={}         ///< additional usage flags. These are 'added' to flags defined by allocator.
@@ -63,7 +63,9 @@ public:
 	constexpr auto offset_bytes() const-> std::size_t { return 0u; }
 
 	/// @return reference to device on which underlying buffer is allocated
-	auto device()-> vuh::Device& { return _device; }
+	auto device() const-> const Device& {return _device;}
+
+	auto memory() const-> VkDeviceMemory {return _mem;}
 
 	/// @return true if array is host-visible, ie can expose its data via a normal host pointer.
 	auto host_visible() const-> bool {
@@ -82,42 +84,39 @@ protected: // data
 	VkBuffer _buffer;              ///< doc me
 	VkDeviceMemory _mem;           ///< associated chunk of device memory
 	VkMemoryPropertyFlags _flags;  ///< actual flags of allocated memory (may differ from those requested)
-	vuh::Device& _device;             ///< referes underlying logical device
+	const Device& _device;             ///< referes underlying logical device
 }; // class BufferBase
 
 ///
-template<class T>
+template<class T, class Buf>
 class HostData {
 public:
 	using value_type = T;
 
-	explicit HostData(VkDevice device, VkDeviceMemory memory, std::size_t size_bytes)
-	   : _size(size_bytes/sizeof(T)), _device(device), _memory(memory)
+	explicit HostData(Buf& buffer, std::size_t size_bytes)
+	   : _size(size_bytes/sizeof(T)), _buffer(buffer)
 	{
-		VUH_CHECK(vkMapMemory(device, memory, 0, size_bytes, {}, (void**)(&_data)));
+		VUH_CHECK(vkMapMemory(_buffer.device(), _buffer.memory(), 0, size_bytes, {}, (void**)(&_data)));
 	}
-	~HostData() noexcept { if(_data){vkUnmapMemory(_device, _memory);} }
+	~HostData() noexcept { if(_data){ vkUnmapMemory(_buffer.device(), _buffer.memory());} }
 	HostData(HostData&& other) noexcept
-	   : _data(other.data), _size(other.count), _device(other.device), _memory(other.memory)
+	   : _data(other.data), _size(other.count), _buffer(other._buffer)
 	{
 		other._data = nullptr;
 	}
 
-	auto data()-> T* {return _data;}
-	auto data() const-> const T* {return _data;}
-	auto begin()-> T* {return _data;}
-	auto begin() const-> const T* {return _data;}
-	auto end()-> T* {return _data + _size;}
-	auto end() const-> const T* {return _data + _size;}
+	auto data() const-> T* {return _data;}
+	auto begin() const-> T* {return _data;}
+	auto end() const-> T* {return _data + _size;}
 	auto size() const-> std::size_t {return _size;}
 	auto size_bytes() const-> std::size_t {return _size*sizeof(value_type);}
-	auto operator[](std::size_t off)->T& {return *(_data + off);}
-	auto operator[](std::size_t off) const-> const T& {return *(_data + off);}
+	auto operator[](std::size_t off) const->T& {return *(_data + off);}
+
+	operator HostData<const value_type, Buf>&() {return *this;}
 private: // data
 	T* _data;
 	std::size_t _size;
-	VkDevice _device;
-	VkDeviceMemory _memory;
+	Buf& _buffer;
 }; // class HostData
 
 } // namespace vuh
