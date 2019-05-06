@@ -6,13 +6,15 @@
 #include "bufferHost.hpp"
 #include "bufferSpan.hpp"
 #include "queue.hpp"
-
 #include "traits.hpp"
+
+#include <algorithm>
 
 namespace vuh {
 
 /// Synchronous copy of the data from the buffer to host iterable
 /// using the default transfer queue of the device to which the buffer belongs.
+/// @todo add traits check for Buffer template parameter
 template<class BufferView_t, class OutputIt>
 auto copy(const BufferView_t& view, OutputIt dst)-> OutputIt{
 	if(view.host_visible()){
@@ -25,66 +27,39 @@ auto copy(const BufferView_t& view, OutputIt dst)-> OutputIt{
 		view.device().default_transfer().copy_sync(view, stage);
 		std::copy(std::begin(stage), std::end(stage), dst);
 	}
+	return std::next(dst, view.size());
 }
 
 ///
-template<class T, class Alloc, class InputIt>
-auto copy(InputIt first, InputIt last, BufferDevice<T, Alloc>& buf)-> InputIt;
-
-///
-template<class T, class Alloc, class InputIt>
-auto copy(InputIt first, InputIt last, BufferSpan<BufferDevice<T, Alloc>> data)-> InputIt;
-
-///
-template<class T, class Alloc, class InputIt>
-auto copy(InputIt first, InputIt last, BufferHost<T, Alloc>& buf)-> InputIt;
-
-///
-template<class T, class Alloc, class InputIt>
-auto copy(InputIt first, InputIt last, BufferSpan<BufferHost<T, Alloc>> data)-> InputIt;
+template<class BufferView_t, class InputIt>
+auto copy(InputIt first, InputIt last, BufferView_t& buf)-> InputIt {
+	throw "not implemented";
+}
 
 
 ///
-template<class T, class Alloc, class InputIt, class F>
-auto transform(InputIt first, InputIt last, BufferDevice<T, Alloc>& buf, F&& f)-> InputIt;
+template<class BufferView_t, class InputIt, class F>
+auto transform(InputIt first, InputIt last, BufferView_t& buf, F&& f)-> InputIt {
+	throw "not implemented";
+}
 
 ///
-template<class T, class Alloc, class InputIt, class F>
-auto transform(InputIt first, InputIt last, BufferSpan<BufferDevice<T, Alloc>> data, F&& f)-> InputIt;
-
-///
-template<class T, class Alloc, class OutputIt, class F>
-auto transform(const BufferDevice<T, Alloc>& buf, OutputIt first, F&& f)-> OutputIt;
-
-///
-template<class T, class Alloc, class OutputIt, class F>
-auto transform(BufferSpan<BufferDevice<T, Alloc>> data, OutputIt first, F&& f)-> OutputIt;
+template<class BufferView_t, class OutputIt, class F>
+auto transform(const BufferView_t& buf, OutputIt first, F&& f)-> OutputIt {
+	throw "not implemented";
+}
 
 
 ///
-template<class C, class T, class Alloc
-        , typename=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>
-        >
-auto to_host(BufferSpan<BufferDevice<T, Alloc>> data)-> C;
+template<class C, class BufferView_t>
+auto to_host(const BufferView_t& buf)-> traits::Iterable<C> {
+	throw "not implemented";
+}
 
 ///
-template<class C, class T, class Alloc
-        , typename=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>
-        >
-auto to_host(const BufferDevice<T, Alloc>& buf)-> C;
-
-///
-template<class C, class F, class T, class Alloc
-        , typename=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>
-        >
-auto to_host(BufferSpan<BufferDevice<T, Alloc>> data, F&& f)-> C;
-
-///
-template<class C, class F, class T, class Alloc
-        , typename=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>
-        >
-auto to_host(const BufferDevice<T, Alloc>& buf, F&& f)-> C;
-
-
+template<class C, class F, class BufferView_t >
+auto to_host(const BufferView_t& data, F&& f)-> traits::Iterable<C> {
+	throw "not implemented";
+}
 
 } // namespace vuh

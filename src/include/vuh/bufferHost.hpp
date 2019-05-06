@@ -58,6 +58,7 @@ public:
 		std::copy(first, last, this->begin());
 	}
 
+	/// @todo return non-owning host data class by value
 	auto host_device()-> HostData<T, Base>& {return *this;}
 	auto host_device() const-> HostData<const T, Base>& {return *this;}
 }; // class BufferHost

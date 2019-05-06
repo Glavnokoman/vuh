@@ -51,6 +51,7 @@ namespace vuh::traits {
 	/// (provides begin(), end(), op++(), and * operators).
 	template<class T> using is_iterable = decltype(detail::is_iterable_impl<T>(0));
 	template<class T> constexpr auto is_iterable_v = is_iterable<T>::value;
+	template<class T> using Iterable = std::enable_if_t<is_iterable_v<T>, T>;
 	
 	/// Concept to check if given container is contiguously iterable
 	/// (provides data(), size() and * operator)

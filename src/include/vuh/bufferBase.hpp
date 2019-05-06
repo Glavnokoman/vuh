@@ -84,7 +84,7 @@ protected: // data
 	VkBuffer _buffer;              ///< doc me
 	VkDeviceMemory _mem;           ///< associated chunk of device memory
 	VkMemoryPropertyFlags _flags;  ///< actual flags of allocated memory (may differ from those requested)
-	const Device& _device;             ///< referes underlying logical device
+	const Device& _device;         ///< referes underlying logical device
 }; // class BufferBase
 
 ///
