@@ -48,13 +48,13 @@ public:
 	auto operator= (Device&&)-> Device& = delete;
 
 	auto instance() const-> const Instance& {return _instance;}
-	auto physical() const-> const PhysicalDevice& {return _physical;}
+	auto physical() const-> VkPhysicalDevice {return _physical;}
 	operator VkDevice() const {return Base::_base_resource;}
 	auto default_compute() const-> Queue& { return *_default_compute;}
 	auto default_transfer() const-> Queue& { return *_default_transfer;}
 private: // data
 	Instance& _instance;              ///< doc me
-	const PhysicalDevice& _physical;  ///< doc me
+	VkPhysicalDevice _physical;       ///< doc me
 	std::vector<Queue> _queues;       ///< doc me
 	std::vector<VkCommandPool> _command_pools; ///< one pool per queue family in use
 	Queue* _default_compute;          ///< doc me

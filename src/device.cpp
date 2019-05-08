@@ -212,4 +212,5 @@ Device::~Device() noexcept {
 		vkDestroyCommandPool(*this, pool, nullptr);
 	}
 }
+
 } // namespace vuh
