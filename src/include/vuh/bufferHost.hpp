@@ -28,7 +28,7 @@ public:
 	          , VkBufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	          )
 	   : Base(device, n_elements*sizeof(T), flags_memory, flags_buffer)
-	   , HostData<T, Base>(*this, n_elements*sizeof(T))
+	   , HostData<T, Base>(*this, n_elements)
 	{}
 
 	/// Construct array on given device and initialize with a provided value.
@@ -59,7 +59,7 @@ public:
 	}
 
 	/// @todo return non-owning host data class by value
-	auto host_device()-> HostData<T, Base>& {return *this;}
-	auto host_device() const-> HostData<const T, Base>& {return *this;}
+	auto host_data()-> HostDataView<T> {return *this;}
+	auto host_data() const-> HostDataView<const T> {return *this;}
 }; // class BufferHost
 } // namespace vuh

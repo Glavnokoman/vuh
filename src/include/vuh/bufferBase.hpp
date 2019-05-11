@@ -87,23 +87,14 @@ protected: // data
 	const Device& _device;         ///< referes underlying logical device
 }; // class BufferBase
 
-///
-template<class T, class Buf>
-class HostData {
+/// non-owning data view
+template<class T>
+class HostDataView {
 public:
 	using value_type = T;
+	using pointer = T*;
 
-	explicit HostData(Buf& buffer, std::size_t size_bytes)
-	   : _size(size_bytes/sizeof(T)), _buffer(buffer)
-	{
-		VUH_CHECK(vkMapMemory(_buffer.device(), _buffer.memory(), 0, size_bytes, {}, (void**)(&_data)));
-	}
-	~HostData() noexcept { if(_data){ vkUnmapMemory(_buffer.device(), _buffer.memory());} }
-	HostData(HostData&& other) noexcept
-	   : _data(other.data), _size(other.count), _buffer(other._buffer)
-	{
-		other._data = nullptr;
-	}
+	explicit HostDataView(T* data, std::size_t count): _data(data), _size(count){}
 
 	auto data() const-> T* {return _data;}
 	auto begin() const-> T* {return _data;}
@@ -111,11 +102,36 @@ public:
 	auto size() const-> std::size_t {return _size;}
 	auto size_bytes() const-> std::size_t {return _size*sizeof(value_type);}
 	auto operator[](std::size_t off) const->T& {return *(_data + off);}
+private:
+	T* _data;
+	std::size_t _size; ///< element count
+}; // class HostDataView
 
+///
+template<class T, class Buf>
+class HostData: public HostDataView<T> {
+	using Base = HostDataView<T>;
+public:
+	using value_type = typename Base::value_type;
+	using pointer = typename Base::pointer;
+
+	explicit HostData(Buf& buffer, std::size_t count)
+	   : Base(map_memory(buffer, count*sizeof(T)), count), _buffer(buffer)
+	{}
+	~HostData() noexcept { if(this->data()){ vkUnmapMemory(_buffer.device(), _buffer.memory());} }
+	HostData(HostData&& other) noexcept
+	   : Base(static_cast<Base&>(other)), _buffer(other._buffer)
+	{
+		static_cast<Base&>(other) = Base(nullptr, 0);
+	}
+
+	static auto map_memory(Buf& buffer, std::size_t size_bytes)-> T* {
+		auto ret = pointer{};
+		VUH_CHECK(vkMapMemory(buffer.device(), buffer.memory(), 0, size_bytes, {}, (void**)(&ret)));
+		return ret;
+	}
 	operator HostData<const value_type, Buf>&() {return *this;}
 private: // data
-	T* _data;
-	std::size_t _size;
 	Buf& _buffer;
 }; // class HostData
 

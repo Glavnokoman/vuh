@@ -18,7 +18,7 @@ namespace vuh {
 template<class BufferView_t, class OutputIt>
 auto copy(const BufferView_t& view, OutputIt dst)-> OutputIt{
 	if(view.host_visible()){
-		const auto& data = view.host_data();
+		auto data = view.host_data();
 		std::copy(std::begin(data), std::end(data), dst);
 	} else {
 		using Stage = BufferHost< typename BufferView_t::value_type
@@ -33,7 +33,15 @@ auto copy(const BufferView_t& view, OutputIt dst)-> OutputIt{
 ///
 template<class BufferView_t, class InputIt>
 auto copy(InputIt first, InputIt last, BufferView_t& buf)-> InputIt {
-	throw "not implemented";
+	if(buf.host_visible()){
+		auto data = buf.host_data();
+		std::copy(first, last, data.begin());
+	} else {
+		using Stage = BufferHost<typename BufferView_t::value_type
+		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
+		auto stage = Stage(buf.device(), first, last);
+		buf.device().default_transfer().copy_sync(stage, buf);
+	}
 }
 
 

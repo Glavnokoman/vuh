@@ -84,11 +84,11 @@ public:
 
 	auto host_data()-> HostData<T, Base> {
 		assert(this->host_visible());
-		return HostData<T, Base>(*this, size_bytes());
+		return HostData<T, Base>(*this, size());
 	}
 	auto host_data() const-> HostData<const T, const Base> {
 		assert(this->host_visible());
-		return HostData<const T, const Base>(*this, size_bytes());
+		return HostData<const T, const Base>(*this, size());
 	}
 private: // data
 	std::size_t _size; ///< number of elements. Actual allocated memory may be a bit bigger than necessary.
