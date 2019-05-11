@@ -4,6 +4,7 @@
 #include "bufferDevice.hpp"
 #include "bufferDeviceImpl.hpp"
 #include "bufferHost.hpp"
+#include "bufferSpan.hpp"
 
 namespace vuh {
 namespace detail {

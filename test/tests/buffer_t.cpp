@@ -4,7 +4,6 @@
 //#include <vuh/vuh.h>
 #include <vuh/algorithm.hpp>
 #include <vuh/buffer.hpp>
-#include <vuh/bufferSpan.hpp>
 #include <vuh/device.hpp>
 #include <vuh/instance.hpp>
 
@@ -14,7 +13,7 @@
 using std::begin;
 using std::end;
 
-TEST_CASE("array with memory directly allocated from device", "[array][correctness]"){
+TEST_CASE("array with memory directly allocated from device", "[buffer]"){
 	constexpr auto arr_size = size_t(128);
 	const auto host_data = std::vector<float>(arr_size, 3.14f);
 	const auto host_data_doubled = [h = host_data]()mutable {

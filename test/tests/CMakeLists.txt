@@ -12,15 +12,16 @@ function(add_catch_test arg_test_name)
 #	add_dependencies(${arg_test_name} link_shaders_test)
 endfunction()
 
-add_catch_test(test_core
+add_catch_test(core-test
 	 device_t.cpp
 	 instance_t.cpp 
 	 physicalDevice_t.cpp
 )
 
-add_catch_test(test_buffer
-	 buffer_t.cpp
-)
+add_catch_test(buffer-test buffer_t.cpp)
+
+add_catch_test(kernel-test kernel_t.cpp)
+
 # add_catch_test(test_vuh)
 # add_dependencies(test_vuh test_shaders)
 
