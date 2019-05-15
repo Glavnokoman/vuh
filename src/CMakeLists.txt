@@ -4,10 +4,11 @@ list(APPEND VUH_PUBLIC_DEFINES $<$<NOT:$<BOOL:${VUH_USE_EXCEPTIONS}>>:VUH_NO_EXC
 
 add_library(vuh)
 target_sources(vuh
-	PRIVATE 
+	PRIVATE
 		device.cpp
 		error_noexcept.cpp
 		instance.cpp
+		kernel.cpp
 		physicalDevice.cpp
 		queue.cpp
 		utils.cpp

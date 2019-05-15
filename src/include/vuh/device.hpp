@@ -57,6 +57,7 @@ private: // data
 	VkPhysicalDevice _physical;       ///< doc me
 	std::vector<Queue> _queues;       ///< doc me
 	std::vector<VkCommandPool> _command_pools; ///< one pool per queue family in use
+	VkPipelineCache _pipecache;       ///< pipeline cache for all kernels build with this device
 	Queue* _default_compute;          ///< doc me
 	Queue* _default_transfer;         ///< doc me
 }; // class Device

@@ -24,7 +24,7 @@ struct BufferType<allocator::traits::Device>{
 /// Explicit trait specialization mapping BufferType<allocator::traits::DeviceOnly> -> BufferDeviceOnly
 template<>
 struct BufferType<allocator::traits::DeviceOnly>{
-   template<class T, class Alloc> using type = BufferDeviceOnly<T, Alloc>;
+	template<class T, class Alloc> using type = BufferDeviceOnly<T, Alloc>;
 };
 } // namespace detail
 

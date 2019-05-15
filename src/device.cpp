@@ -16,7 +16,7 @@ namespace {
 ///
 auto make_device( const PhysicalDevice& phys_dev
                 , const std::vector<QueueSpec>& specs
-                , const std::vector<const char*> extensions
+                , const std::vector<const char*>& extensions
                 )-> VkDevice
 {
 	auto queue_info = std::vector<VkDeviceQueueCreateInfo>{};
@@ -140,7 +140,7 @@ auto to_specs( const PhysicalDevice& phys_device
 }
 } // namespace
 
-/// wrapping constructor
+/// Wrapping constructor. This is also the most basic constructor being called by the all the others.
 Device::Device( VkDevice device
               , Instance& instance
               , const PhysicalDevice& phys_device
@@ -175,6 +175,11 @@ Device::Device( VkDevice device
 			_queues.push_back(Queue(queue, *this, pool, spec.family_id));
 		}
 	}
+
+	const auto pipecache_info = VkPipelineCacheCreateInfo {
+	                            VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, nullptr
+	                            , {}, 0, nullptr };
+	VUH_CHECK(vkCreatePipelineCache(device, &pipecache_info, nullptr, &_pipecache));
 
 	// point to default compute and transport queues
 	auto defaults = select_default_queue(instance, queue_families, _queues, queue_specs);
@@ -211,6 +216,7 @@ Device::~Device() noexcept {
 	for(const auto& pool: _command_pools){
 		vkDestroyCommandPool(*this, pool, nullptr);
 	}
+	vkDestroyPipelineCache(*this, _pipecache, nullptr);
 }
 
 } // namespace vuh

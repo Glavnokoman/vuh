@@ -5,6 +5,8 @@
 //#include <vuh/vuh.hpp>
 #include <vuh/algorithm.hpp>
 #include <vuh/buffer.hpp>
+#include <vuh/kernel.hpp>
+#include <vuh/traits.hpp>
 
 #include <vector>
 #include <cstdint>
@@ -31,14 +33,16 @@ TEST_CASE("saxpy 1D, run once", "[kernel]"){
 //		auto program = vuh::Program(device, "../shaders/saxpy.spv");
 //		auto kernel = program.kernel("main");
 		auto kernel = vuh::Kernel(device, "../shaders/saxpy.spv");
-		vuh::run({128/64}, kernel.spec(64u).push({128u, a}).bind(d_y, d_x));
+		struct {uint32_t b; float a;} p{128u, a}; // struct Push
+		vuh::run({128/64}, kernel.spec(64u).bind(p, d_y, d_x));
 		vuh::copy(d_y, begin(y));
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5).verbose());
 	}
 	SECTION("no specialization constants"){
 		auto kernel = vuh::Kernel(device, "../shaders/saxpy_nospec.spv");
-		vuh::run({128/64}, kernel.push({128u, a}).bind(d_y, d_x));
+		struct {uint32_t b; float a;} p{128u, a}; // struct Push
+		vuh::run({128/64}, kernel.bind(p, d_y, d_x));
 		vuh::copy(d_y, begin(y));
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5));
@@ -76,9 +80,11 @@ TEST_CASE("saxpy_repeated_1D", "[correctness]"){
 	auto d_y = vuh::Buffer<float>(device, begin(y), end(y)); // allocate device buffer and copy data
 	auto d_x = vuh::Buffer<float>(device, begin(x), end(x));
 
+	static_assert(vuh::traits::is_device_buffer_v<vuh::Buffer<float>> == true);
 	SECTION("bind once run multiple"){
 		auto kernel = vuh::Kernel(device, "../shaders/saxpy.spv");
-		kernel.spec(64u).push({128u, a}.bind(d_y, d_x)).on_grid({128/64});
+		struct {uint32_t b; float a;} p{128u, a}; // struct Push
+		kernel.spec(64u).bind(p, d_y, d_x).grid({128/64});
 		for(size_t i = 0; i < n_repeat; ++i){
 			vuh::run(kernel);
 		}
@@ -89,11 +95,16 @@ TEST_CASE("saxpy_repeated_1D", "[correctness]"){
 	SECTION("multiple bind and run"){
 		auto kernel = vuh::Kernel(device, "../shaders/saxpy.spv");
 		kernel.spec(64u);
+		struct {uint32_t b; float a;} p{128u, a}; // struct Push
 		for(size_t i = 0; i < n_repeat; ++i){
-			vuh::run({128/64}, kernel.push({128u, a}).bind(d_y, d_x));
+			vuh::run({128/64}, kernel.bind(p, d_y, d_x));
 		}
 		vuh::copy(d_y, begin(y));
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5));
 	}
+	SECTION("change specs"){
+		// @todo
+	}
+
 }
