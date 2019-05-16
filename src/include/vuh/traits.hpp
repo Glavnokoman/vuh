@@ -67,7 +67,8 @@ namespace vuh::traits {
 	///
 	template<class T> using is_device_buffer = decltype(detail::_is_device_buffer<T>(0));
 	template<class T> constexpr auto is_device_buffer_v = is_device_buffer<T>::value;
-	template<class T> using DeviceBuffer = std::enable_if_t<is_device_buffer_v<T>, T>;
+	template<class T, class=std::enable_if_t<is_device_buffer_v<T>>>
+	using DeviceBuffer = T;
 
 	/// Concept to check if given container is contiguously iterable
 	/// (provides data(), size() and * operator)

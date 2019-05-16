@@ -22,9 +22,9 @@ public:
 	               , std::string entry_point="main", VkShaderModuleCreateFlags flags={});
 
 	template<class... Ts> auto spec(Ts&&...)-> Kernel& {throw "not implemented";}
-//	template<class P, class... Ts> auto bind(const P& p, traits::DeviceBuffer<Ts>&&...)-> Kernel& {throw "not implemented";}
-	template<class P, class T1, class T2> auto bind(const P& p, traits::DeviceBuffer<T1>& b1
-	                                      , traits::DeviceBuffer<T2>& b2)-> Kernel& {throw "not implemented";}
+	template<class P, class... Ts> auto bind(const P& p, traits::DeviceBuffer<Ts>&...)-> Kernel& {throw "not implemented";}
+//	template<class P, class T1, class T2> auto bind(const P& p, traits::DeviceBuffer<T1>& b1
+//	                                      , traits::DeviceBuffer<T2>& b2)-> Kernel& {throw "not implemented";}
 
 	auto grid(const std::array<std::uint32_t, 3>& dim)-> Kernel& {throw "not implemented";}
 private: // data
