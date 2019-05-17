@@ -137,6 +137,7 @@ auto to_specs( const PhysicalDevice& phys_device
 			return ret;
 		}
 	}
+
 }
 } // namespace
 

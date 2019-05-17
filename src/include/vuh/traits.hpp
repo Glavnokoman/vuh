@@ -47,28 +47,25 @@ namespace vuh::traits {
 		              );
 
 		///
-		template<class... Ts> auto _is_device_buffer(...)-> std::false_type;
-		template<class T>
-		auto _is_device_buffer(int)
-		   -> decltype( T::descriptor_class
-		              , void()
-		              , (void)(std::declval<T&>().size())
-		              , (void)(std::declval<T&>().size_bytes() + std::declval<T&>().offset_bytes())
-		              , std::true_type{}
-		              );
+		template<class T, class=void> struct _is_device_buffer: public std::false_type {};
+		template<class T> struct _is_device_buffer<T, decltype(
+		      (void)(std::declval<T&>().descriptor_class)
+		      , void()
+		      , (void)(std::declval<T&>().size_bytes() + std::declval<T&>().offset_bytes())
+		      )>: public std::true_type {};
 	} // namespace detail
 	
 	/// Concept to check if given type is host-iterable
 	/// (provides begin(), end(), op++(), and * operators).
+	///
 	template<class T> using is_iterable = decltype(detail::is_host_iterable_<T>(0));
-	template<class T> constexpr auto is_iterable_v = is_iterable<T>::value;
+	template<class T> inline constexpr bool is_iterable_v = is_iterable<T>::value;
 	template<class T> using Iterable = std::enable_if_t<is_iterable_v<T>, T>;
 	
 	///
-	template<class T> using is_device_buffer = decltype(detail::_is_device_buffer<T>(0));
-	template<class T> constexpr auto is_device_buffer_v = is_device_buffer<T>::value;
-	template<class T, class=std::enable_if_t<is_device_buffer_v<T>>>
-	using DeviceBuffer = T;
+	template<class T> using is_device_buffer = detail::_is_device_buffer<T>;
+	template<class T> inline constexpr bool is_device_buffer_v = is_device_buffer<T>::value;
+	template<class T, class=std::enable_if_t<is_device_buffer_v<T>>> using DeviceBuffer = T;
 
 	/// Concept to check if given container is contiguously iterable
 	/// (provides data(), size() and * operator)
