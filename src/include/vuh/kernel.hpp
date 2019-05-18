@@ -19,8 +19,13 @@ class Device;
 ///
 class BindParameters {
 public:
+	template<class T>
+	explicit BindParameters(){throw "not implemented";}
+
 	auto push_constant_ranges() const-> std::vector<VkPushConstantRange>;
-	auto descriptors_layout() const-> VkDescriptorSetLayout;
+	auto push_constants() const-> const std::vector<std::byte>;
+	auto descriptors_layout() const-> VkDescriptorSetLayout {return _dsclayout;}
+	auto descriptors_set() const-> const VkDescriptorSet& {return _dscset; }
 private:
 	VkDescriptorPool _dscpool;         ///< descriptor set pool. Each kernel allocates its own pool to avoid complex dependencies for no benefit.
 	VkDescriptorSetLayout _dsclayout;  ///< descriptor set layout. This defines the kernel's array parameters interface.

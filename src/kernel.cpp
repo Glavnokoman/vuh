@@ -34,7 +34,22 @@ void Kernel::make_cmdbuf()
 		init_pipeline();
 		VUH_CHECKOUT();
 	}
-	// create command buffer
+	// Start recording commands into the newly allocated command buffer.
+	const auto beginInfo = VkCommandBufferBeginInfo{}; // vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+	vkBeginCommandBuffer(_cmdbuf, &beginInfo);
+
+	vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
+	vkCmdBindDescriptorSets(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, _pipelayout, 0
+	                       , 1, &_bind->descriptors_set()
+	                       , 0, nullptr // dynamic offsets
+	                       );
+
+	if(const auto& push_constants = _bind->push_constants(); not push_constants.empty()){
+		vkCmdPushConstants( _cmdbuf, _pipelayout, VK_SHADER_STAGE_COMPUTE_BIT, 0
+		                  , push_constants.size(), push_constants.data());
+	}
+	vkCmdDispatch(_cmdbuf, _grid[0], _grid[1], _grid[2]);
+	vkEndCommandBuffer(_cmdbuf);
 }
 
 ///
