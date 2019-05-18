@@ -52,6 +52,7 @@ public:
 	operator VkDevice() const {return Base::_base_resource;}
 	auto default_compute() const-> Queue& { return *_default_compute;}
 	auto default_transfer() const-> Queue& { return *_default_transfer;}
+	auto pipeline_cache() const-> VkPipelineCache { return _pipecache; }
 private: // data
 	Instance& _instance;              ///< doc me
 	VkPhysicalDevice _physical;       ///< doc me

@@ -1,5 +1,6 @@
 #include "kernel.hpp"
 #include "device.hpp"
+#include "error.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -23,6 +24,50 @@ Kernel::Kernel( Device& device
 	vkCreateShaderModule(device, &create_info, nullptr, &_module);
 }
 
+/// Creates command buffer based on bind, spec and grid parameters provided before
+/// Initializes pipeline if needed.
+/// In case the pipeline has been initialized previously the layout is supposed to be compatible
+/// with currently pending bind and spec parameters.
+void Kernel::make_cmdbuf()
+{
+	if(not _pipeline){
+		init_pipeline();
+		VUH_CHECKOUT();
+	}
+	// create command buffer
+}
+
+///
+void Kernel::init_pipeline()
+{
+	const auto ps_ranges = _bind->push_constant_ranges();
+	const auto& layout = _bind->descriptors_layout();
+	const auto layout_info = VkPipelineLayoutCreateInfo{
+	                         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr
+	                         , {} // flags
+	                         , 1, &layout
+	                         , uint32_t(ps_ranges.size()), ps_ranges.data()};
+
+	VUH_CHECK(vkCreatePipelineLayout(_device, &layout_info, nullptr, &_pipelayout));
+
+	const auto* spec_info = _spec ? &_spec->specialization_info() : nullptr;
+	const auto stage_info = VkPipelineShaderStageCreateInfo{
+	                        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr
+	                        , {} // flags
+	                        , VK_SHADER_STAGE_COMPUTE_BIT
+	                        , _module
+	                        , _entry_point.c_str()
+	                        , spec_info };
+	const auto pipeline_info = VkComputePipelineCreateInfo{
+	                           VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, nullptr
+	                           , {}
+	                           , stage_info
+	                           , _pipelayout
+	                           , VkPipeline{}, 0 };
+	VUH_CHECK(vkCreateComputePipelines( _device, _device.pipeline_cache()
+	                                  , 1, &pipeline_info, nullptr, &_pipeline));
+}
+
 ///
 auto read_spirv(std::string_view path)-> std::vector<std::uint32_t> {
 	auto fin = std::ifstream(path.data(), std::ios::binary | std::ios::ate);
@@ -37,6 +82,13 @@ auto read_spirv(std::string_view path)-> std::vector<std::uint32_t> {
 	         , reinterpret_cast<char*>(ret.data()));
 	return ret;
 }
+
+///
+auto run(Kernel& k)-> void
+{
+	throw "not implemented";
+}
+
 
 
 } // namespace vuh

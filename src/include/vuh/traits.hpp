@@ -49,7 +49,7 @@ namespace vuh::traits {
 		///
 		template<class T, class=void> struct _is_device_buffer: public std::false_type {};
 		template<class T> struct _is_device_buffer<T, decltype(
-		      (void)(std::declval<T&>().descriptor_class)
+		        (void)(std::declval<T&>().descriptor_class)
 		      , void()
 		      , (void)(std::declval<T&>().size_bytes() + std::declval<T&>().offset_bytes())
 		      )>: public std::true_type {};
@@ -57,7 +57,6 @@ namespace vuh::traits {
 	
 	/// Concept to check if given type is host-iterable
 	/// (provides begin(), end(), op++(), and * operators).
-	///
 	template<class T> using is_iterable = decltype(detail::is_host_iterable_<T>(0));
 	template<class T> inline constexpr bool is_iterable_v = is_iterable<T>::value;
 	template<class T> using Iterable = std::enable_if_t<is_iterable_v<T>, T>;
@@ -66,6 +65,7 @@ namespace vuh::traits {
 	template<class T> using is_device_buffer = detail::_is_device_buffer<T>;
 	template<class T> inline constexpr bool is_device_buffer_v = is_device_buffer<T>::value;
 	template<class T, class=std::enable_if_t<is_device_buffer_v<T>>> using DeviceBuffer = T;
+	template<class T, class=std::enable_if_t<not is_device_buffer_v<T>>> using NotDeviceBuffer = T;
 
 	/// Concept to check if given container is contiguously iterable
 	/// (provides data(), size() and * operator)
