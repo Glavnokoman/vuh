@@ -85,14 +85,13 @@ private:
 ///
 class PushParameters {
 public:
-	explicit PushParameters();
-	PushParameters(const PushParameters&)=delete;
-	auto operator= (const PushParameters&)->PushParameters& = delete;
+	PushParameters(const std::byte* data, const std::size_t size_bytes);
 
-	auto ranges() const-> std::vector<VkPushConstantRange>;
-	auto values() const-> const std::vector<std::byte>;
+	auto push(const std::byte* data, const std::size_t size_bytes)-> void;
+	auto range() const-> VkPushConstantRange;
+	auto values() const-> const std::vector<std::byte>& {return push_params;}
 private: // data
-	std::vector<std::byte> push_params; ///< bitwise copy of push parameters
+	std::vector<std::byte> push_params; ///< bitwise copy of push parameters struct
 }; // class PushParameters
 
 ///
@@ -111,10 +110,11 @@ public:
 	explicit Kernel( Device& device, std::string_view source
 	               , std::string entry_point="main", VkShaderModuleCreateFlags flags={});
 
+	template<class... Ts> auto bind(traits::DeviceBuffer<Ts>&&...)-> Kernel& {
+		throw "not implemented";
+	}
+	template<class P> auto push(const P& p)-> Kernel& {throw "not implemented";}
 	template<class... Ts> auto spec(Ts&&...)-> Kernel& {throw "not implemented";}
-	template<class P, class... Ts> auto bind( const traits::NotDeviceBuffer<P>& p
-	                                        , traits::DeviceBuffer<Ts>&&...)-> Kernel& {throw "not implemented";}
-	template<class... Ts> auto bind(traits::DeviceBuffer<Ts>&&...)-> Kernel& {throw "not implemented";}
 	auto grid(std::array<std::uint32_t, 3> dim)-> Kernel& {throw "not implemented";}
 
 	auto make_cmdbuf()-> void;
@@ -134,7 +134,7 @@ private: // data
 	std::unique_ptr<BindParameters> _bind;
 	std::unique_ptr<PushParameters> _push;
 	std::unique_ptr<SpecParameters> _spec;
-	std::array<uint32_t, 3> _grid; ///< 3D computation grid dimensions (number of workgroups to run)
+	std::array<uint32_t, 3> _grid;     ///< 3D computation grid dimensions (number of workgroups to run)
 }; // class Kernel
 
 ///

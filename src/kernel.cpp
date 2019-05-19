@@ -3,6 +3,7 @@
 #include "error.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <fstream>
 
 namespace vuh {
@@ -28,13 +29,12 @@ Kernel::Kernel( Device& device
 /// Initializes pipeline if needed.
 /// In case the pipeline has been initialized previously the layout is supposed to be compatible
 /// with currently pending bind and spec parameters.
-void Kernel::make_cmdbuf()
-{
+auto Kernel::make_cmdbuf()-> void {
 	if(not _pipeline){
 		init_pipeline();
 		VUH_CHECKOUT();
 	}
-	// Start recording commands into the newly allocated command buffer.
+	// record commands
 	const auto beginInfo = VkCommandBufferBeginInfo{}; // vk::CommandBufferUsageFlagBits::eOneTimeSubmit
 	vkBeginCommandBuffer(_cmdbuf, &beginInfo);
 
@@ -53,9 +53,9 @@ void Kernel::make_cmdbuf()
 }
 
 ///
-void Kernel::init_pipeline()
-{
-	const auto ps_ranges = _push->ranges();
+auto Kernel::init_pipeline()-> void {
+	assert(_bind);
+	const auto ps_ranges = _push ? std::vector{{_push->range()}} : std::vector<VkPushConstantRange>{};
 	const auto& layout = _bind->descriptors_layout();
 	const auto layout_info = VkPipelineLayoutCreateInfo{
 	                         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr
@@ -104,6 +104,23 @@ auto run(Kernel& k)-> void
 	throw "not implemented";
 }
 
+///
+PushParameters::PushParameters(const std::byte* data, const std::size_t size_bytes)
+   : push_params(size_bytes)
+{
+	push(data, size_bytes);
+}
 
+///
+void PushParameters::push(const std::byte* data, const std::size_t size_bytes)
+{
+	std::copy_n(data, size_bytes, push_params);
+}
+
+///
+VkPushConstantRange PushParameters::range() const
+{
+	return VkPushConstantRange{VK_SHADER_STAGE_COMPUTE_BIT, 0, uint32_t(push_params.size())};
+}
 
 } // namespace vuh

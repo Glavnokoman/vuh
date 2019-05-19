@@ -34,7 +34,7 @@ TEST_CASE("saxpy 1D, run once", "[kernel]"){
 //		auto kernel = program.kernel("main");
 		auto kernel = vuh::Kernel(device, "../shaders/saxpy.spv");
 		struct {uint32_t b; float a;} p{128u, a}; // struct Push
-		vuh::run({128/64}, kernel.spec(64u).bind(p, d_y, d_x));
+		vuh::run({128/64}, kernel.spec(64u).push(p).bind(d_y, d_x));
 		vuh::copy(d_y, begin(y));
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5).verbose());
@@ -42,7 +42,7 @@ TEST_CASE("saxpy 1D, run once", "[kernel]"){
 	SECTION("no specialization constants"){
 		auto kernel = vuh::Kernel(device, "../shaders/saxpy_nospec.spv");
 		struct {uint32_t b; float a;} p{128u, a}; // struct Push
-		vuh::run({128/64}, kernel.bind(p, d_y, d_x));
+		vuh::run({128/64}, kernel.push(p).bind(d_y, d_x));
 		vuh::copy(d_y, begin(y));
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5));
@@ -84,7 +84,7 @@ TEST_CASE("saxpy_repeated_1D", "[correctness]"){
 	SECTION("bind once run multiple"){
 		auto kernel = vuh::Kernel(device, "../shaders/saxpy.spv");
 		struct {uint32_t b; float a;} p{128u, a}; // struct Push
-		kernel.spec(64u).bind(p, d_y, d_x).grid({128/64});
+		kernel.spec(64u).push(p).bind(d_y, d_x).grid({128/64});
 		for(size_t i = 0; i < n_repeat; ++i){
 			vuh::run(kernel);
 		}
@@ -97,7 +97,7 @@ TEST_CASE("saxpy_repeated_1D", "[correctness]"){
 		kernel.spec(64u);
 		struct {uint32_t b; float a;} p{128u, a}; // struct Push
 		for(size_t i = 0; i < n_repeat; ++i){
-			vuh::run({128/64}, kernel.bind(p, d_y, d_x));
+			vuh::run({128/64}, kernel.push(p).bind(d_y, d_x));
 		}
 		vuh::copy(d_y, begin(y));
 
