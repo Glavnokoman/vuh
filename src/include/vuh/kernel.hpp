@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <tuple>
 
 namespace vuh {
 
@@ -98,10 +99,24 @@ private: // data
 class SpecParameters {
 public:
 	template<class... Ts>
-	SpecParameters() { throw "not implemented"; }
+	explicit SpecParameters(Ts&&... ts) {
+		const auto tmp = std::tuple(ts...);
+		constexpr auto* p = reinterpret_cast<const std::byte*>(&tmp);
+		data = std::vector<std::byte>(p, p + sizeof(tmp));
+		const auto idx = std::index_sequence_for<Ts...>{};
+		const auto specialization_map = std::vector{
+		    VkSpecializationMapEntry{ idx
+		                            , reinterpret_cast<const std::byte*>(&std::get<idx>(tmp)) - p
+	                               , sizeof(ts)}...};
+		info = VkSpecializationInfo{
+		                 uint32_t(specialization_map.size()), specialization_map.data()
+		                 , data.size(), data.data()};
+	}
 
-	auto specialization_info() const-> const VkSpecializationInfo&;
+	auto specialization_info() const-> const VkSpecializationInfo& { return info; }
 private: // data
+	VkSpecializationInfo  info;
+	std::vector<std::byte> data;
 }; // class SpecParameters;
 
 ///

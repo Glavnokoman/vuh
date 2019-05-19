@@ -114,7 +114,7 @@ PushParameters::PushParameters(const std::byte* data, const std::size_t size_byt
 ///
 void PushParameters::push(const std::byte* data, const std::size_t size_bytes)
 {
-	std::copy_n(data, size_bytes, push_params);
+	std::copy_n(data, size_bytes, push_params.data());
 }
 
 ///
