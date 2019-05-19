@@ -44,7 +44,7 @@ void Kernel::make_cmdbuf()
 	                       , 0, nullptr // dynamic offsets
 	                       );
 
-	if(const auto& push_constants = _bind->push_constants(); not push_constants.empty()){
+	if(const auto& push_constants = _push->values(); not push_constants.empty()){
 		vkCmdPushConstants( _cmdbuf, _pipelayout, VK_SHADER_STAGE_COMPUTE_BIT, 0
 		                  , push_constants.size(), push_constants.data());
 	}
@@ -55,7 +55,7 @@ void Kernel::make_cmdbuf()
 ///
 void Kernel::init_pipeline()
 {
-	const auto ps_ranges = _bind->push_constant_ranges();
+	const auto ps_ranges = _push->ranges();
 	const auto& layout = _bind->descriptors_layout();
 	const auto layout_info = VkPipelineLayoutCreateInfo{
 	                         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr
@@ -83,7 +83,7 @@ void Kernel::init_pipeline()
 	                                  , 1, &pipeline_info, nullptr, &_pipeline));
 }
 
-///
+/// doc me
 auto read_spirv(std::string_view path)-> std::vector<std::uint32_t> {
 	auto fin = std::ifstream(path.data(), std::ios::binary | std::ios::ate);
 	if(!fin.is_open()){
