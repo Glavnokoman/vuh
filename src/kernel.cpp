@@ -25,6 +25,15 @@ Kernel::Kernel( Device& device
 	vkCreateShaderModule(device, &create_info, nullptr, &_module);
 }
 
+///
+Kernel::~Kernel() noexcept
+{
+	vkDestroyPipeline(_device, _pipeline, nullptr);
+	vkDestroyPipelineLayout(_device, _pipelayout, nullptr);
+	vkFreeCommandBuffers(_device, _cmdpool, 1, &_cmdbuf);
+	vkDestroyShaderModule(_device, _module, nullptr);
+}
+
 /// Creates command buffer based on bind, spec and grid parameters provided before
 /// Initializes pipeline if needed.
 /// In case the pipeline has been initialized previously the layout is supposed to be compatible
@@ -105,16 +114,14 @@ auto run(Kernel& k)-> void
 }
 
 ///
-PushParameters::PushParameters(const std::byte* data, const std::size_t size_bytes)
+PushParameters::PushParameters(std::size_t size_bytes)
    : push_params(size_bytes)
-{
-	push(data, size_bytes);
-}
+{}
 
 ///
-void PushParameters::push(const std::byte* data, const std::size_t size_bytes)
+void PushParameters::push(const std::byte* data)
 {
-	std::copy_n(data, size_bytes, push_params.data());
+	std::copy_n(data, push_params.size(), push_params.data());
 }
 
 ///
