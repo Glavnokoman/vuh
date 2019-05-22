@@ -30,7 +30,7 @@ Kernel::~Kernel() noexcept
 {
 	vkDestroyPipeline(_device, _pipeline, nullptr);
 	vkDestroyPipelineLayout(_device, _pipelayout, nullptr);
-	vkFreeCommandBuffers(_device, _cmdpool, 1, &_cmdbuf);
+	if(_cmdpool){ vkFreeCommandBuffers(_device, _cmdpool, 1, &_cmdbuf); }
 	vkDestroyShaderModule(_device, _module, nullptr);
 }
 
@@ -38,27 +38,27 @@ Kernel::~Kernel() noexcept
 /// Initializes pipeline if needed.
 /// In case the pipeline has been initialized previously the layout is supposed to be compatible
 /// with currently pending bind and spec parameters.
-auto Kernel::make_cmdbuf()-> void {
+auto Kernel::command_buffer(VkCommandPool pool)-> VkCommandBuffer {
+	if(_dirty && _cmdbuf){
+		VUH_CHECK(vkResetCommandBuffer(_cmdbuf, {})); // do not release associated resources, they will be reused
+		record_buffer();
+	}
 	if(not _pipeline){
+		assert(_cmdbuf == nullptr && _cmdpool == nullptr);
 		init_pipeline();
 		VUH_CHECKOUT();
+		_cmdpool = pool;
+		const auto buffer_info = VkCommandBufferAllocateInfo{
+		                         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr
+		                         , _cmdpool
+		                         , VK_COMMAND_BUFFER_LEVEL_PRIMARY
+		                         , 1  // command buffer count
+		};
+		VUH_CHECK(vkAllocateCommandBuffers(_device, &buffer_info, &_cmdbuf));
+		record_buffer();
 	}
-	// record commands
-	const auto beginInfo = VkCommandBufferBeginInfo{}; // vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-	vkBeginCommandBuffer(_cmdbuf, &beginInfo);
 
-	vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
-	vkCmdBindDescriptorSets(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, _pipelayout, 0
-	                       , 1, &_bind->descriptors_set()
-	                       , 0, nullptr // dynamic offsets
-	                       );
-
-	if(const auto& push_constants = _push->values(); not push_constants.empty()){
-		vkCmdPushConstants( _cmdbuf, _pipelayout, VK_SHADER_STAGE_COMPUTE_BIT, 0
-		                  , push_constants.size(), push_constants.data());
-	}
-	vkCmdDispatch(_cmdbuf, _grid[0], _grid[1], _grid[2]);
-	vkEndCommandBuffer(_cmdbuf);
+	return _cmdbuf;
 }
 
 ///
@@ -89,7 +89,29 @@ auto Kernel::init_pipeline()-> void {
 	                           , _pipelayout
 	                           , VkPipeline{}, 0 };
 	VUH_CHECK(vkCreateComputePipelines( _device, _device.pipeline_cache()
-	                                  , 1, &pipeline_info, nullptr, &_pipeline));
+	                                    , 1, &pipeline_info, nullptr, &_pipeline));
+}
+
+/// record command into command buffer. Resets _dirty flag to false.
+/// @pre buffer is in initial state
+/// @post buffer is in executable state
+auto Kernel::record_buffer()-> void {
+	_dirty = false;
+	const auto beginInfo = VkCommandBufferBeginInfo{}; // vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+	vkBeginCommandBuffer(_cmdbuf, &beginInfo);
+
+	vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
+	vkCmdBindDescriptorSets(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, _pipelayout, 0
+	                       , 1, &_bind->descriptors_set()
+	                       , 0, nullptr // dynamic offsets
+	                       );
+
+	if(const auto& push_constants = _push->values(); not push_constants.empty()){
+		vkCmdPushConstants( _cmdbuf, _pipelayout, VK_SHADER_STAGE_COMPUTE_BIT, 0
+		                  , push_constants.size(), push_constants.data());
+	}
+	vkCmdDispatch(_cmdbuf, _grid[0], _grid[1], _grid[2]);
+	vkEndCommandBuffer(_cmdbuf);
 }
 
 /// doc me

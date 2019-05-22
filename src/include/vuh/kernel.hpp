@@ -15,20 +15,55 @@
 
 namespace vuh {
 
+namespace detail {
+
+template<size_t N, std::size_t... I>
+auto layout_bindings( const std::array<VkDescriptorType, N>& arr
+                    , std::index_sequence<I...>
+                    )-> std::array<VkDescriptorSetLayoutBinding, N>
+{
+	return {VkDescriptorSetLayoutBinding{I, arr[I], 1, VK_SHADER_STAGE_COMPUTE_BIT}...};
+}
+
+template<size_t N, std::size_t... I>
+auto write_dscsets( VkDescriptorSet dscset
+                  , const std::array<VkDescriptorBufferInfo, N>& arr
+                  , std::index_sequence<I...>
+                  )-> std::array<VkWriteDescriptorSet, N>
+{
+	return std::array{ VkWriteDescriptorSet{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr
+	                                       , dscset, I, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
+	                                       , nullptr, &arr[I], nullptr}... };
+}
+
+///
+template<class Tup, std::size_t... I>
+auto specialization_map( const Tup& t
+                       , const std::array<std::size_t, sizeof...(I)>& sizes
+                       , std::index_sequence<I...>
+                       )-> std::array<VkSpecializationMapEntry, sizeof...(I)>
+{
+	const auto* p = reinterpret_cast<const std::byte*>(&t);
+	return std::array{ VkSpecializationMapEntry{I
+	                 , uint32_t(reinterpret_cast<const std::byte*>(&std::get<I>(t)) - p)
+	                 , sizes[I]}...};
+}
+
+} // namespace detail
+
 auto read_spirv(std::string_view path)-> std::vector<std::uint32_t>;
 
 class Device;
 
-///
+/// Helper class to handle the kernel bind parameters.
 class BindParameters {
 public:
 	template<class... Ts>
 	explicit BindParameters(VkDevice device, Ts&&... ts){
 		// create descriptors set layout
-		using indicies = std::index_sequence_for<Ts...>;
-		const auto bindings = std::array{
-		                      VkDescriptorSetLayoutBinding{ indicies{}, Ts::descriptor_class
-		                                                  , 1, VK_SHADER_STAGE_COMPUTE_BIT}...};
+		const auto bindings = detail::layout_bindings(
+		                                    std::array{VkDescriptorType{ts.descriptor_class}...}
+		                                  , std::index_sequence_for<Ts...>{});
 		const auto dsclayout_info = VkDescriptorSetLayoutCreateInfo{
 		                            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr
 		                            , {} // flags
@@ -67,10 +102,12 @@ public:
 	/// Actually bind buffer parameters to descriptor set
 	template<class... Ts>
 	auto bind(traits::DeviceBuffer<Ts>&&... ts)-> void {
-		const auto ids = std::index_sequence_for<Ts...>{};
-		const auto write_dscsets = std::array{{_dscset, ids, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
-		      , nullptr, VkDescriptorBufferInfo{ts.buffer(), ts.offset_bytes(), ts.size_bytes()}}...};
-		vkUpdateDescriptorSets(_device, 1, &write_dscsets, 0, nullptr);
+		const auto buffer_infos = std::array{
+		      VkDescriptorBufferInfo{ts.buffer(), ts.offset_bytes(), ts.size_bytes()}...};
+		const auto write_dscsets = detail::write_dscsets(_dscset, buffer_infos
+		                                                , std::index_sequence_for<Ts...>{});
+		vkUpdateDescriptorSets( _device
+		                      , uint32_t(write_dscsets.size()), write_dscsets.data(), 0, nullptr);
 	}
 
 	auto descriptors_layout() const-> VkDescriptorSetLayout {return _dsclayout;}
@@ -82,7 +119,7 @@ private:
 	VkDescriptorSet _dscset;           ///< descriptors set
 }; // class BindParameters
 
-///
+/// Helper class to handle the kernel push parameters.
 class PushParameters {
 public:
 	explicit PushParameters(std::size_t size_bytes);
@@ -94,22 +131,20 @@ private: // data
 	std::vector<std::byte> push_params; ///< bitwise copy of push parameters struct
 }; // class PushParameters
 
-///
+/// Helper class to hande kernel specialization parameters.
 class SpecParameters {
 public:
 	template<class... Ts>
 	explicit SpecParameters(Ts&&... ts) {
 		const auto tmp = std::tuple(ts...);
-		constexpr auto* p = reinterpret_cast<const std::byte*>(&tmp);
+		const auto* p = reinterpret_cast<const std::byte*>(&tmp);
 		data = std::vector<std::byte>(p, p + sizeof(tmp));
-		const auto idx = std::index_sequence_for<Ts...>{};
-		const auto specialization_map = std::vector{
-		    VkSpecializationMapEntry{ idx
-		                            , reinterpret_cast<const std::byte*>(&std::get<idx>(tmp)) - p
-	                               , sizeof(ts)}...};
-		info = VkSpecializationInfo{
-		                 uint32_t(specialization_map.size()), specialization_map.data()
-		                 , data.size(), data.data()};
+		const auto specialization_map = detail::specialization_map(
+		                                     tmp
+		                                   , std::array<size_t, sizeof...(Ts)>{{sizeof(ts)}...}
+		                                   , std::index_sequence_for<Ts...>{});
+		info = VkSpecializationInfo{ uint32_t(specialization_map.size()), specialization_map.data()
+		                           , data.size(), data.data()};
 	}
 
 	auto specialization_info() const-> const VkSpecializationInfo& { return info; }
@@ -126,7 +161,9 @@ public:
 
 	~Kernel() noexcept;
 
-	///
+	/// Bind buffer (in-out) parameters to the kernel. Can be done multiple times during the
+	/// lifetime of the kernel. Causes the command buffer overwrite next time the kernel is queued
+	/// for execution. Must correspond exactly to bind interface as defined by the kernel spir-v code.
 	template<class... Ts> auto bind(traits::DeviceBuffer<Ts>&&... ts)-> Kernel& {
 		_dirty = true;
 		if(not _bind){
@@ -136,7 +173,9 @@ public:
 		return *this;
 	}
 
-	///
+	/// Set push constants of the kernel. Can be done multiple times during the lifetime of the kernel.
+	/// Causes the command buffer overwrite next time the kernel is queued for execution.
+	/// Must correspond exactly to push constants interface as defined by the kernel spir-v code.
 	template<class P> auto push(const P& p)-> Kernel& {
 		_dirty = true;
 		if(not _push){
@@ -146,20 +185,22 @@ public:
 		return *this;
 	}
 
-	///
+	/// Set specification constants of the kernel. Can only be done once, before the first kernel run.
+	/// Must correspond exactly to specialization constant interface defined in the spir-v code.
 	template<class... Ts> auto spec(Ts&&... ts)-> Kernel& {
 		assert(not _spec);
 		_spec = std::make_unique<SpecParameters>(std::forward<Ts>(ts)...);
 		return *this;
 	}
 
-	///
+	/// set the computation grid dimensions (number of workgroups to run)
 	auto grid(std::array<std::uint32_t, 3> dim)-> Kernel& { _grid = dim; return *this; }
 
-	auto make_cmdbuf()-> void;
+	auto command_buffer(VkCommandPool pool)-> VkCommandBuffer;
 
 private: // helpers
 	auto init_pipeline()-> void;
+	auto record_buffer()-> void;
 
 private: // data
 	VkShaderModule _module;
@@ -175,7 +216,7 @@ private: // data
 	std::unique_ptr<PushParameters> _push;
 	std::unique_ptr<SpecParameters> _spec;
 	std::array<uint32_t, 3> _grid;     ///< 3D computation grid dimensions (number of workgroups to run)
-	bool _dirty;                       ///< doc me
+	bool _dirty;                       ///< flag to indicate the pending writes to command buffer
 }; // class Kernel
 
 ///
