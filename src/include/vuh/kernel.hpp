@@ -41,12 +41,12 @@ template<class Tup, std::size_t... I>
 auto specialization_map( const Tup& t
                        , const std::array<std::size_t, sizeof...(I)>& sizes
                        , std::index_sequence<I...>
-                       )-> std::array<VkSpecializationMapEntry, sizeof...(I)>
+                       )-> std::vector<VkSpecializationMapEntry>
 {
 	const auto* p = reinterpret_cast<const std::byte*>(&t);
-	return std::array{ VkSpecializationMapEntry{I
-	                 , uint32_t(reinterpret_cast<const std::byte*>(&std::get<I>(t)) - p)
-	                 , sizes[I]}...};
+	return std::vector{ VkSpecializationMapEntry{I
+	                  , uint32_t(reinterpret_cast<const std::byte*>(&std::get<I>(t)) - p)
+	                  , sizes[I]}...};
 }
 
 } // namespace detail
@@ -59,7 +59,7 @@ class Device;
 class BindParameters {
 public:
 	template<class... Ts>
-	explicit BindParameters(VkDevice device, Ts&&... ts){
+	explicit BindParameters(VkDevice device, Ts&&... ts): _device(device) {
 		// create descriptors set layout
 		const auto bindings = detail::layout_bindings(
 		                                    std::array{VkDescriptorType{ts.descriptor_class}...}
@@ -139,17 +139,17 @@ public:
 		const auto tmp = std::tuple(ts...);
 		const auto* p = reinterpret_cast<const std::byte*>(&tmp);
 		data = std::vector<std::byte>(p, p + sizeof(tmp));
-		const auto specialization_map = detail::specialization_map(
-		                                     tmp
-		                                   , std::array<size_t, sizeof...(Ts)>{{sizeof(ts)}...}
-		                                   , std::index_sequence_for<Ts...>{});
-		info = VkSpecializationInfo{ uint32_t(specialization_map.size()), specialization_map.data()
-		                           , data.size(), data.data()};
+		specialization_map = detail::specialization_map( tmp
+		                                         , std::array<size_t, sizeof...(Ts)>{{sizeof(ts)}...}
+		                                         , std::index_sequence_for<Ts...>{});
 	}
 
-	auto specialization_info() const-> const VkSpecializationInfo& { return info; }
+	auto specialization_info() const-> VkSpecializationInfo {
+		return VkSpecializationInfo{ uint32_t(specialization_map.size()), specialization_map.data()
+		                           , data.size(), data.data()};
+; }
 private: // data
-	VkSpecializationInfo  info;
+	std::vector<VkSpecializationMapEntry> specialization_map;
 	std::vector<std::byte> data;
 }; // class SpecParameters;
 

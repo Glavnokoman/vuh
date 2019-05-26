@@ -15,6 +15,8 @@ Kernel::Kernel( Device& device
               , VkShaderModuleCreateFlags flags)
    : _entry_point(std::move(entry_point))
    , _device{device}
+   , _cmdbuf{nullptr}
+   , _pipeline{nullptr}
 {
 	const auto code = read_spirv(source);
 	const auto create_info = VkShaderModuleCreateInfo {
@@ -22,7 +24,7 @@ Kernel::Kernel( Device& device
 	                         , flags
 	                         , code.size()*sizeof(std::uint32_t)
 	                         , code.data() };
-	vkCreateShaderModule(device, &create_info, nullptr, &_module);
+	VUH_CHECK(vkCreateShaderModule(device, &create_info, nullptr, &_module));
 }
 
 ///
@@ -74,14 +76,14 @@ auto Kernel::init_pipeline()-> void {
 
 	VUH_CHECK(vkCreatePipelineLayout(_device, &layout_info, nullptr, &_pipelayout));
 
-	const auto* spec_info = _spec ? &_spec->specialization_info() : nullptr;
+	const auto spec_info = _spec->specialization_info();
 	const auto stage_info = VkPipelineShaderStageCreateInfo{
 	                        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr
 	                        , {} // flags
 	                        , VK_SHADER_STAGE_COMPUTE_BIT
 	                        , _module
 	                        , _entry_point.c_str()
-	                        , spec_info };
+	                        , &spec_info };
 	const auto pipeline_info = VkComputePipelineCreateInfo{
 	                           VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, nullptr
 	                           , {}
@@ -97,8 +99,11 @@ auto Kernel::init_pipeline()-> void {
 /// @post buffer is in executable state
 auto Kernel::record_buffer()-> void {
 	_dirty = false;
-	const auto beginInfo = VkCommandBufferBeginInfo{}; // vk::CommandBufferUsageFlagBits::eOneTimeSubmit
-	vkBeginCommandBuffer(_cmdbuf, &beginInfo);
+	const auto begin_info = VkCommandBufferBeginInfo{
+	                  VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr
+	                  , {} // usage flags
+	                  , nullptr};
+	vkBeginCommandBuffer(_cmdbuf, &begin_info);
 
 	vkCmdBindPipeline(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
 	vkCmdBindDescriptorSets(_cmdbuf, VK_PIPELINE_BIND_POINT_COMPUTE, _pipelayout, 0
