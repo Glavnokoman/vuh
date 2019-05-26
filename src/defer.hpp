@@ -8,6 +8,9 @@ template<class Deleter>
 struct Deferred {
 	explicit Deferred(Deleter d): _d(std::move(d)){}
 	~Deferred(){ _d(); }
+
+	Deferred(const Deferred&)=delete;
+	auto operator= (const Deferred&)->Deferred& =delete;
 private: // data
 	Deleter _d;
 };

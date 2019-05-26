@@ -194,10 +194,11 @@ public:
 	}
 
 	/// set the computation grid dimensions (number of workgroups to run)
-	auto grid(std::array<std::uint32_t, 3> dim)-> Kernel& { _grid = dim; return *this; }
+	auto grid(std::array<std::uint32_t, 3> dim)-> Kernel& {_dirty = true; _grid = dim; return *this; }
 
-	auto command_buffer(VkCommandPool pool)-> VkCommandBuffer;
+	auto command_buffer(VkCommandPool pool)-> const VkCommandBuffer&;
 
+	auto device() const-> vuh::Device& { return _device; }
 private: // helpers
 	auto init_pipeline()-> void;
 	auto record_buffer()-> void;
@@ -218,8 +219,4 @@ private: // data
 	std::array<uint32_t, 3> _grid;     ///< 3D computation grid dimensions (number of workgroups to run)
 	bool _dirty;                       ///< flag to indicate the pending writes to command buffer
 }; // class Kernel
-
-///
-auto run(Kernel& k)-> void;
-inline auto run(std::array<uint32_t, 3> grid, Kernel& k)-> void { k.grid(grid); run(k); }
 } // namespace vuh

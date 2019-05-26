@@ -38,7 +38,7 @@ Kernel::~Kernel() noexcept
 /// Initializes pipeline if needed.
 /// In case the pipeline has been initialized previously the layout is supposed to be compatible
 /// with currently pending bind and spec parameters.
-auto Kernel::command_buffer(VkCommandPool pool)-> VkCommandBuffer {
+auto Kernel::command_buffer(VkCommandPool pool)-> const VkCommandBuffer& {
 	if(_dirty && _cmdbuf){
 		VUH_CHECK(vkResetCommandBuffer(_cmdbuf, {})); // do not release associated resources, they will be reused
 		record_buffer();
@@ -127,12 +127,6 @@ auto read_spirv(std::string_view path)-> std::vector<std::uint32_t> {
 	std::copy( std::istreambuf_iterator<char>(fin), std::istreambuf_iterator<char>()
 	         , reinterpret_cast<char*>(ret.data()));
 	return ret;
-}
-
-///
-auto run(Kernel& k)-> void
-{
-	throw "not implemented";
 }
 
 ///

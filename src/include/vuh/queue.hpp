@@ -2,24 +2,38 @@
 
 #include <vulkan/vulkan.h>
 
+#include <array>
 #include <cstdint>
+#include <list>
+#include <memory>
 #include <vector>
 
 namespace vuh {
 
+struct SubmitData {
+	std::vector<VkSemaphore> wait_for;
+	std::vector<VkPipelineStageFlags> stage_flags;
+	VkCommandBuffer cmd_buf; ///< Owning handle to comamnd buffer. Only command buffers owned by submit data (transfer operations) are recorded here. The buffers owned by external objects are recorded directly to submit info.
+}; // struct SubmitData
+
+class Queue;
+
 ///
-class Submission{
-public:
+struct Pipeline {
+	explicit Pipeline(Queue& queue): queue{queue}{}
+	auto submit()-> void;
 
-//	auto run()-> Submission;
-//	auto cb()-> Submission; // set compute barrier
-// auto tb()-> Submission; // set transfer barrier
+	~Pipeline() noexcept;
+	// nocopy - move only
 
-private:
-	VkDevice _device; ///< non-owning
-	VkQueue  _queue;  ///< non-owning
-	std::vector<VkSubmitInfo> _submits;
+	Queue& queue; ///< non-owning handle to the queue used to create the pipeline.
+	VkFence fence = nullptr; ///< non-owning?
+	std::vector<VkSubmitInfo> submit_infos;
+	std::list<SubmitData>   submit_data; ///< holds the data which pointed to by submit infos structures
+	std::vector<VkSemaphore>  semaphores_outstanding; ///< signifies the set of wait semaphores for the next submission
 }; // class Submission
+
+class Kernel;
 
 /// Queue in a context of a compute device
 class Queue {
@@ -41,14 +55,24 @@ public:
 	}
 
 	///
-	auto run()-> Submission {
+	auto run(Kernel&)-> Queue&;
+//	auto qb()-> SemaphoreProxy;
+//	auto hb()-> Fence;
+//	release_pipeline()-> Pipeline;
 
-	}
+	operator VkQueue() const { return _handle; }
+	auto device() const-> VkDevice { return _device; }
+
+	auto submit()-> void;
+	auto waitIdle() const-> void;
 private:
 	VkQueue _handle;              ///< owned queue handle
 	VkDevice _device;             ///< non-owned logical device handle containing the queue and other stuff
 	VkCommandPool _command_pool;  ///< non-owned command pool handle. command pool should correspond to the queue family to which the queue handle belongs
+	std::unique_ptr<Pipeline> _submission;
 	std::uint32_t _family_id;     ///< queue family id. Needed here?
 }; // struct Queue
+
+auto run(Kernel& k)-> void;
 
 } // namespace vuh
