@@ -76,7 +76,7 @@ public:
 		const auto descriptor_sizes = std::array<VkDescriptorPoolSize, 1>{{sbo_descriptors_size}};
 		const auto pool_info = VkDescriptorPoolCreateInfo{
 		                       VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr
-		                       , {} // flags
+		                       , VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT // flags
 		                       , 1
 		                       , uint32_t(descriptor_sizes.size()), descriptor_sizes.data() };
 		VUH_CHECK(vkCreateDescriptorPool(device, &pool_info, nullptr, &_dscpool));

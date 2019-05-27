@@ -14,9 +14,10 @@ Kernel::Kernel( Device& device
               , std::string entry_point
               , VkShaderModuleCreateFlags flags)
    : _entry_point(std::move(entry_point))
-   , _device{device}
    , _cmdbuf{nullptr}
+   , _cmdpool{nullptr}
    , _pipeline{nullptr}
+   , _device{device}
 {
 	const auto code = read_spirv(source);
 	const auto create_info = VkShaderModuleCreateInfo {
