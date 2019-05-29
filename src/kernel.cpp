@@ -115,7 +115,8 @@ auto Kernel::init_pipeline()-> void {
 
 	VUH_CHECK(vkCreatePipelineLayout(_device, &layout_info, nullptr, &_pipelayout));
 
-	const auto spec_info = _spec->specialization_info();
+	const auto spec_info = _spec ? _spec->specialization_info()
+	                             : VkSpecializationInfo{0, nullptr, 0, nullptr};
 	const auto stage_info = VkPipelineShaderStageCreateInfo{
 	                        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr
 	                        , {} // flags
@@ -149,8 +150,9 @@ auto Kernel::record_buffer()-> void {
 	                       , 1, &_bind->descriptors_set()
 	                       , 0, nullptr // dynamic offsets
 	                       );
-
-	if(const auto& push_constants = _push->values(); not push_constants.empty()){
+	if(_push){
+		const auto& push_constants = _push->values();
+		assert(not push_constants.empty());
 		vkCmdPushConstants( _cmdbuf, _pipelayout, VK_SHADER_STAGE_COMPUTE_BIT, 0
 		                  , push_constants.size(), push_constants.data());
 	}

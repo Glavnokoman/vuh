@@ -44,26 +44,26 @@ auto Queue::copy_sync( VkBuffer src
 
 /// Enques the fully bound kernel for execution in the given queue.
 auto Queue::run(Kernel& k)-> Queue& {
-	if(not _submission){
-		_submission = std::make_unique<Pipeline>(*this);
+	if(not _pipeline){
+		_pipeline = std::make_unique<Pipeline>(*this);
 	}
-	_submission->submit_data.emplace_back(SubmitData{
-	                   _submission->semaphores_outstanding
-	                 , std::vector<VkPipelineStageFlags>( _submission->semaphores_outstanding.size()
+	_pipeline->submit_data.emplace_back(SubmitData{
+	                   _pipeline->semaphores_outstanding
+	                 , std::vector<VkPipelineStageFlags>( _pipeline->semaphores_outstanding.size()
 	                                                    , VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT)
 	                 , nullptr /*cmdbuf is owned by the compute kernel*/
 	                 });
 	const auto& cmdbuf = k.command_buffer(_command_pool);
 	auto submit_info = VkSubmitInfo{
 	                   VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr
-	                   , uint32_t(_submission->submit_data.back().wait_for.size())
-	                   , _submission->submit_data.back().wait_for.data()
-	                   , _submission->submit_data.back().stage_flags.data()
+	                   , uint32_t(_pipeline->submit_data.back().wait_for.size())
+	                   , _pipeline->submit_data.back().wait_for.data()
+	                   , _pipeline->submit_data.back().stage_flags.data()
 	                   , 1, &cmdbuf
 	                   , 0, nullptr // signalling semaphores, not defined at this stage
 	};
-	_submission->submit_infos.push_back(submit_info); // @bug: all pointers in the submit_info will be invalid by the time it is actually used.
-	_submission->semaphores_outstanding.clear();
+	_pipeline->submit_infos.push_back(submit_info); // @bug: all pointers in the submit_info will be invalid by the time it is actually used.
+	_pipeline->semaphores_outstanding.clear();
 
 	return *this;
 }
@@ -80,9 +80,14 @@ Pipeline::~Pipeline() noexcept {
 	}
 }
 
-
-///
-auto Queue::submit()-> void { _submission->submit(); }
+/// Submits currently assembled pipeline for execution.
+/// Blocks till queue becomes idle. Discards the pipeline.
+auto Queue::submit()-> void {
+	_pipeline->submit();
+	const auto err = vkQueueWaitIdle(_handle);
+	_pipeline = nullptr;
+	VUH_CHECK(err);
+}
 
 ///
 auto Queue::waitIdle() const-> void { VUH_CHECK(vkQueueWaitIdle(_handle)); }
@@ -93,7 +98,6 @@ auto run(Kernel& k)-> void {
 	auto& que = k.device().default_compute();
 	que.run(k);
 	que.submit();
-	que.waitIdle();
 }
 
 } // namespace vuh

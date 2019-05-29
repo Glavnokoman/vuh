@@ -69,7 +69,7 @@ private:
 	VkQueue _handle;              ///< owned queue handle
 	VkDevice _device;             ///< non-owned logical device handle containing the queue and other stuff
 	VkCommandPool _command_pool;  ///< non-owned command pool handle. command pool should correspond to the queue family to which the queue handle belongs
-	std::unique_ptr<Pipeline> _submission;
+	std::unique_ptr<Pipeline> _pipeline; ///< computation pipeline assembled for submission in current queue
 	std::uint32_t _family_id;     ///< queue family id. Needed here?
 }; // struct Queue
 
