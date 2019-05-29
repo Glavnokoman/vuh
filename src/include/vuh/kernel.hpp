@@ -96,7 +96,7 @@ public:
 		vkDestroyDescriptorPool(_device, _dscpool, nullptr);
 	}
 
-	BindParameters(const BindParameters&)=delete;
+    BindParameters(const BindParameters&)=delete; // useless? Bind is only used as a unique_ptr.
 	auto operator= (const BindParameters&)->BindParameters& = delete;
 
 	/// Actually bind buffer parameters to descriptor set
@@ -160,6 +160,11 @@ public:
 	               , std::string entry_point="main", VkShaderModuleCreateFlags flags={});
 
 	~Kernel() noexcept;
+
+    Kernel(const Kernel&)=delete;
+    auto operator= (const Kernel&)->Kernel& =delete;
+    Kernel(Kernel&&) noexcept;
+    auto operator= (Kernel&&) noexcept-> Kernel&;
 
 	/// Bind buffer (in-out) parameters to the kernel. Can be done multiple times during the
 	/// lifetime of the kernel. Causes the command buffer overwrite next time the kernel is queued

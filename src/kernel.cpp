@@ -23,7 +23,7 @@ Kernel::Kernel( Device& device
 	const auto create_info = VkShaderModuleCreateInfo {
 	                         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr
 	                         , flags
-	                         , code.size()*sizeof(std::uint32_t)
+                             , code.size()*sizeof(decltype(code)::value_type) // byte size
 	                         , code.data() };
 	VUH_CHECK(vkCreateShaderModule(device, &create_info, nullptr, &_module));
 }
@@ -35,6 +35,44 @@ Kernel::~Kernel() noexcept
 	vkDestroyPipelineLayout(_device, _pipelayout, nullptr);
 	if(_cmdpool){ vkFreeCommandBuffers(_device, _cmdpool, 1, &_cmdbuf); }
 	vkDestroyShaderModule(_device, _module, nullptr);
+}
+
+///
+Kernel::Kernel(Kernel&& other) noexcept
+    : _module{other._module}
+    , _entry_point{std::move(other._entry_point)}
+    , _cmdbuf{other._cmdbuf}
+    , _cmdpool{other._cmdpool}
+    , _pipelayout{other._pipelayout}
+    , _pipeline{other._pipeline}
+    , _device{other._device}
+    , _bind{std::move(other._bind)}
+    , _push{std::move(other._push)}
+    , _spec{std::move(other._spec)}
+    , _grid{std::move(other._grid)}
+    , _dirty{other._dirty}
+{
+    other._cmdbuf = nullptr;
+    other._pipelayout = nullptr;
+    other._pipeline = nullptr;
+    other._dirty = false;
+}
+
+///
+auto Kernel::operator=(Kernel&& other) noexcept-> Kernel& {
+    assert(_device == other._device);
+    std::swap(_module, other._module);
+    std::swap(_entry_point, other._entry_point);
+    std::swap(_cmdbuf, other._cmdbuf);
+    std::swap(_cmdpool, other._cmdpool);
+    std::swap(_pipelayout, other._pipelayout);
+    std::swap(_pipeline, other._pipeline);
+    std::swap(_bind, other._bind);
+    std::swap(_push, other._push);
+    std::swap(_spec, other._spec);
+    std::swap(_grid, other._grid);
+    std::swap(_dirty, other._dirty);
+    return *this;
 }
 
 /// Creates command buffer based on bind, spec and grid parameters provided before
