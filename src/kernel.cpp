@@ -49,7 +49,7 @@ Kernel::Kernel(Kernel&& other) noexcept
     , _bind{std::move(other._bind)}
     , _push{std::move(other._push)}
     , _spec{std::move(other._spec)}
-    , _grid{std::move(other._grid)}
+    , _grid{other._grid}
     , _dirty{other._dirty}
 {
     other._cmdbuf = nullptr;

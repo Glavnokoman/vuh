@@ -199,7 +199,12 @@ public:
 	}
 
 	/// set the computation grid dimensions (number of workgroups to run)
-	auto grid(std::array<std::uint32_t, 3> dim)-> Kernel& {_dirty = true; _grid = dim; return *this; }
+	auto grid(std::array<std::uint32_t, 3> dim)-> Kernel& {
+		_dirty = true;
+		for(auto& x: dim) { if(x == 0){x = 1;} }
+		_grid = dim;
+		return *this;
+	}
 
 	auto command_buffer(VkCommandPool pool)-> const VkCommandBuffer&;
 
