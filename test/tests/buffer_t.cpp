@@ -13,16 +13,19 @@
 using std::begin;
 using std::end;
 
-TEST_CASE("array with memory directly allocated from device", "[buffer]"){
-	constexpr auto arr_size = size_t(128);
-	const auto host_data = std::vector<float>(arr_size, 3.14f);
-	const auto host_data_doubled = [h = host_data]()mutable {
-		for(auto& x: h){x *= 2.0f;}
-		return h;
-	}();
+namespace {
+constexpr auto arr_size = size_t(128);
+const auto host_data = std::vector<float>(arr_size, 3.14f);
+const auto host_data_doubled = [h = host_data]()mutable {
+	for(auto& x: h){x *= 2.0f;}
+	return h;
+}();
 
-	auto instance = vuh::Instance();
-	auto device = vuh::Device(instance);
+auto instance = vuh::Instance();
+auto device = vuh::Device(instance);
+} // namespace
+
+TEST_CASE("array with memory directly allocated from device", "[buffer]"){
 
 	SECTION("device-only memory"){
 		auto buf = vuh::Buffer<float, vuh::mem::DeviceOnly>(device, arr_size);
