@@ -9,20 +9,23 @@
 #include <vector>
 
 namespace vuh {
+class Kernel;
+class Queue;
 
+///
 struct SubmitData {
 	std::vector<VkSemaphore> wait_for; ///< non-owning
 	std::vector<VkPipelineStageFlags> stage_flags;
 	VkCommandBuffer cmd_buf; ///< Owning handle to comamnd buffer. Only command buffers owned by submit data (transfer operations) are recorded here. The buffers owned by external objects are recorded directly to submit info.
 }; // struct SubmitData
 
-class Queue;
-
-///
+/// doc me. this one is kinda important.
 struct Pipeline {
 	explicit Pipeline(Queue& queue): queue{queue}{}
 	auto submit()-> void;
 	auto set_fence()-> void;
+	auto push_data(SubmitData data)-> void;
+	auto push_data(SubmitData data, const VkCommandBuffer& buf)-> void;
 
 	~Pipeline();
 	// nocopy - move only
@@ -30,9 +33,9 @@ struct Pipeline {
 	Queue& queue; ///< non-owning handle to the queue used to create the pipeline.
 	VkFence fence = nullptr; ///< owning!
 	std::vector<VkSubmitInfo> submit_infos;
-	std::list<SubmitData>   submit_data;       ///< holds the data which pointed to by submit infos structures
-	std::vector<VkSemaphore> semaphores_owned; ///< semaphores owned by the pipeline. For some semaphores ownership could have been transferred to outside objects, those should not be contained here.
-	std::vector<VkSemaphore>  semaphores_outstanding; ///< signifies the set of wait semaphores for the next submission
+	std::list<SubmitData>     submit_data;            ///< holds the data which pointed to by submit infos structures
+	std::vector<VkSemaphore>  semaphores_owned;       ///< semaphores owned by the pipeline. For some semaphores ownership could have been transferred to outside objects, those should not be contained here.
+	std::vector<VkSemaphore>  semaphores_outstanding; ///< signifies the set of wait semaphores for the next submission. @todo: move it to the Queue where it actually belongs.
 }; // class Submission
 
 ///
@@ -43,8 +46,6 @@ public:
 private:
 	std::unique_ptr<Pipeline> _pipeline;
 }; // struct SyncTokenHost
-
-class Kernel;
 
 /// Queue in a context of a compute device
 class Queue {
@@ -57,12 +58,16 @@ public:
 	   : _handle(handle), _device(device), _command_pool(command_pool), _family_id(family_id)
 	{}
 
-	auto copy_sync( VkBuffer src, VkBuffer dst, std::size_t size_bytes
-	              , std::size_t src_offset=0u, std::size_t dst_offset=0u)-> void;
+//	auto copy_sync( VkBuffer src, VkBuffer dst, std::size_t size_bytes
+//	              , std::size_t src_offset=0u, std::size_t dst_offset=0u)-> void;
+
+	auto copy( VkBuffer src, VkBuffer dst, std::size_t size_bytes
+	         , std::size_t src_offset=0u, std::size_t dst_offset=0u)-> Queue&;
 
 	template<class BufIn, class BufOut>
-	auto copy_sync(const BufIn& src, BufOut& dst){
-		copy_sync(src.buffer(), dst.buffer(), src.size_bytes(), src.offset_bytes(), dst.offset_bytes());
+	auto copy(const BufIn& src, BufOut& dst)-> Queue& {
+		return copy( src.buffer(), dst.buffer()
+		           , src.size_bytes(), src.offset_bytes(), dst.offset_bytes());
 	}
 
 	///

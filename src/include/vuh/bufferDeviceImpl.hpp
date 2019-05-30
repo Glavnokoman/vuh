@@ -28,7 +28,7 @@ BufferDevice<T, Alloc>::BufferDevice( const Device& device
 		using stage_t = BufferHost<T, AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage_buffer = stage_t(device, count, value);
 		VUH_CHECKOUT();
-		device.default_transfer().copy_sync(stage_buffer, *this);
+		device.default_transfer().copy(stage_buffer, *this).submit();
 	}
 }
 
@@ -51,7 +51,7 @@ BufferDevice<T, Alloc>::BufferDevice( const Device& device  ///< device to creat
 		using stage_t = BufferHost<T, AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage_buffer = stage_t(device, first, last);
 		VUH_CHECKOUT();
-		device.default_transfer().copy_sync(stage_buffer, *this);
+		device.default_transfer().copy(stage_buffer, *this).submit();
 	}
 }
 
@@ -74,7 +74,7 @@ BufferDevice<T, Alloc>::BufferDevice(
 		using stage_t = BufferHost<T, AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage_buffer = stage_t(Base::_device, first, last, fun);
 		VUH_CHECKOUT();
-		device.default_transfer().copy_sync(stage_buffer, *this);
+		device.default_transfer().copy(stage_buffer, *this).submit();
 	}
 }
 

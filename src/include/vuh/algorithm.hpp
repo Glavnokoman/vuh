@@ -16,20 +16,20 @@ namespace vuh {
 /// using the default transfer queue of the device to which the buffer belongs.
 /// @todo add traits check for Buffer template parameter
 template<class DeviceData_t, class OutputIt>
-auto copy(const DeviceData_t& ddata, OutputIt dst)-> OutputIt {
-	if(ddata.host_visible()){
-		auto hd = ddata.host_data();
+auto copy(const DeviceData_t& data, OutputIt dst)-> OutputIt {
+	if(data.host_visible()){
+		auto hd = data.host_data();
 		std::copy(std::begin(hd), std::end(hd), dst);
 	} else {
 		using Stage = BufferHost< typename DeviceData_t::value_type
 		                        , AllocatorDevice<allocator::traits::HostCached>>;
-		auto stage = Stage(ddata.device(), ddata.size());
+		auto stage = Stage(data.device(), data.size());
 		VUH_CHECKOUT_RET(dst);
-		ddata.device().default_transfer().copy_sync(ddata, stage);
+		data.device().default_transfer().copy(data, stage).submit();
 		VUH_CHECKOUT_RET(dst);
 		std::copy(std::begin(stage), std::end(stage), dst);
 	}
-	return std::next(dst, ddata.size());
+	return std::next(dst, data.size());
 }
 
 /// Synchronous copy of the data from host range to device buffer
@@ -46,7 +46,7 @@ auto copy(InputIt first, InputIt last, DeviceData_t& buf)-> void {
 		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage = Stage(buf.device(), first, last);
 		VUH_CHECKOUT();
-		buf.device().default_transfer().copy_sync(stage, buf);
+		buf.device().default_transfer().copy(stage, buf).submit();
 	}
 }
 
@@ -61,7 +61,7 @@ auto transform(const DeviceData_t& buf, OutputIt first, F&& f)-> OutputIt {
 		                        , AllocatorDevice<allocator::traits::HostCached>>;
 		auto stage = Stage(buf.device(), buf.size());
 		VUH_CHECKOUT_RET(first);
-		buf.device().default_transfer().copy_sync(buf, stage);
+		buf.device().default_transfer().copy(buf, stage).submit();
 		VUH_CHECKOUT_RET(first);
 		std::transform(std::begin(stage), std::end(stage), first, std::forward<F>(f));
 	}
@@ -80,7 +80,7 @@ auto transform(InputIt first, InputIt last, DeviceData_t& buf, F&& f)-> void {
 		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage = Stage(buf.device(), first, last, std::forward<F>(f));
 		VUH_CHECKOUT();
-		buf.device().default_transfer().copy_sync(stage, buf);
+		buf.device().default_transfer().copy(stage, buf).submit();
 	}
 }
 
