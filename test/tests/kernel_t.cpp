@@ -100,3 +100,7 @@ TEST_CASE("test kernel execution", "[kernel][sync]"){
 		}
 	}
 }
+
+TEST_CASE("async kernel execution with host synchronization", "[kernel][host_async]"){
+
+}

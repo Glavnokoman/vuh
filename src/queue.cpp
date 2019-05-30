@@ -62,10 +62,28 @@ auto Queue::run(Kernel& k)-> Queue& {
 	                   , 1, &cmdbuf
 	                   , 0, nullptr // signalling semaphores, not defined at this stage
 	};
-	_pipeline->submit_infos.push_back(submit_info); // @bug: all pointers in the submit_info will be invalid by the time it is actually used.
+	_pipeline->submit_infos.push_back(submit_info);
 	_pipeline->semaphores_outstanding.clear();
 
 	return *this;
+}
+
+///
+auto Queue::release_pipeline()-> std::unique_ptr<Pipeline> {
+	return std::move(_pipeline);
+}
+
+///
+auto Queue::waitIdle() const-> void { VUH_CHECK(vkQueueWaitIdle(_handle)); }
+
+///
+auto Queue::hb()-> SyncTokenHost {
+	_pipeline->set_fence();
+	VUH_CHECKOUT_RET(SyncTokenHost(nullptr));
+
+	_pipeline->submit();
+	VUH_CHECKOUT_RET(SyncTokenHost(nullptr));
+	return SyncTokenHost(std::move(_pipeline));
 }
 
 ///
@@ -74,10 +92,23 @@ auto Pipeline::submit()-> void {
 }
 
 ///
-Pipeline::~Pipeline() noexcept {
+auto Pipeline::set_fence()-> void {
+	const auto fence_info = VkFenceCreateInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, {}};
+	VUH_CHECK(vkCreateFence(queue.device(), &fence_info, nullptr, &fence));
+}
+
+/// @throws
+Pipeline::~Pipeline() {
+	auto err = VK_SUCCESS;
 	if(fence) {
+		err = vkWaitForFences(queue.device(), 1, &fence, VK_TRUE, uint64_t(-1));
 		vkDestroyFence(queue.device(), fence, nullptr);
+		fence = nullptr;
 	}
+	for(auto& s: semaphores_owned){
+		vkDestroySemaphore(queue.device(), s, nullptr);
+	}
+	VUH_CHECK(err);
 }
 
 /// Submits currently assembled pipeline for execution.
@@ -89,9 +120,6 @@ auto Queue::submit()-> void {
 	VUH_CHECK(err);
 }
 
-///
-auto Queue::waitIdle() const-> void { VUH_CHECK(vkQueueWaitIdle(_handle)); }
-
 /// Run the fully specified kernel in the default compute queue of kernel device synchronously.
 /// Wait for completion.
 auto run(Kernel& k)-> void {
@@ -100,4 +128,10 @@ auto run(Kernel& k)-> void {
 	que.submit();
 }
 
+///
+auto run_async(Kernel& k)-> SyncTokenHost {
+	auto& que = k.device().default_compute();
+	que.run(k);
+	return que.hb();
+}
 } // namespace vuh

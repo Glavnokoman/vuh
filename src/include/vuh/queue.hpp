@@ -11,7 +11,7 @@
 namespace vuh {
 
 struct SubmitData {
-	std::vector<VkSemaphore> wait_for;
+	std::vector<VkSemaphore> wait_for; ///< non-owning
 	std::vector<VkPipelineStageFlags> stage_flags;
 	VkCommandBuffer cmd_buf; ///< Owning handle to comamnd buffer. Only command buffers owned by submit data (transfer operations) are recorded here. The buffers owned by external objects are recorded directly to submit info.
 }; // struct SubmitData
@@ -22,16 +22,27 @@ class Queue;
 struct Pipeline {
 	explicit Pipeline(Queue& queue): queue{queue}{}
 	auto submit()-> void;
+	auto set_fence()-> void;
 
-	~Pipeline() noexcept;
+	~Pipeline();
 	// nocopy - move only
 
 	Queue& queue; ///< non-owning handle to the queue used to create the pipeline.
-	VkFence fence = nullptr; ///< non-owning?
+	VkFence fence = nullptr; ///< owning!
 	std::vector<VkSubmitInfo> submit_infos;
-	std::list<SubmitData>   submit_data; ///< holds the data which pointed to by submit infos structures
+	std::list<SubmitData>   submit_data;       ///< holds the data which pointed to by submit infos structures
+	std::vector<VkSemaphore> semaphores_owned; ///< semaphores owned by the pipeline. For some semaphores ownership could have been transferred to outside objects, those should not be contained here.
 	std::vector<VkSemaphore>  semaphores_outstanding; ///< signifies the set of wait semaphores for the next submission
 }; // class Submission
+
+///
+class SyncTokenHost {
+public:
+	explicit SyncTokenHost(std::unique_ptr<Pipeline> pipeline): _pipeline(std::move(pipeline)) {}
+	auto wait()-> void { _pipeline = nullptr; }
+private:
+	std::unique_ptr<Pipeline> _pipeline;
+}; // struct SyncTokenHost
 
 class Kernel;
 
@@ -56,9 +67,9 @@ public:
 
 	///
 	auto run(Kernel&)-> Queue&;
-//	auto qb()-> SemaphoreProxy;
-//	auto hb()-> Fence;
-//	release_pipeline()-> Pipeline;
+//	auto qb()-> SyncTokenQueue;
+	auto hb()-> SyncTokenHost;
+	auto release_pipeline()-> std::unique_ptr<Pipeline>;
 
 	operator VkQueue() const { return _handle; }
 	auto device() const-> VkDevice { return _device; }
