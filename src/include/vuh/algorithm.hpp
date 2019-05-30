@@ -12,9 +12,8 @@
 
 namespace vuh {
 
-/// Synchronous copy of the data from the buffer to host iterable
+/// Synchronous copy of the data from the buffer to host iterable.
 /// using the default transfer queue of the device to which the buffer belongs.
-/// @todo add traits check for Buffer template parameter
 template<class T, class OutputIt>
 auto copy(const traits::DeviceBuffer<T>& data, OutputIt dst)-> OutputIt {
 	if(data.host_visible()){
@@ -32,7 +31,7 @@ auto copy(const traits::DeviceBuffer<T>& data, OutputIt dst)-> OutputIt {
 	return std::next(dst, data.size());
 }
 
-/// Synchronous copy of the data from host range to device buffer
+/// Synchronous copy of the data from host range to device buffer.
 /// using the default transfer queue of the device on which the buffer was allocated.
 /// Buffer is supposed to have sufficient memory to accomodate that data.
 template<class T, class InputIt>
@@ -50,7 +49,7 @@ auto copy(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf)-> void {
 	}
 }
 
-/// Async copy of host data to device memory.
+/// Async copy of host data to device memory with host-side synchronization.
 /// Blocks initially while copying the data to the stage buffer.
 /// Then returns the synchronization token and performs buffer to buffer transfer asynchronously.
 template<class T, class InputIt>
