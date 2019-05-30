@@ -59,7 +59,7 @@ namespace vuh::traits {
 	/// (provides begin(), end(), op++(), and * operators).
 	template<class T> using is_iterable = decltype(detail::is_host_iterable_<T>(0));
 	template<class T> inline constexpr bool is_iterable_v = is_iterable<T>::value;
-	template<class T> using Iterable = std::enable_if_t<is_iterable_v<T>, T>;
+	template<class T, class=std::enable_if_t<is_iterable_v<T>>> using Iterable = T;
 	
 	///
 	template<class T> using is_device_buffer = detail::_is_device_buffer<T>;

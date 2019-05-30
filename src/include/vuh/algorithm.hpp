@@ -15,13 +15,13 @@ namespace vuh {
 /// Synchronous copy of the data from the buffer to host iterable
 /// using the default transfer queue of the device to which the buffer belongs.
 /// @todo add traits check for Buffer template parameter
-template<class DeviceData_t, class OutputIt>
-auto copy(const DeviceData_t& data, OutputIt dst)-> OutputIt {
+template<class T, class OutputIt>
+auto copy(const traits::DeviceBuffer<T>& data, OutputIt dst)-> OutputIt {
 	if(data.host_visible()){
 		auto hd = data.host_data();
 		std::copy(std::begin(hd), std::end(hd), dst);
 	} else {
-		using Stage = BufferHost< typename DeviceData_t::value_type
+		using Stage = BufferHost< typename T::value_type
 		                        , AllocatorDevice<allocator::traits::HostCached>>;
 		auto stage = Stage(data.device(), data.size());
 		VUH_CHECKOUT_RET(dst);
@@ -35,14 +35,14 @@ auto copy(const DeviceData_t& data, OutputIt dst)-> OutputIt {
 /// Synchronous copy of the data from host range to device buffer
 /// using the default transfer queue of the device on which the buffer was allocated.
 /// Buffer is supposed to have sufficient memory to accomodate that data.
-template<class DeviceData_t, class InputIt>
-auto copy(InputIt first, InputIt last, DeviceData_t& buf)-> void {
+template<class T, class InputIt>
+auto copy(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf)-> void {
 	assert(std::distance(first, last) <= buf.size());
 	if(buf.host_visible()){
 		auto data = buf.host_data();
 		std::copy(first, last, data.begin());
 	} else {
-		using Stage = BufferHost<typename DeviceData_t::value_type
+		using Stage = BufferHost<typename T::value_type
 		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage = Stage(buf.device(), first, last);
 		VUH_CHECKOUT();
@@ -50,14 +50,40 @@ auto copy(InputIt first, InputIt last, DeviceData_t& buf)-> void {
 	}
 }
 
+/// Async copy of host data to device memory.
+/// Blocks initially while copying the data to the stage buffer.
+/// Then returns the synchronization token and performs buffer to buffer transfer asynchronously.
+template<class T, class InputIt>
+auto copy_async(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf)-> SyncTokenHost {
+	assert(std::distance(first, last) <= buf.size());
+	if(buf.host_visible()){
+		auto data = buf.host_data();
+		std::copy(first, last, data.begin());
+		return SyncTokenHost(nullptr);
+	} else {
+		using Stage = BufferHost<typename T::value_type
+		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
+		auto stage = Stage(buf.device(), first, last);
+		VUH_CHECKOUT();
+		return buf.device().default_transfer().copy(stage, buf).hb();
+	}
+}
+
+/// Async copy between two device buffers with host-side syncronization.
+template<class T1, class T2>
+auto copy_async(traits::DeviceBuffer<T1>& src, traits::DeviceBuffer<T2>& dst)-> SyncTokenHost {
+	assert(src.device() == dst.device());
+	return src.device().default_transfer().copy(src, dst).hb();
+}
+
 ///
-template<class DeviceData_t, class OutputIt, class F>
-auto transform(const DeviceData_t& buf, OutputIt first, F&& f)-> OutputIt {
+template<class T, class OutputIt, class F>
+auto transform(const traits::DeviceBuffer<T>& buf, OutputIt first, F&& f)-> OutputIt {
 	if(buf.host_visible()){
 		auto data = buf.host_data();
 		std::transform(std::begin(data), std::end(data), first, std::forward<F>(f));
 	} else {
-		using Stage = BufferHost< typename DeviceData_t::value_type
+		using Stage = BufferHost< typename T::value_type
 		                        , AllocatorDevice<allocator::traits::HostCached>>;
 		auto stage = Stage(buf.device(), buf.size());
 		VUH_CHECKOUT_RET(first);
@@ -69,14 +95,14 @@ auto transform(const DeviceData_t& buf, OutputIt first, F&& f)-> OutputIt {
 }
 
 ///
-template<class DeviceData_t, class InputIt, class F>
-auto transform(InputIt first, InputIt last, DeviceData_t& buf, F&& f)-> void {
+template<class T, class InputIt, class F>
+auto transform(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf, F&& f)-> void {
 	assert(std::distance(first, last) <= buf.size());
 	if(buf.host_visible()){
 		auto data = buf.host_data();
 		std::transform(first, last, std::begin(data), std::forward<F>(f));
 	} else {
-		using Stage = BufferHost<typename DeviceData_t::value_type
+		using Stage = BufferHost<typename T::value_type
 		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage = Stage(buf.device(), first, last, std::forward<F>(f));
 		VUH_CHECKOUT();
@@ -85,16 +111,16 @@ auto transform(InputIt first, InputIt last, DeviceData_t& buf, F&& f)-> void {
 }
 
 ///
-template<class C, class DeviceData_t>
-auto to_host(const DeviceData_t& buf)-> traits::Iterable<C> {
+template<class C, class T>
+auto to_host(const traits::DeviceBuffer<T>& buf)-> traits::Iterable<C> {
 	auto ret = C(buf.size());
 	copy(buf, std::begin(ret));
 	return ret;
 }
 
 ///
-template<class C, class F, class DeviceData_t >
-auto to_host(const DeviceData_t& buf, F&& f)-> traits::Iterable<C> {
+template<class C, class F, class T>
+auto to_host(const traits::DeviceBuffer<T>& buf, F&& f)-> traits::Iterable<C> {
 	auto ret = C(buf.size());
 	transform(buf, std::begin(ret), std::forward<F>(f));
 	return ret;
