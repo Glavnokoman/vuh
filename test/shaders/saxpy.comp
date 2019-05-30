@@ -16,3 +16,4 @@ void main(){
    }
    arr_y[id] += params.a*arr_x[id];         // saxpy
 }
+
