@@ -51,7 +51,13 @@ public:
 		other._buffer = nullptr;
 	}
 
-	auto operator= (BufferBase&& other)=delete;
+	auto operator= (BufferBase&& other) noexcept-> BufferBase& {
+		assert(_device == other._device);
+		std::swap(_buffer, other._buffer);
+		std::swap(_mem, other._mem);
+		std::swap(_flags, other._flags);
+		return *this;
+	}
 
 	/// @return underlying buffer
 	auto buffer() const-> VkBuffer { return _buffer; }
@@ -116,14 +122,15 @@ public:
 	using pointer = typename Base::pointer;
 
 	explicit HostData(Buf& buffer, std::size_t count)
-	   : Base(map_memory(buffer, count*sizeof(T)), count), _buffer(buffer)
+	   : Base(map_memory(buffer, count*sizeof(T)), count), _buffer(&buffer)
 	{}
-	~HostData() noexcept { if(this->data()){ vkUnmapMemory(_buffer.device(), _buffer.memory());} }
+	~HostData() noexcept { if(_buffer){ vkUnmapMemory(_buffer->device(), _buffer->memory());} }
 	HostData(HostData&& other) noexcept
 	   : Base(static_cast<Base&>(other)), _buffer(other._buffer)
 	{
-		static_cast<Base&>(other) = Base(nullptr, 0);
+		other._buffer = nullptr;
 	}
+	auto operator=(HostData&& other) noexcept-> HostData& = default;
 
 	static auto map_memory(Buf& buffer, std::size_t size_bytes)-> T* {
 		auto ret = pointer{};
@@ -132,7 +139,7 @@ public:
 	}
 	operator HostData<const value_type, Buf>&() {return *this;}
 private: // data
-	Buf& _buffer;
+	Buf* _buffer; ///< doc me. nonnull
 }; // class HostData
 
 } // namespace vuh

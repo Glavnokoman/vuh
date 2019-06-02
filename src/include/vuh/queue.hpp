@@ -12,6 +12,8 @@ namespace vuh {
 class Kernel;
 class Queue;
 
+auto run(Kernel& k)-> void;
+
 ///
 struct SubmitData {
 	std::vector<VkSemaphore> wait_for; ///< non-owning
@@ -31,7 +33,7 @@ struct Pipeline {
 	// nocopy - move only
 
 	Queue& queue; ///< non-owning handle to the queue used to create the pipeline.
-	VkFence fence = nullptr; ///< owning!
+	VkFence fence = nullptr; ///< owning handle to a fence for host synchronization. can be null.
 	std::vector<VkSubmitInfo> submit_infos;
 	std::list<SubmitData>     submit_data;            ///< holds the data which pointed to by submit infos structures
 	std::vector<VkSemaphore>  semaphores_owned;       ///< semaphores owned by the pipeline. For some semaphores ownership could have been transferred to outside objects, those should not be contained here.
@@ -46,6 +48,17 @@ public:
 private:
 	std::unique_ptr<Pipeline> _pipeline;
 }; // struct SyncTokenHost
+
+/// Host synchronization token carrying an additional resource on itself.
+/// For instance a staging buffer for async copy.
+template<class T>
+class SyncTokenHostResource: private std::unique_ptr<T>, public SyncTokenHost {
+public:
+	SyncTokenHostResource(SyncTokenHost&& token, T&& resource)
+	   : std::unique_ptr<T>(std::make_unique<T>(std::move(resource)))
+	   , SyncTokenHost(std::move(token))
+	{}
+};
 
 /// Queue in a context of a compute device
 class Queue {
@@ -74,6 +87,9 @@ public:
 	auto run(Kernel&)-> Queue&;
 //	auto qb()-> SyncTokenQueue;
 	auto hb()-> SyncTokenHost;
+	template<class T> auto hb(T&& resource)-> SyncTokenHostResource<T>{
+		return SyncTokenHostResource<T>{hb(), std::move(resource)};
+	}
 	auto release_pipeline()-> std::unique_ptr<Pipeline>;
 
 	operator VkQueue() const { return _handle; }
@@ -88,7 +104,5 @@ private:
 	std::unique_ptr<Pipeline> _pipeline; ///< computation pipeline assembled for submission in current queue
 	std::uint32_t _family_id;     ///< queue family id. Needed here?
 }; // struct Queue
-
-auto run(Kernel& k)-> void;
 
 } // namespace vuh

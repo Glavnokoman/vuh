@@ -53,24 +53,24 @@ auto copy(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf)-> void {
 /// Blocks initially while copying the data to the stage buffer.
 /// Then returns the synchronization token and performs buffer to buffer transfer asynchronously.
 template<class T, class InputIt>
-auto copy_async(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf)-> SyncTokenHost {
+auto copy_async(InputIt first, InputIt last, traits::DeviceBuffer<T>&& buf)-> SyncTokenHost {
 	assert(std::distance(first, last) <= buf.size());
 	if(buf.host_visible()){
 		auto data = buf.host_data();
 		std::copy(first, last, data.begin());
 		return SyncTokenHost(nullptr);
 	} else {
-		using Stage = BufferHost<typename T::value_type
+		using Stage = BufferHost<typename std::decay_t<T>::value_type
 		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage = Stage(buf.device(), first, last);
 		VUH_CHECKOUT();
-		return buf.device().default_transfer().copy(stage, buf).hb();
+		return buf.device().default_transfer().copy(stage, buf).hb(std::move(stage));
 	}
 }
 
 /// Async copy between two device buffers with host-side syncronization.
 template<class T1, class T2>
-auto copy_async(traits::DeviceBuffer<T1>& src, traits::DeviceBuffer<T2>& dst)-> SyncTokenHost {
+auto copy_async(traits::DeviceBuffer<T1>&& src, traits::DeviceBuffer<T2>&& dst)-> SyncTokenHost {
 	assert(src.device() == dst.device());
 	return src.device().default_transfer().copy(src, dst).hb();
 }

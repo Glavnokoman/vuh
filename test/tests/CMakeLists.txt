@@ -19,10 +19,8 @@ add_catch_test(core-test
 )
 
 add_catch_test(buffer-test buffer_t.cpp)
+add_catch_test(buffer-async-host-test ./buffer_async_host_t.cpp)
 
 add_catch_test(kernel-test kernel_t.cpp)
 add_dependencies(kernel-test test_shaders)
-
-# add_catch_test(test_vuh)
-# add_dependencies(test_vuh test_shaders)
 
