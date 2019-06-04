@@ -14,7 +14,7 @@ using std::begin;
 using std::end;
 
 namespace {
-constexpr auto arr_size = size_t(128);
+constexpr auto arr_size = size_t(1024*64);
 const auto host_data = std::vector<float>(arr_size, 3.14f);
 const auto host_data_doubled = [h = host_data]()mutable {
 	for(auto& x: h){x *= 2.0f;}
@@ -64,14 +64,34 @@ TEST_CASE("array with memory directly allocated from device", "[buffer]"){
 			vuh::transform(buf, begin(host_dst), [](auto x){return 2.f*x;});
 			REQUIRE(host_dst == host_data_doubled);
 		}
-		SECTION("transfer buffer span to host"){
+		SECTION("buffer span to host"){
 			auto buf = vuh::Buffer<float, vuh::mem::Device>(device, begin(host_data), end(host_data));
-			auto host_dst = std::vector<float>(arr_size, 0.f);
-			vuh::copy(buf.span(0, arr_size/2), begin(host_dst));
-			REQUIRE_FALSE(host_dst == host_data);
-			vuh::copy(buf.span(arr_size/2, arr_size/2), begin(host_dst) + arr_size/2);
-			REQUIRE(host_dst == host_data);
 
+			{ // only the first half of buffer
+				auto host_dst = std::vector<float>(arr_size, -1.f);
+				vuh::copy(buf.span(0, arr_size/2), begin(host_dst));
+				auto ref = host_data;
+				std::fill(begin(ref) + arr_size/2, end(ref), -1.f);
+				REQUIRE(host_dst == ref);
+			}
+
+			{ // only the second half of buffer
+				auto host_dst = std::vector<float>(arr_size, -1.f);
+				vuh::copy(buf.span(arr_size/2, arr_size/2), begin(host_dst) + arr_size/2);
+				auto ref = host_data;
+				std::fill(begin(ref), begin(ref) + arr_size/2, -1.f);
+				REQUIRE(host_dst == ref);
+			}
+
+			{ // both halves of buffer separately
+				auto host_dst = std::vector<float>(arr_size, -1.f);
+				vuh::copy(buf.span(0, arr_size/2), begin(host_dst));
+				vuh::copy(buf.span(arr_size/2, arr_size/2), begin(host_dst) + arr_size/2);
+				REQUIRE(host_dst == host_data);
+			}
+
+			// using span in transform
+			auto host_dst = std::vector<float>(arr_size, -1.f);
 			vuh::transform(buf.span(0, arr_size/2), begin(host_dst), [](auto x){return 2.f*x;});
 			REQUIRE_FALSE(host_dst == host_data_doubled);
 			vuh::transform(buf.span(arr_size/2, arr_size/2), begin(host_dst) + arr_size/2

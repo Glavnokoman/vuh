@@ -132,7 +132,7 @@ auto Pipeline::push_data(SubmitData data)-> void {
 }
 
 ///
-auto Pipeline::push_data(SubmitData data, const VkCommandBuffer& buf)-> void {
+auto Pipeline::push_data(SubmitData data, VkCommandBuffer buf)-> void {
 	assert(data.cmd_buf == nullptr);
 	const auto& submitted = submit_data.emplace_back(std::move(data));
 	auto submit_info = VkSubmitInfo{

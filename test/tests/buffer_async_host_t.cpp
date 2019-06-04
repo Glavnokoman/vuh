@@ -1,5 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
+#include "approx.hpp"
 
 //#include <vuh/vuh.h>
 #include <vuh/algorithm.hpp>
@@ -66,11 +67,12 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 		SECTION("async copy from host. 2 halves, scoped"){
 			{
 				auto f1 = vuh::copy_async( begin(host_data), begin(host_data) + arr_size/2
-				                         , dst);
+				                         , dst.span(0, arr_size/2));
 				auto f2 = vuh::copy_async( begin(host_data) + arr_size/2, end(host_data)
 				                         , dst.span(arr_size/2, arr_size/2));
+				f1.wait();
 			}
-			REQUIRE(vuh::to_host<std::vector<float>>(dst) == host_data);
+			REQUIRE(vuh::to_host<std::vector<float>>(dst) == test::approx(host_data).verbose());
 		}
 	}
 }

@@ -15,20 +15,20 @@ namespace vuh {
 /// Synchronous copy of the data from the buffer to host iterable.
 /// using the default transfer queue of the device to which the buffer belongs.
 template<class T, class OutputIt>
-auto copy(const traits::DeviceBuffer<T>& data, OutputIt dst)-> OutputIt {
-	if(data.host_visible()){
-		auto hd = data.host_data();
-		std::copy(std::begin(hd), std::end(hd), dst);
+auto copy(const traits::DeviceBuffer<T>& buf, OutputIt dst)-> OutputIt {
+	if(buf.host_visible()){
+		auto hd = buf.host_data();
+		std::copy(std::begin(hd) + buf.offset(), std::begin(hd) + buf.offset() + buf.size(), dst);
 	} else {
 		using Stage = BufferHost< typename T::value_type
 		                        , AllocatorDevice<allocator::traits::HostCached>>;
-		auto stage = Stage(data.device(), data.size());
+		auto stage = Stage(buf.device(), buf.size());
 		VUH_CHECKOUT_RET(dst);
-		data.device().default_transfer().copy(data, stage).submit();
+		buf.device().default_transfer().copy(buf, stage).submit();
 		VUH_CHECKOUT_RET(dst);
 		std::copy(std::begin(stage), std::end(stage), dst);
 	}
-	return std::next(dst, data.size());
+	return std::next(dst, buf.size());
 }
 
 /// Synchronous copy of the data from host range to device buffer.
@@ -39,9 +39,9 @@ auto copy(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf)-> void {
 	assert(std::distance(first, last) <= buf.size());
 	if(buf.host_visible()){
 		auto data = buf.host_data();
-		std::copy(first, last, data.begin());
+		std::copy(first, last, data.begin() + buf.offset());
 	} else {
-		using Stage = BufferHost<typename T::value_type
+		using Stage = BufferHost< typename T::value_type
 		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage = Stage(buf.device(), first, last);
 		VUH_CHECKOUT();
@@ -57,7 +57,7 @@ auto copy_async(InputIt first, InputIt last, traits::DeviceBuffer<T>&& buf)-> Sy
 	assert(std::distance(first, last) <= buf.size());
 	if(buf.host_visible()){
 		auto data = buf.host_data();
-		std::copy(first, last, data.begin());
+		std::copy(first, last, data.begin() + buf.offset());
 		return SyncTokenHost(nullptr);
 	} else {
 		using Stage = BufferHost<typename std::decay_t<T>::value_type

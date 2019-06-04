@@ -27,10 +27,13 @@ struct Pipeline {
 	auto submit()-> void;
 	auto set_fence()-> void;
 	auto push_data(SubmitData data)-> void;
-	auto push_data(SubmitData data, const VkCommandBuffer& buf)-> void;
+	auto push_data(SubmitData data, VkCommandBuffer buf)-> void;
 
 	~Pipeline();
-	// nocopy - move only
+	Pipeline(const Pipeline&)=delete;
+	auto operator= (const Pipeline&)->Pipeline& =delete;
+//	Pipeline(Pipeline&&)=default; // noexcept;
+//	auto operator= (Pipeline&&)-> Pipeline&=default; // noexcept-> Pipeline&;
 
 	Queue& queue; ///< non-owning handle to the queue used to create the pipeline.
 	VkFence fence = nullptr; ///< owning handle to a fence for host synchronization. can be null.
