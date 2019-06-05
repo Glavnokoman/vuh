@@ -79,8 +79,9 @@ auto copy_async(traits::DeviceBuffer<T1>&& src, traits::DeviceBuffer<T2>&& dst)-
 template<class T, class OutputIt, class F>
 auto transform(const traits::DeviceBuffer<T>& buf, OutputIt first, F&& f)-> OutputIt {
 	if(buf.host_visible()){
-		auto data = buf.host_data();
-		std::transform(std::begin(data), std::end(data), first, std::forward<F>(f));
+        auto hd = buf.host_data();
+        std::transform( std::begin(hd) + buf.offset(), std::begin(hd) + buf.offset() + buf.size()
+                      , first, std::forward<F>(f));
 	} else {
 		using Stage = BufferHost< typename T::value_type
 		                        , AllocatorDevice<allocator::traits::HostCached>>;
@@ -98,8 +99,8 @@ template<class T, class InputIt, class F>
 auto transform(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf, F&& f)-> void {
 	assert(std::distance(first, last) <= buf.size());
 	if(buf.host_visible()){
-		auto data = buf.host_data();
-		std::transform(first, last, std::begin(data), std::forward<F>(f));
+        auto hd = buf.host_data();
+        std::transform(first, last, std::begin(hd) + buf.offset(), std::forward<F>(f));
 	} else {
 		using Stage = BufferHost<typename T::value_type
 		                        , AllocatorDevice<allocator::traits::HostCoherent>>;

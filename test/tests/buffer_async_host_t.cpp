@@ -15,7 +15,7 @@ using std::begin;
 using std::end;
 
 namespace {
-constexpr auto arr_size = size_t(1024*64);
+constexpr auto arr_size = size_t(1024*256);
 const auto host_data = [](){
 	auto r = std::vector<float>(arr_size, 3.14f);
 	std::fill(begin(r) + arr_size/2, end(r), 6.28f);
@@ -64,13 +64,13 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 			}
 			REQUIRE(vuh::to_host<std::vector<float>>(dst) == host_data);
 		}
-		SECTION("async copy from host. 2 halves, scoped"){
+        SECTION("async copy from host. 2 halves, scoped"){ // do not try it on nvidia+linux
 			{
 				auto f1 = vuh::copy_async( begin(host_data), begin(host_data) + arr_size/2
 				                         , dst.span(0, arr_size/2));
+//				f1.wait(); // debug
 				auto f2 = vuh::copy_async( begin(host_data) + arr_size/2, end(host_data)
 				                         , dst.span(arr_size/2, arr_size/2));
-				f1.wait();
 			}
 			REQUIRE(vuh::to_host<std::vector<float>>(dst) == test::approx(host_data).verbose());
 		}
