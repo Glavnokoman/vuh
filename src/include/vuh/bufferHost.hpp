@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bufferBase.hpp"
+#include "bufferSpan.hpp"
 #include "error.hpp"
 
 #include <vulkan/vulkan.h>
@@ -71,5 +72,9 @@ public:
 
 	auto host_data()-> HostDataView<T> {return *this;}
 	auto host_data() const-> HostDataView<const T> {return *this;}
+
+	auto span(std::size_t offset, std::size_t count)-> BufferSpan<BufferHost> {
+		return vuh::span(*this, offset, count);
+	}
 }; // class BufferHost
 } // namespace vuh

@@ -15,7 +15,7 @@ using std::begin;
 using std::end;
 
 namespace {
-constexpr auto arr_size = size_t(1024*256);
+constexpr auto arr_size = size_t(1024*64);
 const auto host_data = [](){
 	auto r = std::vector<float>(arr_size, 3.14f);
 	std::fill(begin(r) + arr_size/2, end(r), 6.28f);
@@ -45,11 +45,11 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 		SECTION("copy 2 halves, scoped"){
 			const auto chunk_size = arr_size/2;
 			{ // @fixme: host-allocated buffer has no associated span
-//				auto f1 = vuh::copy_async(src.span(0, chunk_size), dst);
-//				auto f2 = vuh::copy_async( src.span(chunk_size, chunk_size)
-//				                         , dst.span(chunk_size, chunk_size));
+				auto f1 = vuh::copy_async(src.span(0, chunk_size), dst);
+				auto f2 = vuh::copy_async( src.span(chunk_size, chunk_size)
+				                         , dst.span(chunk_size, chunk_size));
 			}
-//			REQUIRE(vuh::to_host<std::vector<float>>(dst) == host_data);
+			REQUIRE(vuh::to_host<std::vector<float>>(dst) == host_data);
 		}
 	}
 	SECTION("device-local memory from host"){
