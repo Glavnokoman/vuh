@@ -52,6 +52,8 @@ private:
 	std::unique_ptr<Pipeline> _pipeline;
 }; // struct SyncTokenHost
 
+auto run_async(Kernel& k)-> SyncTokenHost;
+
 /// Host synchronization token carrying an additional resource on itself.
 /// For instance a staging buffer for async copy.
 template<class T>

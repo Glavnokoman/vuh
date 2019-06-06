@@ -64,7 +64,7 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 			}
 			REQUIRE(vuh::to_host<std::vector<float>>(dst) == host_data);
 		}
-        SECTION("async copy from host. 2 halves, scoped"){ // do not try it on nvidia+linux
+		SECTION("async copy from host. 2 halves, scoped"){ // do not try it on nvidia+linux
 			{
 				auto f1 = vuh::copy_async( begin(host_data), begin(host_data) + arr_size/2
 				                         , dst.span(0, arr_size/2));
