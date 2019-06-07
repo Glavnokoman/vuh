@@ -59,6 +59,11 @@ auto run_async(Kernel& k)-> SyncTokenHost;
 template<class T>
 class SyncTokenHostResource: private std::unique_ptr<T>, public SyncTokenHost {
 public:
+	explicit SyncTokenHostResource()
+	   : std::unique_ptr<T>(nullptr)
+	   , SyncTokenHost(nullptr)
+	{}
+
 	SyncTokenHostResource(SyncTokenHost&& token, T&& resource)
 	   : std::unique_ptr<T>(std::make_unique<T>(std::move(resource)))
 	   , SyncTokenHost(std::move(token))

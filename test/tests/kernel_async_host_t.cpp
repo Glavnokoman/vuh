@@ -1,3 +1,4 @@
+#define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 #include "approx.hpp"
 
@@ -36,6 +37,8 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 		return ret;
 	}();
 
+	auto out = std::vector<float>(y.size(), -1.f);
+
 	SECTION("3-phase saxpy. default queues. verbose."){
 
 		// phase 1. copy tiles to device
@@ -56,7 +59,7 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 
 		//	phase 3. copy back first result tile, run kernel on second tiles.
 		fence_p.wait();
-		auto fence_cpy_back1 = vuh::copy_async(d_y.span(0, tile_size), begin(y));
+		auto fence_cpy_back1 = vuh::copy_async(d_y.span(0, tile_size), begin(out));
 		fence_cpy.wait();
 		fence_cpx.wait();
 		fence_p = vuh::run_async(kernel.push(p).bind( d_y.span(tile_size, tile_size)
@@ -64,7 +67,7 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 
 		// wait for everything to complete
 		fence_p.wait();
-		auto fence_cpy_back2 = vuh::copy_async(d_y.span(tile_size, tile_size), begin(y) + tile_size);
+		auto fence_cpy_back2 = vuh::copy_async(d_y.span(tile_size, tile_size), begin(out) + tile_size);
 
 		fence_cpy_back1.wait();
 		fence_cpy_back2.wait();
@@ -87,10 +90,10 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 			auto f_x = vuh::copy_async(begin(x) + tile_size, end(x), d_x.span(tile_size, tile_size));
 		}
 		{ // phase 3. copy back first result tile, run kernel on second tiles
-			auto f_y1 = vuh::copy_async(d_y.span(0, tile_size), begin(y));
+			auto f_y1 = vuh::copy_async(d_y.span(0, tile_size), begin(out));
 
 			vuh::run_async(kernel.bind(d_y.span(tile_size, tile_size), d_x.span(tile_size, tile_size)));
-			auto f_y2 = vuh::copy_async(d_y.span(tile_size, tile_size), begin(y) + tile_size);
+			auto f_y2 = vuh::copy_async(d_y.span(tile_size, tile_size), begin(out) + tile_size);
 			f_y1.wait();
 		}
 		REQUIRE(y == approx(ref).eps(1.e-5).verbose());

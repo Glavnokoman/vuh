@@ -53,17 +53,17 @@ auto copy(InputIt first, InputIt last, traits::DeviceBuffer<T>& buf)-> void {
 /// Blocks initially while copying the data to the stage buffer.
 /// Then returns the synchronization token and performs buffer to buffer transfer asynchronously.
 template<class T, class InputIt>
-auto copy_async(InputIt first, InputIt last, traits::DeviceBuffer<T>&& buf)-> SyncTokenHost {
+auto copy_async(InputIt first, InputIt last, traits::DeviceBuffer<T>&& buf){
 	assert(std::distance(first, last) <= buf.size());
+	using Stage = BufferHost<typename std::decay_t<T>::value_type
+	                        , AllocatorDevice<allocator::traits::HostCoherent>>;
 	if(buf.host_visible()){
 		auto data = buf.host_data();
 		std::copy(first, last, data.begin() + buf.offset());
-		return SyncTokenHost(nullptr);
+		return SyncTokenHostResource<Stage>{};
 	} else {
-		using Stage = BufferHost<typename std::decay_t<T>::value_type
-		                        , AllocatorDevice<allocator::traits::HostCoherent>>;
 		auto stage = Stage(buf.device(), first, last);
-		VUH_CHECKOUT();
+		VUH_CHECKOUT_RET(SyncTokenHostResource<Stage>{});
 		return buf.device().default_transfer().copy(stage, buf).hb(std::move(stage));
 	}
 }
@@ -73,6 +73,55 @@ template<class T1, class T2>
 auto copy_async(traits::DeviceBuffer<T1>&& src, traits::DeviceBuffer<T2>&& dst)-> SyncTokenHost {
 	assert(src.device() == dst.device());
 	return src.device().default_transfer().copy(src, dst).hb();
+}
+
+namespace detail {
+	struct IRes{ virtual ~IRes() noexcept = default; };
+
+	template<class T, class OutputIt>
+	struct DataRes: IRes {
+		T data;
+		std::size_t offset, count;
+		OutputIt dst;
+
+		DataRes(T&& data, size_t offset, size_t count, OutputIt dst)
+		   : data(std::move(data)), offset(offset), count(count), dst(dst)
+		{}
+		~DataRes() noexcept { std::copy(data.begin() + offset, data.begin() + offset + count, dst); }
+	};
+
+	template<class Stage, class OutputIt>
+	struct StageRes: IRes {
+		Stage stage;
+		OutputIt dst;
+
+		StageRes(Stage&& stage, OutputIt dst): stage(std::move(stage)), dst(dst){}
+		~StageRes() noexcept {
+			auto data = stage.host_data();
+			std::copy(data.begin(), data.end(), dst);
+		}
+	};
+} // namespace detail
+
+/// Async copy from device buffer to host iterator.
+template<class T, class OutputIt>
+auto copy_async(traits::DeviceBuffer<T>&& buf, traits::NotDeviceBuffer<OutputIt> dst)
+	-> SyncTokenHostResource<std::unique_ptr<detail::IRes>>
+{
+	using Stage = BufferHost< typename T::value_type
+	                        , AllocatorDevice<allocator::traits::HostCached>>;
+	using HD = decltype(std::declval<std::decay_t<T>>().host_data());
+
+	if(buf.host_visible()){
+		return { SyncTokenHost(nullptr)
+		       , std::make_unique<detail::DataRes<HD, OutputIt>>
+		                                         (buf.host_data(), buf.offset(), buf.size(), dst)};
+	} else {
+		VUH_CHECKOUT_RET(SyncTokenHostResource<std::unique_ptr<detail::IRes>>{});
+		auto resptr = new detail::StageRes<Stage, OutputIt>(Stage(buf.device(), buf.size()), dst);
+		return buf.device().default_transfer().copy(buf, resptr->stage)
+		          .hb(std::unique_ptr<detail::IRes>(resptr));
+	}
 }
 
 ///
