@@ -68,6 +68,11 @@ public:
 	   : std::unique_ptr<T>(std::make_unique<T>(std::move(resource)))
 	   , SyncTokenHost(std::move(token))
 	{}
+
+	auto wait()-> void {
+		SyncTokenHost::wait();
+		static_cast<std::unique_ptr<T>&>(*this) = nullptr;
+	}
 };
 
 /// Queue in a context of a compute device

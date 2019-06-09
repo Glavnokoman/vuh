@@ -70,6 +70,13 @@ public:
 		std::transform(first, last, this->begin(), std::forward<F>(f));
 	}
 
+	BufferHost(BufferHost&& other)
+	   : Base(std::move(other))
+	   , HostData<T, Base>(std::move(other))
+	{
+		HostData<T, Base>::_buffer = this;
+	}
+
 	auto host_data()-> HostDataView<T> {return *this;}
 	auto host_data() const-> HostDataView<const T> {return *this;}
 

@@ -44,6 +44,9 @@ public:
 	/// Release resources associated with current object.
 	~BufferBase() noexcept {release();}
    
+	BufferBase(const BufferBase&)=delete;
+	auto operator= (const BufferBase&)->BufferBase& = delete;
+
 	/// Move constructor. Passes the underlying buffer ownership.
 	BufferBase(BufferBase&& other) noexcept
 	   : _buffer(other._buffer), _mem(other._mem), _flags(other._flags), _device(other._device)
@@ -124,13 +127,25 @@ public:
 	explicit HostData(Buf& buffer, std::size_t count)
 	   : Base(map_memory(buffer, count*sizeof(T)), count), _buffer(&buffer)
 	{}
-	~HostData() noexcept { if(_buffer){ vkUnmapMemory(_buffer->device(), _buffer->memory());} }
+
+	~HostData() noexcept {
+		if(_buffer){
+			vkUnmapMemory(_buffer->device(), _buffer->memory());
+		}
+	}
+
+	HostData(const HostData&)=delete;
+	auto operator= (const HostData&)->HostData& = delete;
+
 	HostData(HostData&& other) noexcept
-	   : Base(static_cast<Base&>(other)), _buffer(other._buffer)
+	   : Base(static_cast<Base&&>(other)), _buffer(other._buffer)
 	{
 		other._buffer = nullptr;
 	}
-	auto operator=(HostData&& other) noexcept-> HostData& = default;
+	auto operator=(HostData&& other) noexcept-> HostData& {
+		std::swap(_buffer, other._buffer);
+		return *this;
+	}
 
 	static auto map_memory(Buf& buffer, std::size_t size_bytes)-> T* {
 		auto ret = pointer{};
@@ -138,7 +153,7 @@ public:
 		return ret;
 	}
 	operator HostData<const value_type, Buf>&() {return *this;}
-private: // data
+protected: // data
 	Buf* _buffer; ///< doc me. nonnull
 }; // class HostData
 
