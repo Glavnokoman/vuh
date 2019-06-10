@@ -44,7 +44,7 @@ TEST_CASE("async copy device-local memory", "[array][correctness][async]"){
 		}
 		SECTION("copy 2 halves, scoped"){
 			const auto chunk_size = arr_size/2;
-			{ // @fixme: host-allocated buffer has no associated span
+			{
 				auto f1 = vuh::copy_async(src.span(0, chunk_size), dst);
 				auto f2 = vuh::copy_async( src.span(chunk_size, chunk_size)
 				                         , dst.span(chunk_size, chunk_size));

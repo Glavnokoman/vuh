@@ -15,7 +15,7 @@ using test::approx;
 
 namespace {
 
-constexpr auto buffer_size = 1024*64u;
+constexpr auto buffer_size = 1024*64u; // !!! For kernels without push constant interface this value is hardcoded in the shader code.
 constexpr auto workgroup_size = 64u;
 
 const auto x = std::vector<float>(buffer_size, 2.0f);

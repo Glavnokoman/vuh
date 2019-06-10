@@ -27,7 +27,7 @@ struct Pipeline {
 	auto submit()-> void;
 	auto set_fence()-> void;
 	auto push_data(SubmitData data)-> void;
-	auto push_data(SubmitData data, VkCommandBuffer buf)-> void;
+	auto push_data(SubmitData data, const VkCommandBuffer& buf)-> void;
 
 	~Pipeline();
 	Pipeline(const Pipeline&)=delete;
