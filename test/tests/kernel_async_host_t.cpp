@@ -15,7 +15,7 @@
 using test::approx;
 
 namespace {
-	constexpr auto buffer_size = 1024*64u;
+	constexpr auto buffer_size = 1024*64;
 	constexpr auto tile_size = buffer_size/2;
 	constexpr auto workgroup_size = 64u;
 
@@ -72,7 +72,7 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 		fence_cpy_back1.wait();
 		fence_cpy_back2.wait();
 
-		REQUIRE(y == approx(ref).eps(1.e-5).verbose());
+		REQUIRE(out == approx(ref).eps(1.e-5).verbose());
 	}
 	SECTION("3-phase saxpy. default queues. scoped."){
 		struct {uint32_t size; float a;} p{tile_size, a};
@@ -96,7 +96,7 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 			auto f_y2 = vuh::copy_async(d_y.span(tile_size, tile_size), begin(out) + tile_size);
 			f_y1.wait();
 		}
-		REQUIRE(y == approx(ref).eps(1.e-5).verbose());
+		REQUIRE(out == approx(ref).eps(1.e-5).verbose());
 	}
 
 }
