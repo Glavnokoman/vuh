@@ -10,15 +10,8 @@ enum VuhError: int32_t {
 	, NoSuitableMemoryFound
 };
 
-/// messages for vulkan and vuh error codes
-inline auto text(VkResult)-> const char* {
-	return "TBD";
-}
-
-/// messages for vuh specific errors
-inline auto text(VuhError)-> const char* {
-	return "TBD";
-}
+auto text(VkResult)-> const char*;
+auto text(VuhError)-> const char*;
 
 
 } // namespace vuh::error
