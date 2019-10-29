@@ -13,18 +13,19 @@ namespace vuh {
 /// binding memory to buffer objects, etc...
         template<class T, class Alloc>
         class BasicImage: public VULKAN_HPP_NAMESPACE::Image {
-            static constexpr auto descriptor_flags = VULKAN_HPP_NAMESPACE::ImageUsageFlagBits::eStorage;
         public:
 
             /// Construct Image of given size in device memory
             BasicImage(vuh::Device& device                     ///< device to allocate array
-                    , const VULKAN_HPP_NAMESPACE::ImageCreateInfo& createInfo
+                    , VULKAN_HPP_NAMESPACE::ImageType imageType
+                    , size_t width    ///< desired width
+                    , size_t height    ///< desired height
+                    , VULKAN_HPP_NAMESPACE::Format format = VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
                     , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
                     , VULKAN_HPP_NAMESPACE::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : VULKAN_HPP_NAMESPACE::Image(Alloc::makeImage(device, createInfo, _result))
+                    : VULKAN_HPP_NAMESPACE::Image(Alloc::makeImage(device, imageType, width, height, format, usage, _result))
                     , _dev(device)
-                    , _imageCreateInfo(createInfo)
             {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
                 VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
@@ -41,7 +42,7 @@ namespace vuh {
                     auto alloc = Alloc();
                     _mem = alloc.allocMemory(device, *this, properties);
                     _flags = alloc.memoryProperties(device);
-                    _dev.bindBufferMemory(*this, _mem, 0);
+                    _dev.bindImageMemory(*this, _mem, 0);
                 } catch(std::runtime_error&){ // destroy buffer if memory allocation was not successful
                     release();
                     throw;
@@ -114,7 +115,6 @@ namespace vuh {
             VULKAN_HPP_NAMESPACE::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
             const vuh::Device&                          _dev;      ///< referes underlying logical device
             VULKAN_HPP_NAMESPACE::Result                _result;
-            const VULKAN_HPP_NAMESPACE::ImageCreateInfo _imageCreateInfo;
         }; // class BasicImage
 
         template<class T, class Alloc>
@@ -125,10 +125,11 @@ namespace vuh {
             Basic2DImage(vuh::Device& device                     ///< device to allocate array
                     , size_t width                     ///< desired width in bytes
                     , size_t height                     ///< desired height in bytes
+                    , VULKAN_HPP_NAMESPACE::Format format = VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
                     , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
                     , VULKAN_HPP_NAMESPACE::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : Base(device, _imageCreateInfo, properties, usage)
+                    : Base(device, VULKAN_HPP_NAMESPACE::ImageType::e2D, width, height, format, properties, usage)
                     , _width(width)
                     , _height(height)
             {}
@@ -143,7 +144,6 @@ namespace vuh {
         private: // helpers
             size_t                                      _width;    ///< desired width in bytes
             size_t                                      _height;   ///< desired height in bytes
-            VULKAN_HPP_NAMESPACE::ImageCreateInfo       _imageCreateInfo;
         }; //// class Basic2DImage
     } // namespace img
 } // namespace vuh

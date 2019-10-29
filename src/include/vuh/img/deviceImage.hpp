@@ -24,9 +24,10 @@ namespace vuh {
             DeviceOnly2DImage( vuh::Device& device  ///< deice to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
-                    , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-                    , vk::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
-                    : Basic2DImage<T, Alloc>(device, width, height, flags_memory, flags_buffer)
+                    , VULKAN_HPP_NAMESPACE::Format format = VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
+                    , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
+                    : Basic2DImage<T, Alloc>(device, width, height, format, flags_memory, flags_image)
             {}
         }; // class DeviceOnlyImage
 
@@ -46,9 +47,10 @@ namespace vuh {
             Device2DImage(vuh::Device& device   ///< device to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
-                    , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-                    , vk::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
-                    : Base(device, width, height, flags_memory, flags_image)
+                    , VULKAN_HPP_NAMESPACE::Format format = VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
+                    , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
+                    : Base(device, width, height, format, flags_memory, flags_image)
             {}
 
             /// Copy data from host range to array memory.

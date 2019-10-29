@@ -25,8 +25,8 @@ public:
    /// Memory is left unintitialized.
    DeviceOnlyArray( vuh::Device& device  ///< deice to create array on
 	               , size_t n_elements    ///< number of elements
-	               , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	               , vk::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
+	               , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	               , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
 	   : BasicArray<Alloc>(device, n_elements*sizeof(T), flags_memory, flags_buffer)
 	   , _size(n_elements)
 	{}
@@ -52,8 +52,8 @@ public:
 	/// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
 	DeviceArray( vuh::Device& device   ///< device to create array on
 	           , size_t n_elements     ///< number of elements
-	           , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	           , vk::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
+	           , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	           , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
 	   : Base(device, n_elements*sizeof(T), flags_memory, flags_buffer)
 	   , _size(n_elements)
 	{}
@@ -62,8 +62,8 @@ public:
 	template<class C, class=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
 	DeviceArray(vuh::Device& device  ///< device to create array on
 	           , const C& c          ///< iterable to initialize from
-	           , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	           , vk::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
+	           , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	           , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
 	   : DeviceArray(device, c.size(), flags_memory, flags_buffer)
 	{
 		using std::begin; using std::end;
@@ -75,8 +75,8 @@ public:
    DeviceArray(vuh::Device& device   ///< device to create array on
 	            , It1 begin           ///< range begin
 	            , It2 end             ///< range end (points to one past the last element of the range)
-	            , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	            , vk::BufferUsageFlags flags_buffer={})	///< additional (to defined by allocator) buffer usage flags
+	            , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	            , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={})	///< additional (to defined by allocator) buffer usage flags
 	   : DeviceArray(device, std::distance(begin, end), flags_memory, flags_buffer)
 	{
 		fromHost(begin, end);
@@ -87,8 +87,8 @@ public:
 	DeviceArray( vuh::Device& device  ///< device to create array on
 	           , size_t n_elements    ///< number of elements
 	           , F&& fun              ///< callable of a form function<T(size_t)> mapping an offset to array value
-	           , vk::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	           , vk::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
+	           , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	           , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
 	   : DeviceArray(device, n_elements, flags_memory, flags_buffer)
 	{
 		using std::begin;

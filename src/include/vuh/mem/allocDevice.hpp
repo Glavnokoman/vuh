@@ -40,11 +40,28 @@ public:
 
 	/// Create image on a device.
 	static auto makeImage(vuh::Device& device   ///< device to create buffer on
-			, const VULKAN_HPP_NAMESPACE::ImageCreateInfo& info
+            , VULKAN_HPP_NAMESPACE::ImageType imageType
+            , size_t width    ///< desired width
+            , size_t height    ///< desired height
+            , VULKAN_HPP_NAMESPACE::Format format /// format
+            , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags ///< additional (to the ones defined in Props) image usage flags
 			, VULKAN_HPP_NAMESPACE::Result& result
 	)-> VULKAN_HPP_NAMESPACE::Image
 	{
-		auto image = device.createImage(info);
+        const auto flags_combined = flags | VULKAN_HPP_NAMESPACE::ImageUsageFlags(Props::image);
+
+        VULKAN_HPP_NAMESPACE::Extent3D extent;
+        extent.setWidth(width);
+        extent.setHeight(height);
+        extent.setDepth(1);
+
+        VULKAN_HPP_NAMESPACE::ImageCreateInfo imageCreateInfo;
+        imageCreateInfo.setImageType(imageType);
+        imageCreateInfo.setExtent(extent);
+        imageCreateInfo.setUsage(flags_combined);
+        imageCreateInfo.setTiling(VULKAN_HPP_NAMESPACE::ImageTiling::eOptimal);
+
+		auto image = device.createImage(imageCreateInfo);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = image.result;
 		VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == result);
@@ -53,22 +70,6 @@ public:
 		result = VULKAN_HPP_NAMESPACE::Result::eSuccess;
 		return image;
 #endif
-	}
-
-	/// Create image on a device.
-	static auto make2DImage(vuh::Device& device   ///< device to create buffer on
-			, size_t width    ///< desired width in bytes
-			, size_t height    ///< desired width in bytes
-			, VULKAN_HPP_NAMESPACE::ImageUsageFlags flags ///< additional (to the ones defined in Props) buffer usage flags
-			, VULKAN_HPP_NAMESPACE::Result& result
-	)-> VULKAN_HPP_NAMESPACE::Image
-	{
-		const auto flags_combined = flags | VULKAN_HPP_NAMESPACE::ImageUsageFlags(Props::image);
-		VULKAN_HPP_NAMESPACE::Extent3D ext(width, height, 1);
-		VULKAN_HPP_NAMESPACE::ImageCreateInfo info({ {}, VULKAN_HPP_NAMESPACE::ImageType::e2D});
-		info.setExtent(ext);
-		info.setUsage(flags_combined);
-		return makeImage(device, info, result);
 	}
 
 	/// Allocate memory for the image.
