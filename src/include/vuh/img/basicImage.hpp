@@ -20,7 +20,7 @@ namespace vuh {
                     , VULKAN_HPP_NAMESPACE::ImageType imageType
                     , size_t width    ///< desired width
                     , size_t height    ///< desired height
-                    , VULKAN_HPP_NAMESPACE::Format format = VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
+                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
                     , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
                     , VULKAN_HPP_NAMESPACE::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
@@ -113,7 +113,7 @@ namespace vuh {
         protected: // data
             VULKAN_HPP_NAMESPACE::DeviceMemory          _mem;      ///< associated chunk of device memory
             VULKAN_HPP_NAMESPACE::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
-            const vuh::Device&                          _dev;      ///< referes underlying logical device
+            vuh::Device&                                _dev;      ///< referes underlying logical device
             VULKAN_HPP_NAMESPACE::Result                _result;
         }; // class BasicImage
 
@@ -125,7 +125,7 @@ namespace vuh {
             Basic2DImage(vuh::Device& device                     ///< device to allocate array
                     , size_t width                     ///< desired width in bytes
                     , size_t height                     ///< desired height in bytes
-                    , VULKAN_HPP_NAMESPACE::Format format = VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
+                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm /// format
                     , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
                     , VULKAN_HPP_NAMESPACE::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
@@ -136,10 +136,14 @@ namespace vuh {
 
             /// @return size of a memory chunk occupied by array elements
             /// (not the size of actually allocated chunk, which may be a bit bigger).
-            auto size_bytes() const-> uint32_t {return _height*_width*sizeof(T);}
+            auto size_bytes() const-> uint32_t {return _height * _width * sizeof(T);}
 
             /// @return number of elements
             auto size() const-> size_t {return _height*_width;}
+
+            auto width() const-> uint32_t {return _width;}
+
+            auto height() const-> uint32_t {return _height;}
 
         private: // helpers
             size_t                                      _width;    ///< desired width in bytes

@@ -11,10 +11,10 @@
 namespace vuh {
     namespace img {
 
-/// Array class not supposed to take part in data exchange with host.
-/// The only valid use for such arrays is passing them as (in or out) argument to a shader.
-/// Resources allocation is handled by allocator defined by a template parameter which is supposed to provide
-/// memory and underlying vulkan image with suitable flags.
+        /// Image class not supposed to take part in data exchange with host.
+        /// The only valid use for such arrays is passing them as (in or out) argument to a shader.
+        /// Resources allocation is handled by allocator defined by a template parameter which is supposed to provide
+        /// memory and underlying vulkan image with suitable flags.
         template<class T, class Alloc>
         class DeviceOnly2DImage: public Basic2DImage<T, Alloc> {
         public:
@@ -24,20 +24,20 @@ namespace vuh {
             DeviceOnly2DImage( vuh::Device& device  ///< deice to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
-                    , VULKAN_HPP_NAMESPACE::Format format = VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
+                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
                     , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
                     , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
                     : Basic2DImage<T, Alloc>(device, width, height, format, flags_memory, flags_image)
             {}
-        }; // class DeviceOnlyImage
+        }; // class DeviceOnly2DImage
 
-/// Array with host data exchange interface suitable for memory allocated in device-local space.
-/// Memory allocation and underlying buffer creation is managed by allocator defined by a template parameter.
-/// Such allocator is expected to allocate memory in device local memory not mappable
-/// for host access. However actual allocation may take place in a host-visible memory.
-/// Some functions (like toHost(), fromHost()) switch to using the simplified data exchange methods
-/// in that case. Some do not. In case all memory is host-visible (like on integrated GPUs) using this class
-/// may result in performance penalty.
+        /// Image with host data exchange interface suitable for memory allocated in device-local space.
+        /// Memory allocation and underlying buffer creation is managed by allocator defined by a template parameter.
+        /// Such allocator is expected to allocate memory in device local memory not mappable
+        /// for host access. However actual allocation may take place in a host-visible memory.
+        /// Some functions (like toHost(), fromHost()) switch to using the simplified data exchange methods
+        /// in that case. Some do not. In case all memory is host-visible (like on integrated GPUs) using this class
+        /// may result in performance penalty.
         template<class T, class Alloc>
         class Device2DImage: public Basic2DImage<T, Alloc>{
             using Base = Basic2DImage<T, Alloc>;
@@ -47,11 +47,25 @@ namespace vuh {
             Device2DImage(vuh::Device& device   ///< device to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
-                    , VULKAN_HPP_NAMESPACE::Format format = VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
+                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm /// format
                     , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
                     , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(device, width, height, format, flags_memory, flags_image)
             {}
+
+            /// Create an instance of Device2DImage and initialize memory by content of some host iterable.
+            template<class C, class=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
+            Device2DImage(vuh::Device& device  ///< device to create array on
+                    , const C& c          ///< iterable to initialize from
+                    , size_t width     ///< width of image
+                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm /// format
+                    , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags_image={})	  ///< additional (to defined by allocator) buffer usage flags
+                    : Base(device, width, c.size() / width + 1, format, flags_memory, flags_image)
+            {
+                using std::begin; using std::end;
+                fromHost(begin(c), end(c));
+            }
 
             /// Copy data from host range to array memory.
             template<class It1, class It2>
@@ -60,8 +74,8 @@ namespace vuh {
                     std::copy(begin, end, host_data());
                     Base::_dev.unmapMemory(Base::_mem);
                 } else { // memory is not host visible, use staging buffer
-                    auto stage_buf = arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>(Base::_dev, begin, end);
-                    copyBuf(Base::_dev, stage_buf, *this, Base::size_bytes());
+                    auto stage_buf = vuh::arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>(Base::_dev, begin, end);
+                    copyBufferToImage(Base::_dev, stage_buf, *this, Base::width(), Base::height());
                 }
             }
 
@@ -73,7 +87,7 @@ namespace vuh {
                     Base::_dev.unmapMemory(Base::_mem);
                 } else { // memory is not host visible, use staging buffer
                     auto stage_buf = arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>(Base::_dev, begin, end);
-                    copyBuf(Base::_dev, stage_buf, *this, Base::size_bytes(), 0u, offset*sizeof(T));
+                    copyBufferToImage(Base::_dev, stage_buf, *this, Base::width(), Base::height(), offset*sizeof(T));
                 }
             }
 
@@ -86,8 +100,8 @@ namespace vuh {
                     Base::_dev.unmapMemory(Base::_mem);
                 } else {
                     using std::begin; using std::end;
-                    auto stage_buf = arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, Base::size());
-                    copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
+                    auto stage_buf = vuh::arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, Base::size());
+                    copyImageToBuffer(Base::_dev, *this, stage_buf, Base::width(), Base::height());
                     std::copy(begin(stage_buf), end(stage_buf), copy_to);
                 }
             }
@@ -103,7 +117,7 @@ namespace vuh {
                 } else {
                     using std::begin; using std::end;
                     auto stage_buf = arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, Base::size());
-                    copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
+                    copyImageToBuffer(Base::_dev, *this, stage_buf, Base::width(), Base::height());
                     std::transform(begin(stage_buf), end(stage_buf), copy_to, std::forward<F>(fun));
                 }
             }
@@ -122,7 +136,7 @@ namespace vuh {
                 } else {
                     using std::begin; using std::end;
                     auto stage_buf = arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, size);
-                    copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
+                    copyImageToBuffer(Base::_dev, *this, stage_buf, Base::width(), Base::height());
                     std::transform(begin(stage_buf), end(stage_buf), copy_to, std::forward<F>(fun));
                 }
             }
@@ -138,7 +152,7 @@ namespace vuh {
                     using std::begin; using std::end;
                     auto stage_buf = arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev
                             , offset_end - offset_begin);
-                    copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes(), offset_begin, 0u);
+                    copyImageToBuffer(Base::_dev, *this, stage_buf, Base::width(), Base::height(), offset_begin);
                     std::copy(begin(stage_buf), end(stage_buf), dst_begin);
                 }
             }
@@ -187,15 +201,15 @@ namespace vuh {
                 return static_cast<const T*>(data);
 #endif
             }
-        }; // class DeviceArray
+        }; // class Device2DImage
 
-/// doc me
+        /// doc me
         template<class T, class Alloc>
         auto device_begin(Device2DImage<T, Alloc>& image)-> ImageIter<Device2DImage<T, Alloc>> {
             return image.device_begin();
         }
 
-/// doc me
+        /// doc me
         template<class T, class Alloc>
         auto device_end(Device2DImage<T, Alloc>& image)-> ImageIter<Device2DImage<T, Alloc>> {
             return image.device_end();

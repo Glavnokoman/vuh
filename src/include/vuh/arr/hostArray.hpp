@@ -40,7 +40,7 @@ public:
 	}
 
 	/// Construct array on given device and initialize with a provided value.
-	HostArray( vuh::Device& device ///< device to create array on
+	HostArray(vuh::Device& device ///< device to create array on
 	         , size_t n_elements   ///< number of elements
 	         , T value             ///< initializer value
 	         , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags

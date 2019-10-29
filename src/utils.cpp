@@ -28,8 +28,8 @@ namespace arr {
 	/// Source and destination buffers are supposed to be allocated on the same device.
 	/// Fully sync, no latency hiding whatsoever.
 	auto copyBuf(vuh::Device& device ///< device where buffers are allocated
-	             , vk::Buffer src    ///< source buffer
-	             , vk::Buffer dst    ///< destination buffer
+	             , VULKAN_HPP_NAMESPACE::Buffer src    ///< source buffer
+	             , VULKAN_HPP_NAMESPACE::Buffer dst    ///< destination buffer
 	             , size_t size_bytes ///< size of memory chunk to copy in bytes
 	             , size_t src_offset ///< source buffer offset (bytes)
 	             , size_t dst_offset ///< destination buffer offset (bytes)
@@ -39,6 +39,48 @@ namespace arr {
 		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 		auto region = vk::BufferCopy(src_offset, dst_offset, size_bytes);
 		cmd_buf.copyBuffer(src, dst, 1, &region);
+		cmd_buf.end();
+		auto queue = device.transferQueue();
+		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
+		queue.submit({submit_info}, nullptr);
+		queue.waitIdle();
+	}
+
+	auto copyImageToBuffer(vuh::Device& device
+			, VULKAN_HPP_NAMESPACE::Image src
+			, VULKAN_HPP_NAMESPACE::Buffer dst
+			, uint32_t imageWidth
+			, uint32_t imageHeight
+			, size_t bufferOffset
+	)-> void
+	{
+		auto cmd_buf = device.transferCmdBuffer();
+		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+		VULKAN_HPP_NAMESPACE::BufferImageCopy region;
+		region.setBufferOffset(bufferOffset);
+		region.setImageExtent({imageWidth, imageHeight, 1});
+		cmd_buf.copyImageToBuffer(src, VULKAN_HPP_NAMESPACE::ImageLayout::eTransferSrcOptimal, dst, 1, &region);
+		cmd_buf.end();
+		auto queue = device.transferQueue();
+		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
+		queue.submit({submit_info}, nullptr);
+		queue.waitIdle();
+	}
+
+	auto copyBufferToImage(vuh::Device& device
+			, VULKAN_HPP_NAMESPACE::Buffer src
+			, VULKAN_HPP_NAMESPACE::Image dst
+			, uint32_t imageWidth
+			, uint32_t imageHeight
+			, size_t bufferOffset
+	)-> void
+	{
+		auto cmd_buf = device.transferCmdBuffer();
+		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+		VULKAN_HPP_NAMESPACE::BufferImageCopy region;
+		region.setBufferOffset(bufferOffset);
+		region.setImageExtent({imageWidth, imageHeight, 1});
+		cmd_buf.copyBufferToImage(src, dst, VULKAN_HPP_NAMESPACE::ImageLayout::eTransferDstOptimal, 1, &region);
 		cmd_buf.end();
 		auto queue = device.transferQueue();
 		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
