@@ -91,25 +91,25 @@ namespace {
 
 namespace vuh {
 	/// Constructs logical device wrapping the physical device of the given instance.
-	Device::Device(Instance& instance, vk::PhysicalDevice physical_device)
-	   : Device(instance, physical_device, physical_device.getQueueFamilyProperties())
+	Device::Device(const Instance& instance, const vk::PhysicalDevice& phy_dev)
+	   : Device(instance, phy_dev, phy_dev.getQueueFamilyProperties())
 	{}
 
 	/// Helper constructor.
-	Device::Device(Instance& instance, vk::PhysicalDevice physdevice
+	Device::Device(const Instance& instance, const vk::PhysicalDevice& phy_dev
 	              , const std::vector<vk::QueueFamilyProperties>& familyProperties
 	              )
-	   : Device(instance, physdevice, getFamilyID(familyProperties, vk::QueueFlagBits::eCompute)
+	   : Device(instance, phy_dev, getFamilyID(familyProperties, vk::QueueFlagBits::eCompute)
 	            , getFamilyID(familyProperties, vk::QueueFlagBits::eTransfer))
 	{}
 
 	/// Helper constructor
-	Device::Device(Instance& instance, vk::PhysicalDevice physdevice
+	Device::Device(const Instance& instance, const vk::PhysicalDevice& phy_dev
 	               , uint32_t computeFamilyId, uint32_t transferFamilyId
 	               )
-	  : vk::Device(createDevice(physdevice, computeFamilyId, transferFamilyId, _result))
+	  : vk::Device(createDevice(phy_dev, computeFamilyId, transferFamilyId, _result))
 	  , _instance(instance)
-	  , _physdev(physdevice)
+	  , _phy_dev(phy_dev)
 	  , _cmp_family_id(computeFamilyId)
 	  , _tfr_family_id(transferFamilyId)
 	  , _support_fence_fd(fenceFdSupported())
@@ -196,7 +196,7 @@ namespace vuh {
 			return true;
 		} else {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-			const auto em_extensions = _physdev.enumerateDeviceExtensionProperties();
+			const auto em_extensions = _phy_dev.enumerateDeviceExtensionProperties();
 			auto avail_extensions = em_extensions.value;
 			VULKAN_HPP_ASSERT(vk::Result::eSuccess == em_extensions.result);
 			if(vk::Result::eSuccess != em_extensions.result) {
@@ -226,7 +226,7 @@ namespace vuh {
 
 	/// Copy constructor. Creates new handle to the same physical device, and recreates associated pools
 	Device::Device(const Device& other)
-	   : Device(other._instance, other._physdev, other._cmp_family_id, other._tfr_family_id)
+	   : Device(other._instance, other._phy_dev, other._cmp_family_id, other._tfr_family_id)
 	{}
 
 	/// Copy assignment. Created new handle to the same physical device and recreates associated pools.
@@ -239,7 +239,7 @@ namespace vuh {
 	Device::Device(Device&& other) noexcept
 	   : vk::Device(std::move(other))
 	   , _instance(other._instance)
-	   , _physdev(other._physdev)
+	   , _phy_dev(other._phy_dev)
 	   , _cmdpool_compute(other._cmdpool_compute)
 	   , _cmdbuf_compute(other._cmdbuf_compute)
 	   , _cmdpool_transfer(other._cmdpool_transfer)
@@ -261,7 +261,7 @@ namespace vuh {
 	auto swap(Device& d1, Device& d2)-> void {
 		using std::swap;
 		swap((vk::Device&)d1     , (vk::Device&)d2     );
-		swap(d1._physdev         , d2._physdev         );
+		swap(d1._phy_dev         , d2._phy_dev         );
 		swap(d1._cmdpool_compute , d2._cmdpool_compute );
 		swap(d1._cmdbuf_compute  , d2._cmdbuf_compute  );
 		swap(d1._cmdpool_transfer, d2._cmdpool_transfer);
@@ -273,25 +273,43 @@ namespace vuh {
 
 	/// @return physical device properties
 	auto Device::properties() const-> vk::PhysicalDeviceProperties {
-		return _physdev.getProperties();
+		return _phy_dev.getProperties();
 	}
 
 	/// @return memory properties of the memory with given id
 	auto Device::memoryProperties(uint32_t id) const-> vk::MemoryPropertyFlags {
-		return _physdev.getMemoryProperties().memoryTypes[id].propertyFlags;
+		return _phy_dev.getMemoryProperties().memoryTypes[id].propertyFlags;
 	}
 
 	/// Find first memory matching desired properties.
 	/// Does NOT check for free space availability, only matches the properties.
 	/// @return id of the suitable memory, -1 if no suitable memory found.
-	auto Device::selectMemory(vk::Buffer buffer, vk::MemoryPropertyFlags properties
+	auto Device::selectMemory(const vk::Buffer& buffer, vk::MemoryPropertyFlags properties
 	                          ) const-> uint32_t
 	{
-		auto memProperties = _physdev.getMemoryProperties();
+		auto memProperties = _phy_dev.getMemoryProperties();
 		auto memoryReqs = getBufferMemoryRequirements(buffer);
 		for(uint32_t i = 0; i < memProperties.memoryTypeCount; ++i){
 			if( (memoryReqs.memoryTypeBits & (1u << i))
 			    && ((properties & memProperties.memoryTypes[i].propertyFlags) == properties))
+			{
+				return i;
+			}
+		}
+		return uint32_t(-1);
+	}
+
+	/// Find first memory matching desired properties.
+	/// Does NOT check for free space availability, only matches the properties.
+	/// @return id of the suitable memory, -1 if no suitable memory found.
+	auto Device::selectMemory(const vk::Image& image, vk::MemoryPropertyFlags properties
+	) const-> uint32_t
+	{
+		auto memProperties = _phy_dev.getMemoryProperties();
+		auto memoryReqs = getImageMemoryRequirements(image);
+		for(uint32_t i = 0; i < memProperties.memoryTypeCount; ++i){
+			if( (memoryReqs.memoryTypeBits & (1u << i))
+				&& ((properties & memProperties.memoryTypes[i].propertyFlags) == properties))
 			{
 				return i;
 			}

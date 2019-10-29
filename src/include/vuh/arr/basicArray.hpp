@@ -1,11 +1,8 @@
 #pragma once
 
-#include "allocDevice.hpp"
-
+#include "vuh/mem/allocDevice.hpp"
 #include <vuh/device.h>
-
 #include <vulkan/vulkan.hpp>
-
 #include <cassert>
 
 namespace vuh {
@@ -36,10 +33,9 @@ public:
 			_mem = alloc.allocMemory(device, *this, properties);
 			_flags = alloc.memoryProperties(device);
 			_dev.bindBufferMemory(*this, _mem, 0);
+		} else {
+			release();
 		}
-		//else {
-		//	release();
-		//}
 #else
       try{
          auto alloc = Alloc();
@@ -105,16 +101,18 @@ public:
 private: // helpers
 	/// release resources associated with current BasicArray object
 	auto release() noexcept-> void {
-		if(static_cast<VULKAN_HPP_NAMESPACE::Buffer&>(*this)){
-			_dev.freeMemory(_mem);
+		if(static_cast<VULKAN_HPP_NAMESPACE::Buffer&>(*this)) {
+			if (bool(_mem)) {
+				_dev.freeMemory(_mem);
+			}
 			_dev.destroyBuffer(*this);
 		}
 	}
 protected: // data
-	VULKAN_HPP_NAMESPACE::DeviceMemory _mem;           ///< associated chunk of device memory
-	VULKAN_HPP_NAMESPACE::MemoryPropertyFlags _flags;  ///< actual flags of allocated memory (may differ from those requested)
-	vuh::Device& _dev;               ///< referes underlying logical device
-	VULKAN_HPP_NAMESPACE::Result _result;
+	vuh::Device& 								_dev;               ///< referes underlying logical device
+	VULKAN_HPP_NAMESPACE::DeviceMemory          _mem;           ///< associated chunk of device memory
+	VULKAN_HPP_NAMESPACE::MemoryPropertyFlags   _flags;  ///< actual flags of allocated memory (may differ from those requested)
+	VULKAN_HPP_NAMESPACE::Result                _result;
 }; // class BasicArray
 } // namespace arr
 } // namespace vuh

@@ -2,7 +2,6 @@
 
 #include "basicArray.hpp"
 #include "arrayIter.hpp"
-
 #include <algorithm>
 
 namespace vuh {

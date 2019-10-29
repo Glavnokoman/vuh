@@ -1,14 +1,12 @@
 #pragma once
 
-#include "arrayProperties.h"
+#include "vuh/mem/memProperties.h"
 #include "arrayIter.hpp"
 #include "arrayUtils.h"
-#include "allocDevice.hpp"
+#include "vuh/mem/allocDevice.hpp"
 #include "basicArray.hpp"
 #include "hostArray.hpp"
-
 #include <vuh/traits.hpp>
-
 #include <algorithm>
 #include <cassert>
 
@@ -18,7 +16,7 @@ namespace arr {
 /// Array class not supposed to take part in data exchange with host.
 /// The only valid use for such arrays is passing them as (in or out) argument to a shader.
 /// Resources allocation is handled by allocator defined by a template parameter which is supposed to provide
-/// memory and anderlying vulkan buffer with suitable flags.
+/// memory and underlying vulkan buffer with suitable flags.
 template<class T, class Alloc>
 class DeviceOnlyArray: public BasicArray<Alloc> {
 public:
@@ -94,7 +92,7 @@ public:
 	   : DeviceArray(device, n_elements, flags_memory, flags_buffer)
 	{
 		using std::begin;
-		auto stage_buffer = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, n_elements);
+		auto stage_buffer = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>(Base::_dev, n_elements);
 		auto stage_it = begin(stage_buffer);
 		for(size_t i = 0; i < n_elements; ++i, ++stage_it){
 			*stage_it = fun(i);
@@ -109,7 +107,7 @@ public:
 			std::copy(begin, end, host_data());
 			Base::_dev.unmapMemory(Base::_mem);
 		} else { // memory is not host visible, use staging buffer
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, begin, end);
+			auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>(Base::_dev, begin, end);
 			copyBuf(Base::_dev, stage_buf, *this, size_bytes());
 		}
 	}
@@ -121,7 +119,7 @@ public:
 			std::copy(begin, end, host_data() + offset);
 			Base::_dev.unmapMemory(Base::_mem);
 		} else { // memory is not host visible, use staging buffer
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostCoherent>>(Base::_dev, begin, end);
+			auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>(Base::_dev, begin, end);
 			copyBuf(Base::_dev, stage_buf, *this, size_bytes(), 0u, offset*sizeof(T));
 		}
 	}
@@ -135,7 +133,7 @@ public:
          Base::_dev.unmapMemory(Base::_mem);
       } else {
          using std::begin; using std::end;
-         auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev, size());
+         auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, size());
          copyBuf(Base::_dev, *this, stage_buf, size_bytes());
          std::copy(begin(stage_buf), end(stage_buf), copy_to);
       }
@@ -151,7 +149,7 @@ public:
          Base::_dev.unmapMemory(Base::_mem);
       } else {
          using std::begin; using std::end;
-         auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev, size());
+         auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, size());
          copyBuf(Base::_dev, *this, stage_buf, size_bytes());
          std::transform(begin(stage_buf), end(stage_buf), copy_to, std::forward<F>(fun));
       }
@@ -170,7 +168,7 @@ public:
 			Base::_dev.unmapMemory(Base::_mem);
 		} else {
 			using std::begin; using std::end;
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev, size);
+			auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, size);
 			copyBuf(Base::_dev, *this, stage_buf, size_bytes());
 			std::transform(begin(stage_buf), end(stage_buf), copy_to, std::forward<F>(fun));
 		}
@@ -185,7 +183,7 @@ public:
 			Base::_dev.unmapMemory(Base::_mem);
 		} else {
 			using std::begin; using std::end;
-			auto stage_buf = HostArray<T, AllocDevice<properties::HostCached>>(Base::_dev
+			auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev
 			                                                          , offset_end - offset_begin);
 			copyBuf(Base::_dev, *this, stage_buf, size_bytes(), offset_begin, 0u);
 			std::copy(begin(stage_buf), end(stage_buf), dst_begin);

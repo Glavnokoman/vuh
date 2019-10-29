@@ -1,9 +1,7 @@
 #pragma once
 
 #include <vuh/device.h>
-
 #include <vulkan/vulkan.hpp>
-
 #include <cassert>
 #include <cstdint>
 
@@ -78,5 +76,5 @@ namespace vuh {
 	private: // data
 		Array* _array;       ///< refers to the array being iterated
 		std::size_t _offset; ///< offset (number of elements) wrt to beginning of the iterated array
-	}; // class DeviceArrayIter
+	}; // class ArrayIter
 } // namespace vuh

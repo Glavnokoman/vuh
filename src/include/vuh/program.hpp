@@ -4,9 +4,7 @@
 #include "device.h"
 #include "utils.h"
 #include "delayed.hpp"
-
 #include <vulkan/vulkan.hpp>
-
 #include <array>
 #include <cstddef>
 #include <tuple>

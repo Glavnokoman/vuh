@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-
 #include <vector>
 
 namespace vuh {
@@ -17,7 +16,7 @@ namespace vuh {
 	/// different threads.
 	class Device: public VULKAN_HPP_NAMESPACE::Device {
 	public:
-		explicit Device(vuh::Instance& instance, VULKAN_HPP_NAMESPACE::PhysicalDevice physdevice);
+		explicit Device(const vuh::Instance& instance, const VULKAN_HPP_NAMESPACE::PhysicalDevice& phys_dev);
 		~Device() noexcept;
 
 		Device(const Device&);
@@ -30,7 +29,8 @@ namespace vuh {
 		auto numComputeQueues() const-> uint32_t { return 1u;}
 		auto numTransferQueues() const-> uint32_t { return 1u;}
 		auto memoryProperties(uint32_t id) const-> VULKAN_HPP_NAMESPACE::MemoryPropertyFlags;
-		auto selectMemory(VULKAN_HPP_NAMESPACE::Buffer buffer, VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties) const-> uint32_t;
+		auto selectMemory(const VULKAN_HPP_NAMESPACE::Buffer& buffer, VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties) const-> uint32_t;
+		auto selectMemory(const VULKAN_HPP_NAMESPACE::Image& image, VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties) const-> uint32_t;
 		auto instance() const-> const vuh::Instance& {return _instance;}
 		auto hasSeparateQueues() const-> bool;
 
@@ -47,23 +47,23 @@ namespace vuh {
 							, VULKAN_HPP_NAMESPACE::Result& result
 		                    , VULKAN_HPP_NAMESPACE::PipelineCreateFlags flags={}
 		                    )-> VULKAN_HPP_NAMESPACE::Pipeline;
-		auto instance()-> vuh::Instance& { return _instance; }
+		auto instance()-> const vuh::Instance& { return _instance; }
 		auto releaseComputeCmdBuffer(VULKAN_HPP_NAMESPACE::Result& result)-> VULKAN_HPP_NAMESPACE::CommandBuffer;
 
 		// if fenceFd is support, we can use epoll or select wait for fence complete
 		auto supportFenceFd()-> bool;
 		
 	private: // helpers
-		explicit Device(vuh::Instance& instance, VULKAN_HPP_NAMESPACE::PhysicalDevice physdevice
+		explicit Device(const vuh::Instance& instance, const VULKAN_HPP_NAMESPACE::PhysicalDevice& phy_dev
 		                , const std::vector<VULKAN_HPP_NAMESPACE::QueueFamilyProperties>& families);
-		explicit Device(vuh::Instance& instance, VULKAN_HPP_NAMESPACE::PhysicalDevice physdevice
+		explicit Device(const vuh::Instance& instance, const VULKAN_HPP_NAMESPACE::PhysicalDevice& phy_dev
 	                   , uint32_t computeFamilyId, uint32_t transferFamilyId);
 		auto release() noexcept-> void;
 
 		auto fenceFdSupported() noexcept-> bool;
 	private: // data
-		vuh::Instance&     _instance;           ///< refer to Instance object used to create device
-        VULKAN_HPP_NAMESPACE::PhysicalDevice _physdev;            ///< handle to associated physical device
+		const vuh::Instance&     			_instance;           ///< refer to Instance object used to create device
+        VULKAN_HPP_NAMESPACE::PhysicalDevice _phy_dev;            ///< handle to associated physical device
         VULKAN_HPP_NAMESPACE::CommandPool    _cmdpool_compute;    ///< handle to command pool for compute commands
         VULKAN_HPP_NAMESPACE::CommandBuffer  _cmdbuf_compute;     ///< primary command buffer associated with the compute command pool
         VULKAN_HPP_NAMESPACE::CommandPool    _cmdpool_transfer;   ///< handle to command pool for transfer instructions. Initialized on first trasnfer request.

@@ -5,7 +5,6 @@
 #include <vuh/delayed.hpp>
 #include <vuh/traits.hpp>
 #include <vuh/resource.hpp>
-
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -98,7 +97,7 @@ namespace vuh {
 		/// At construction copies the data from host to the staging buffer.
 		template<class T>
 		struct CopyStageFromHost: public CopyDevice {
-			using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCoherent>>;
+			using StageArray = arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>;
 			StageArray array; ///< staging buffer
 
 			/// Constructor. Copies data from host to the internal staging buffer.
@@ -112,7 +111,7 @@ namespace vuh {
 		/// Delayed action copies data from staging buffer to the host.
 		template<class T, class IterDst>
 		struct CopyStageToHost: CopyDevice {
-			using StageArray = arr::HostArray<T, arr::AllocDevice<arr::properties::HostCached>>;
+			using StageArray = arr::HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>;
 			StageArray array;      ///< staging buffer
 			IterDst    dst_begin;  ///< iterator to beginning of the host destination range
 
