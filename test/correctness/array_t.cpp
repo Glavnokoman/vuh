@@ -142,7 +142,7 @@ TEST_CASE("array with memory directly allocated from device", "[array][correctne
 	}
 	SECTION("void memory allocator should throw"){
 		REQUIRE_THROWS(([&](){
-			auto d_array = vuh::Array<float, vuh::arr::AllocDevice<void>>(device, arr_size);
+			auto d_array = vuh::Array<float, vuh::mem::AllocDevice<void>>(device, arr_size);
 		}()));
 	}
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vuh/mem/memProperties.h"
+#include "mem/memProperties.h"
 #include "arr/arrayIter.hpp"
 #include "arr/arrayView.hpp"
 #include "arr/copy_async.hpp"

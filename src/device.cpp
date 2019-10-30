@@ -203,7 +203,7 @@ namespace vuh {
 				avail_extensions.clear();
 			}
 #else
-			const auto avail_extensions = _physdev.enumerateDeviceExtensionProperties();
+			const auto avail_extensions = _phy_dev.enumerateDeviceExtensionProperties();
 #endif
 			for(int i = 0; i< avail_extensions.size(); i++) {
 #ifdef VK_USE_PLATFORM_WIN32_KHR
