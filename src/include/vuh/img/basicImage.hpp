@@ -1,8 +1,9 @@
 #pragma once
 
+#include "vuh/core/core.hpp"
 #include "vuh/mem/allocDevice.hpp"
+#include "vuh/mem/basicMemory.hpp"
 #include <vuh/device.h>
-#include <vulkan/vulkan.hpp>
 #include <cassert>
 
 namespace vuh {
@@ -12,24 +13,25 @@ namespace vuh {
 /// Keeps the data, handles initialization, copy/move, common interface,
 /// binding memory to buffer objects, etc...
         template<class T, class Alloc>
-        class BasicImage: public VULKAN_HPP_NAMESPACE::Image {
+        class BasicImage: public vhn::Image, public vuh::mem::BasicMemory {
         public:
+            static constexpr auto descriptor_class = basic_memory_image_class;
 
             /// Construct Image of given size in device memory
             BasicImage(vuh::Device& device                     ///< device to allocate array
-                    , VULKAN_HPP_NAMESPACE::ImageType imageType
+                    , vhn::ImageType imageType
                     , size_t width    ///< desired width
                     , size_t height    ///< desired height
-                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
-                    , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
-                    , VULKAN_HPP_NAMESPACE::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm/// format
+                    , vhn::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+                    , vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : VULKAN_HPP_NAMESPACE::Image(Alloc::makeImage(device, imageType, width, height, format, usage, _result))
+                    : vhn::Image(Alloc::makeImage(device, imageType, width, height, format, usage, _result))
                     , _dev(device)
             {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-                VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
-                if (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) {
+                VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+                if (vhn::Result::eSuccess == _result) {
                     auto alloc = Alloc();
                     _mem = alloc.allocMemory(device, *this, properties);
                     _flags = alloc.memoryProperties(device);
@@ -58,13 +60,13 @@ namespace vuh {
 
             /// Move constructor. Passes the underlying buffer ownership.
             BasicImage(BasicImage&& other) noexcept
-                    : VULKAN_HPP_NAMESPACE::Image(other), _mem(other._mem), _flags(other._flags), _dev(other._dev)
+                    : vhn::Image(other), _mem(other._mem), _flags(other._flags), _dev(other._dev)
             {
-                static_cast<VULKAN_HPP_NAMESPACE::Image&>(other) = nullptr;
+                static_cast<vhn::Image&>(other) = nullptr;
             }
 
             /// @return underlying buffer
-            auto image()-> VULKAN_HPP_NAMESPACE::Image { return *this; }
+            auto image()-> vhn::Image { return *this; }
 
             /// @return offset of the current buffer from the beginning of associated device memory.
             /// For arrays managing their own memory this is always 0.
@@ -75,7 +77,7 @@ namespace vuh {
 
             /// @return true if array is host-visible, ie can expose its data via a normal host pointer.
             auto isHostVisible() const-> bool {
-                return bool(_flags & VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eHostVisible);
+                return bool(_flags & vhn::MemoryPropertyFlagBits::eHostVisible);
             }
 
             /// Move assignment.
@@ -86,24 +88,35 @@ namespace vuh {
                 _mem = other._mem;
                 _flags = other._flags;
                 _dev = other._dev;
-                reinterpret_cast<VULKAN_HPP_NAMESPACE::Image&>(*this) = reinterpret_cast<VULKAN_HPP_NAMESPACE::Image&>(other);
-                reinterpret_cast<VULKAN_HPP_NAMESPACE::Image&>(other) = nullptr;
+                reinterpret_cast<vhn::Image&>(*this) = reinterpret_cast<vhn::Image&>(other);
+                reinterpret_cast<vhn::Image&>(other) = nullptr;
                 return *this;
             }
 
             /// swap the guts of two basic arrays
             auto swap(BasicImage& other) noexcept-> void {
                 using std::swap;
-                swap(static_cast<VULKAN_HPP_NAMESPACE::Image&>(&this), static_cast<VULKAN_HPP_NAMESPACE::Image&>(other));
+                swap(static_cast<vhn::Image&>(&this), static_cast<vhn::Image&>(other));
                 swap(_mem, other._mem);
                 swap(_flags, other._flags);
                 swap(_dev, other._dev);
             }
 
+            virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& override {
+              /*  descImageInfo.setSampler(buffer());
+                descImageInfo.setImageView(offset());
+                descImageInfo.setImageLayout(size_bytes());*/
+                return descImageInfo;
+            }
+
+            virtual auto descriptorType() const -> vhn::DescriptorType override  {
+                return descriptor_class;
+            }
+
         private: // helpers
             /// release resources associated with current BasicArray object
             auto release() noexcept-> void {
-                if(static_cast<VULKAN_HPP_NAMESPACE::Image&>(*this)){
+                if(static_cast<vhn::Image&>(*this)){
                     if(bool(_mem)) {
                         _dev.freeMemory(_mem);
                     }
@@ -111,10 +124,10 @@ namespace vuh {
                 }
             }
         protected: // data
-            VULKAN_HPP_NAMESPACE::DeviceMemory          _mem;      ///< associated chunk of device memory
-            VULKAN_HPP_NAMESPACE::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
+            vhn::DeviceMemory          _mem;      ///< associated chunk of device memory
+            vhn::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
             vuh::Device&                                _dev;      ///< referes underlying logical device
-            VULKAN_HPP_NAMESPACE::Result                _result;
+            vhn::Result                _result;
         }; // class BasicImage
 
         template<class T, class Alloc>
@@ -125,11 +138,11 @@ namespace vuh {
             Basic2DImage(vuh::Device& device                     ///< device to allocate array
                     , size_t width                     ///< desired width in bytes
                     , size_t height                     ///< desired height in bytes
-                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm /// format
-                    , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
-                    , VULKAN_HPP_NAMESPACE::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm /// format
+                    , vhn::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+                    , vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : Base(device, VULKAN_HPP_NAMESPACE::ImageType::e2D, width, height, format, properties, usage)
+                    : Base(device, vhn::ImageType::e2D, width, height, format, properties, usage)
                     , _width(width)
                     , _height(height)
             {}

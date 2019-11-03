@@ -24,9 +24,9 @@ namespace vuh {
             DeviceOnly2DImage( vuh::Device& device  ///< deice to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
-                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm/// format
-                    , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-                    , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
+                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm/// format
+                    , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
                     : Basic2DImage<T, Alloc>(device, width, height, format, flags_memory, flags_image)
             {}
         }; // class DeviceOnly2DImage
@@ -47,9 +47,9 @@ namespace vuh {
             Device2DImage(vuh::Device& device   ///< device to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
-                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm /// format
-                    , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-                    , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
+                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm /// format
+                    , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(device, width, height, format, flags_memory, flags_image)
             {}
 
@@ -58,9 +58,9 @@ namespace vuh {
             Device2DImage(vuh::Device& device  ///< device to create array on
                     , const C& c          ///< iterable to initialize from
                     , size_t width     ///< width of image
-                    , VULKAN_HPP_NAMESPACE::Format format=VULKAN_HPP_NAMESPACE::Format::eR8G8B8A8Unorm /// format
-                    , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-                    , VULKAN_HPP_NAMESPACE::ImageUsageFlags flags_image={})	  ///< additional (to defined by allocator) buffer usage flags
+                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm /// format
+                    , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::ImageUsageFlags flags_image={})	  ///< additional (to defined by allocator) buffer usage flags
                     : Base(device, width, c.size() / width + 1, format, flags_memory, flags_image)
             {
                 using std::begin; using std::end;
@@ -178,8 +178,8 @@ namespace vuh {
                 assert(Base::isHostVisible());
                 auto data = Base::_dev.mapMemory(Base::_mem, 0, Base::size_bytes());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-                VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == data.result);
-                if (VULKAN_HPP_NAMESPACE::Result::eSuccess == data.result) {
+                VULKAN_HPP_ASSERT(vhn::Result::eSuccess == data.result);
+                if (vhn::Result::eSuccess == data.result) {
                     return static_cast<T *>(data.value);
                 }
                 return nullptr;
@@ -192,8 +192,8 @@ namespace vuh {
                 assert(Base::isHostVisible());
                 auto data = Base::_dev.mapMemory(Base::_mem, 0, Base::size_bytes());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-                VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == data.result);
-                if (VULKAN_HPP_NAMESPACE::Result::eSuccess == data.result) {
+                VULKAN_HPP_ASSERT(vhn::Result::eSuccess == data.result);
+                if (vhn::Result::eSuccess == data.result) {
                     return static_cast<const T *>(data.value);
                 }
                 return nullptr;

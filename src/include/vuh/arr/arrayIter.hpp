@@ -1,7 +1,7 @@
 #pragma once
 
+#include "vuh/core/core.hpp"
 #include <vuh/device.h>
-#include <vulkan/vulkan.hpp>
 #include <cassert>
 #include <cstdint>
 

@@ -14,25 +14,24 @@ namespace arr {
 /// Provides Forward iterator + random-access interface.
 /// Memory remains mapped during the whole lifetime of an object of this type.
 template<class T, class Alloc>
-class HostArray: public BasicArray<Alloc> {
-	using Base = BasicArray<Alloc>;
+class HostArray: public BasicArray<T, Alloc> {
+	using Base = BasicArray<T, Alloc>;
 public:
 	using value_type = T;
 	/// Construct object of the class on given device.
 	/// Memory is not initialized with any data.
 	HostArray(vuh::Device& device  ///< device to create array on
 	          , size_t n_elements  ///< number of elements
-	          , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	          , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
+	          , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	          , vhn::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	          )
-	   : BasicArray<Alloc>(device, n_elements*sizeof(T), flags_memory, flags_buffer)
-	   , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
-	   , _size(n_elements)
+	   : BasicArray<T, Alloc>(device, n_elements, flags_memory, flags_buffer)
+	   , _result(vhn::Result::eSuccess)
 	{
 		auto data = Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T));
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		_result = data.result;
-		VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
+		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
 		_data = static_cast<T*>(data.value);
 #else
 		_data = static_cast<T*>(data);
@@ -43,8 +42,8 @@ public:
 	HostArray(vuh::Device& device ///< device to create array on
 	         , size_t n_elements   ///< number of elements
 	         , T value             ///< initializer value
-	         , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	         , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={}	   ///< additional (to defined by allocator) buffer usage flags
+	         , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	         , vhn::BufferUsageFlags flags_buffer={}	   ///< additional (to defined by allocator) buffer usage flags
 	         )
 	   : HostArray(device, n_elements, flags_memory, flags_buffer)
 	{
@@ -56,16 +55,16 @@ public:
 	HostArray(vuh::Device& device ///< device to create array on
 	         , It1 begin          ///< beginning of initialization range
 	         , It2 end            ///< end (one past end) of initialization range
-	         , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
-	         , VULKAN_HPP_NAMESPACE::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
+	         , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	         , vhn::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	         )
-	   : HostArray(device, std::distance(begin, end), flags_memory, flags_buffer)
+	   : HostArray(device, std::distance(begin, end)/sizeof(T), flags_memory, flags_buffer)
 	{
 		std::copy(begin, end, this->begin());
 	}
 
    /// Move constructor.
-   HostArray(HostArray&& o): Base(std::move(o)), _data(o._data), _size(o._size) {o._data = nullptr;}
+   HostArray(HostArray&& o): Base(std::move(o)), _data(o._data) {o._data = nullptr;}
 	/// Move operator.
    auto operator=(HostArray&& o)-> HostArray& {
 		this->swap(o);
@@ -84,7 +83,7 @@ public:
 		using std::swap;
 		swap(static_cast<Base&>(*this), static_cast<Base&>(o));
       swap(_data, o._data);
-      swap(_size, o._size);
+      swap(Base::size(), o.Base::size());
 	}
    
    /// Host-accesible iterator to beginning of array data
@@ -96,8 +95,8 @@ public:
 	auto data() const-> const T* {return _data;}
 
    /// Host-accessible iterator to the end (one past the last element) of array data.
-	auto end()-> value_type* { return begin() + size(); }
-	auto end() const-> const value_type* { return begin() + size(); }
+	auto end()-> value_type* { return begin() + Base::size(); }
+	auto end() const-> const value_type* { return begin() + Base::size(); }
 
 	///
 	auto device_begin()-> ArrayIter<HostArray> { return ArrayIter<HostArray>(*this, 0);}
@@ -105,24 +104,17 @@ public:
 	friend auto device_begin(HostArray& a)-> ArrayIter<HostArray> {return a.device_begin();}
 	
 	///
-	auto device_end()-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, _size);}
-	auto device_end() const-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, _size);}
+	auto device_end()-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, Base::size());}
+	auto device_end() const-> ArrayIter<HostArray> {return ArrayIter<HostArray>(*this, Base::size());}
 	friend auto device_end(HostArray& a)-> ArrayIter<HostArray> {return a.device_end();}
 
    /// Element access operator (host-side).
    auto operator[](size_t i)-> T& { return *(begin() + i);}
    auto operator[](size_t i) const-> T { return *(begin() + i);}
-   
-   /// @return number of elements
-   auto size() const-> size_t {return _size;}
-   
-   /// @return size of a memory chunk occupied by array elements
-   /// (not the size of actually allocated chunk, which may be a bit bigger).
-   auto size_bytes() const-> uint32_t {return _size*sizeof(T);}
+
 private: // data
    T* _data;       ///< host accessible pointer to the beginning of corresponding memory chunk.
-   size_t _size;  ///< Number of elements. Actual allocated memory may be a bit bigger then necessary.
-   VULKAN_HPP_NAMESPACE::Result _result;
+   vhn::Result _result;
 }; // class HostArray
 } // namespace arr
 } // namespace vuh

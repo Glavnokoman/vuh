@@ -1,30 +1,29 @@
 #pragma once
 
+#include "vuh/core/core.hpp"
 #include "vuh/device.h"
-
-#include <vulkan/vulkan.hpp>
 
 namespace vuh{
 namespace arr {
 	auto copyBuf(vuh::Device& device
-	             , VULKAN_HPP_NAMESPACE::Buffer src
-	             , VULKAN_HPP_NAMESPACE::Buffer dst
+	             , vhn::Buffer src
+	             , vhn::Buffer dst
 	             , size_t size_bytes
 	             , size_t src_offset=0
 	             , size_t dst_offset=0
 	             )-> void;
 
 	auto copyBufferToImage(vuh::Device& device
-			, VULKAN_HPP_NAMESPACE::Buffer src
-			, VULKAN_HPP_NAMESPACE::Image dst
+			, vhn::Buffer src
+			, vhn::Image dst
 			, uint32_t imageWidth
 			, uint32_t imageHeight
 			, size_t bufferOffset=0
 	)-> void;
 
 	auto copyImageToBuffer(vuh::Device& device
-			, VULKAN_HPP_NAMESPACE::Image src
-			, VULKAN_HPP_NAMESPACE::Buffer dst
+			, vhn::Image src
+			, vhn::Buffer dst
 			, uint32_t imageWidth
 			, uint32_t imageHeight
 			, size_t bufferOffset=0

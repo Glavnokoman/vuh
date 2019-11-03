@@ -38,10 +38,10 @@ namespace vuh {
 		   : vuh::Fence(fence)
 		   , Action(std::move(action))
 		   , _device(&device)
-		   , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
+		   , _result(vhn::Result::eSuccess)
 		{}
 
-		explicit Delayed(vuh::Fence& fence, vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, Action action={})
+		explicit Delayed(vuh::Fence& fence, vuh::Device& device, vhn::Result result, Action action={})
 				: vuh::Fence(fence)
 				, Action(std::move(action))
 				, _device(&device)
@@ -53,11 +53,11 @@ namespace vuh {
 				, vuh::Event(event)
                 , Action(std::move(action))
                 , _device(&device)
-                , _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
+                , _result(vhn::Result::eSuccess)
         {}
 
 		/// Constructs for VULKAN_HPP_NO_EXCEPTIONS
-		explicit Delayed(vuh::Device& device, VULKAN_HPP_NAMESPACE::Result result, vuh::Event& event, Action action={})
+		explicit Delayed(vuh::Device& device, vhn::Result result, vuh::Event& event, Action action={})
 				: vuh::Fence()
 				, vuh::Event(event)
 				, Action(std::move(action))
@@ -70,7 +70,7 @@ namespace vuh {
 				: vuh::Fence(device, true)
 				, Action(std::move(action))
 				, _device(&device)
-				, _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
+				, _result(vhn::Result::eSuccess)
 		{}
 
 
@@ -78,7 +78,7 @@ namespace vuh {
 		/// Takes over the undelying fence ownership.
 		/// Mostly substitute its own action in place of Noop.
 		explicit Delayed(Delayed<detail::Noop>&& noop, Action action={})
-		   : vuh::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device)), _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
+		   : vuh::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device)), _result(vhn::Result::eSuccess)
 		{}
 
 		/// Destructor. Blocks till the undelying fence is signalled (waits forever).
@@ -137,12 +137,12 @@ namespace vuh {
 			return static_cast<vuh::Event&>(*this).setEvent();
 		}
 
-		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
-		bool success() const { return VULKAN_HPP_NAMESPACE::Result::eSuccess == _result; }
-		std::string error_to_string() const { return VULKAN_HPP_NAMESPACE::to_string(_result); };
+		vhn::Result error() const { return _result; };
+		bool success() const { return vhn::Result::eSuccess == _result; }
+		std::string error_to_string() const { return vhn::to_string(_result); };
 
 	private: // data
 		std::unique_ptr<Device, util::NoopDeleter<Device>> _device; ///< refers to the device owning corresponding the underlying fence.
-		VULKAN_HPP_NAMESPACE::Result _result;
+		vhn::Result _result;
 	}; // class Delayed
 } // namespace vuh

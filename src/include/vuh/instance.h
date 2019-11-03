@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "vuh/core/core.hpp"
 #include <vector>
 
 namespace vuh {

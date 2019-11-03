@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vuh/device.h>
-#include <vulkan/vulkan.hpp>
 #include <cassert>
 #include <cstdint>
 
@@ -30,7 +29,7 @@ namespace vuh {
         auto device()-> vuh::Device& { return _image->device(); }
 
         /// @return reference to Vulkan image of iterated array
-        auto image()-> VULKAN_HPP_NAMESPACE::Buffer& { return *_image; }
+        auto image()-> vhn::Buffer& { return *_image; }
 
         /// @return offset (number of elements) wrt to beginning of the iterated array
         auto offset() const-> size_t { return _offset; }
