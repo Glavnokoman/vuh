@@ -68,6 +68,12 @@ namespace vuh {
             /// @return underlying buffer
             auto image()-> vhn::Image { return *this; }
 
+            auto imageView() -> vhn::ImageView { return _imageView; }
+
+            auto imageLayout() -> vhn::ImageLayout { return _imageLayout; }
+
+            auto sampler() -> vhn::Sampler { return _sampler; }
+
             /// @return offset of the current buffer from the beginning of associated device memory.
             /// For arrays managing their own memory this is always 0.
             auto offset() const-> std::size_t { return 0;}
@@ -103,9 +109,9 @@ namespace vuh {
             }
 
             virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& override {
-              /*  descImageInfo.setSampler(buffer());
-                descImageInfo.setImageView(offset());
-                descImageInfo.setImageLayout(size_bytes());*/
+                descImageInfo.setSampler(sampler());
+                descImageInfo.setImageView(imageView());
+                descImageInfo.setImageLayout(imageLayout());
                 return descImageInfo;
             }
 
@@ -126,8 +132,11 @@ namespace vuh {
         protected: // data
             vhn::DeviceMemory          _mem;      ///< associated chunk of device memory
             vhn::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
-            vuh::Device&                                _dev;      ///< referes underlying logical device
+            vuh::Device&               _dev;      ///< referes underlying logical device
             vhn::Result                _result;
+            vhn::ImageView             _imageView;
+            vhn::Sampler               _sampler;
+            vhn::ImageLayout           _imageLayout;
         }; // class BasicImage
 
         template<class T, class Alloc>
