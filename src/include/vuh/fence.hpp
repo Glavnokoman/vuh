@@ -18,15 +18,15 @@ namespace vuh {
 				, _result(vhn::Result::eSuccess)
 		{
 #if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
-	#ifdef VK_USE_PLATFORM_WIN32_KHR
-		// which one is correct on windows ?	
-		vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
-		//VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
-	#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
-		vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eSyncFd);
-	#else
-		vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
-	#endif
+        #ifdef VK_USE_PLATFORM_WIN32_KHR
+            // which one is correct on windows ?
+            vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
+            //VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
+        #elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+            vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eSyncFd);
+        #else
+            vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
+        #endif
 #else									
 	#ifdef VK_USE_PLATFORM_WIN32_KHR
 			// which one is correct on windows ?
