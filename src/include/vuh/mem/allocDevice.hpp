@@ -33,7 +33,7 @@ public:
 		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == result);
 		return buffer.value;
 #else
-		result = vbk::Result::eSuccess;
+		result = vhn::Result::eSuccess;
 		return buffer;
 #endif
 	}
@@ -67,7 +67,7 @@ public:
 		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == result);
 		return image.value;
 #else
-		result = vbk::Result::eSuccess;
+		result = vhn::Result::eSuccess;
 		return image;
 #endif
 	}
@@ -91,7 +91,7 @@ public:
 #else
 		try{
 			mem = device.allocateMemory({device.getImageMemoryRequirements(image).size, _memid});
-		} catch (vbk::Error& e){
+		} catch (vhn::Error& e){
 			device.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 			                         , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 #endif
@@ -122,7 +122,7 @@ public:
 #else
 		try{
 			mem = device.allocateMemory({device.getBufferMemoryRequirements(buffer).size, _memid});
-		} catch (vbk::Error& e){
+		} catch (vhn::Error& e){
 			device.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 			                         , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 #endif
@@ -208,7 +208,7 @@ public:
 		VULKAN_HPP_ASSERT(0);
 		return vhn::DeviceMemory();
 #else
-		throw vbk::OutOfDeviceMemoryError("failed to allocate device memory"
+		throw vhn::OutOfDeviceMemoryError("failed to allocate device memory"
 		                                 " and no fallback available");
 #endif
 	}
@@ -219,7 +219,7 @@ public:
 		VULKAN_HPP_ASSERT(0);
 		return vhn::DeviceMemory();
 #else
-		throw vbk::OutOfDeviceMemoryError("failed to allocate device memory"
+		throw vhn::OutOfDeviceMemoryError("failed to allocate device memory"
 		                                 " and no fallback available");
 #endif
 	}
@@ -257,7 +257,7 @@ public:
 	                      , vhn::Result& result
 	                      )-> vhn::Buffer
 	{
-		VULKAN_HPP_NAMESPACE::ResultValueType<vhn::Buffer>::type buffer = device.createBuffer({ {}, size_bytes, flags});
+		vhn::ResultValueType<vhn::Buffer>::type buffer = device.createBuffer({ {}, size_bytes, flags});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		result = buffer.result;
 		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == result);

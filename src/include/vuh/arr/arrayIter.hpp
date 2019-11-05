@@ -30,7 +30,7 @@ namespace vuh {
 		auto device()-> vuh::Device& { return _array->device(); }
 
 		/// @return reference to Vulkan buffer of iterated array
-		auto buffer()-> VULKAN_HPP_NAMESPACE::Buffer& { return *_array; }
+		auto buffer()-> vhn::Buffer& { return *_array; }
 
 		/// @return offset (number of elements) wrt to beginning of the iterated array
 		auto offset() const-> size_t { return _offset; }
