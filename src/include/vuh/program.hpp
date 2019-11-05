@@ -114,7 +114,7 @@ namespace vuh {
 
 		/// Program base functionality.
 		/// Initializes and keeps most state variables, and array argument handling building blocks.
-		class ProgramBase : public vuh::VuhBasic {
+		class ProgramBase : virtual public vuh::VuhBasic {
 		public:
 			/// Run the Program object on previously bound parameters, wait for completion.
 			/// @pre bacth sizes should be specified before calling this.
@@ -405,7 +405,7 @@ namespace vuh {
 
 		/// Explicit specialization for empty specialization constants interface.
 		template<>
-		class SpecsBase<typelist<>>: public ProgramBase{
+		class SpecsBase<typelist<>>: public ProgramBase {
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
 			SpecsBase(Device& dev, const char* filepath, vhn::ShaderModuleCreateFlags flags={})

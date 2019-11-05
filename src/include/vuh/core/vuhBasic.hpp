@@ -8,6 +8,7 @@ namespace vuh {
     class VuhBasic {
     public:
         VuhBasic() : _res(vhn::Result::eSuccess) { }
+        explicit VuhBasic(vhn::Result res) : _res(res) { }
 
     public:
         virtual vhn::Result error() const { return _res; };

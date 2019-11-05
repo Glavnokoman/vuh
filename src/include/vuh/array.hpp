@@ -9,27 +9,27 @@
 #include "mem/basicMemory.hpp"
 
 namespace vuh {
-namespace detail {
+	namespace detail {
 
-/// Traits to associate array properties to underlying Array classes (HostArray, DeviceArray).
-/// Default mapping is ArrayClass<T> -> arr::HostArray.
-template<class Props>
-struct ArrayClass {
-	template<class T, class Alloc> using type = arr::HostArray<T, Alloc>;
-};
+		/// Traits to associate array properties to underlying Array classes (HostArray, DeviceArray).
+		/// Default mapping is ArrayClass<T> -> arr::HostArray.
+		template<class Props>
+		struct ArrayClass {
+			template<class T, class Alloc> using type = arr::HostArray<T, Alloc>;
+		};
 
-/// Explicit trait specialization mapping ArrayClass<arr::properties::Device> -> arr::DeviceArray
-template<>
-struct ArrayClass<vuh::mem::properties::Device>{
-   template<class T, class Alloc> using type = arr::DeviceArray<T, Alloc>;
-};
+		/// Explicit trait specialization mapping ArrayClass<arr::properties::Device> -> arr::DeviceArray
+		template<>
+		struct ArrayClass<vuh::mem::properties::Device>{
+		   template<class T, class Alloc> using type = arr::DeviceArray<T, Alloc>;
+		};
 
-/// Explicit trait specialization mapping ArrayClass<arr::properties::DeviceOnly> -> arr::DeviceOnlyArray
-template<>
-struct ArrayClass<vuh::mem::properties::DeviceOnly>{
-   template<class T, class Alloc> using type = arr::DeviceOnlyArray<T, Alloc>;
-};
-} // namespace detail
+		/// Explicit trait specialization mapping ArrayClass<arr::properties::DeviceOnly> -> arr::DeviceOnlyArray
+		template<>
+		struct ArrayClass<vuh::mem::properties::DeviceOnly>{
+		   template<class T, class Alloc> using type = arr::DeviceOnlyArray<T, Alloc>;
+		};
+	} // namespace detail
 
 /// Maps Array classes with different data exchange interfaces, to a single template type.
 /// This enables std::vector-like type declarations of Arrays with different allocators.

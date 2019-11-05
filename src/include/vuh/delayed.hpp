@@ -38,14 +38,13 @@ namespace vuh {
 		   : vuh::Fence(fence)
 		   , Action(std::move(act))
 		   , _dev(&dev)
-		   , _res(vhn::Result::eSuccess)
 		{}
 
 		explicit Delayed(vuh::Fence& fence, vuh::Device& dev, vhn::Result res, Action act={})
 				: vuh::Fence(fence)
 				, Action(std::move(act))
 				, _dev(&dev)
-				, _res(res)
+				, vuh::VuhBasic(res)
 		{}
 
         explicit Delayed(vuh::Fence& fence, vuh::Event& ev, vuh::Device& dev, Action act={})
@@ -53,7 +52,6 @@ namespace vuh {
 				, vuh::Event(ev)
                 , Action(std::move(act))
                 , _dev(&dev)
-                , _res(vhn::Result::eSuccess)
         {}
 
 		/// Constructs for VULKAN_HPP_NO_EXCEPTIONS
@@ -62,7 +60,7 @@ namespace vuh {
 				, vuh::Event(ev)
 				, Action(std::move(act))
 				, _dev(&dev)
-				, _res(res)
+				, vuh::VuhBasic(res)
 		{}
 
 		/// Constructor. Creates the fence in a signalled state.
@@ -70,7 +68,6 @@ namespace vuh {
 				: vuh::Fence(dev, true)
 				, Action(std::move(act))
 				, _dev(&dev)
-				, _res(vhn::Result::eSuccess)
 		{}
 
 
@@ -78,7 +75,7 @@ namespace vuh {
 		/// Takes over the undelying fence ownership.
 		/// Mostly substitute its own action in place of Noop.
 		explicit Delayed(Delayed<detail::Noop>&& noop, Action act={})
-		   : vuh::Fence(std::move(noop)), Action(std::move(act)), _dev(std::move(noop._dev)), _res(vhn::Result::eSuccess)
+		   : vuh::Fence(std::move(noop)), Action(std::move(act)), _dev(std::move(noop._dev))
 		{}
 
 		/// Destructor. Blocks till the undelying fence is signalled (waits forever).
@@ -137,12 +134,11 @@ namespace vuh {
 			return static_cast<vuh::Event&>(*this).setEvent();
 		}
 
-		virtual vhn::Result error() const override { return _res; };
-        virtual bool success() const override { return vhn::Result::eSuccess == _res; }
-        virtual std::string error_to_string() const override { return vhn::to_string(_res); };
+        virtual bool success() const override {
+			return vhn::Result::eSuccess == _res;
+		}
 
 	private: // data
 		std::unique_ptr<Device, util::NoopDeleter<Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
-		vhn::Result _res;
 	}; // class Delayed
 } // namespace vuh

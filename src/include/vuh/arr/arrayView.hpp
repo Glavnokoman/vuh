@@ -9,7 +9,7 @@ namespace vuh {
 	/// Maybe used in place of array references in copy routines and kernel invocations
 	/// to pass parts of the array data.
 	template<class Array>
-	class ArrayView : public vuh::mem::BasicMemory {
+	class ArrayView : virtual public vuh::mem::BasicMemory {
 	public:
 		using array_type = Array;
 		using value_type = typename Array::value_type;
@@ -30,10 +30,10 @@ namespace vuh {
 		auto size_bytes() const-> std::size_t {return size()*sizeof(value_type);}
 
 		virtual auto descriptorBufferInfo() -> vhn::DescriptorBufferInfo& override {
-			descBufferInfo.setBuffer(buffer());
-			descBufferInfo.setOffset(offset());
-			descBufferInfo.setRange(size_bytes());
-			return descBufferInfo;
+			_descBufferInfo.setBuffer(buffer());
+			_descBufferInfo.setOffset(offset());
+			_descBufferInfo.setRange(size_bytes());
+			return _descBufferInfo;
 		}
 
 		virtual auto descriptorType() const -> vhn::DescriptorType override  {
@@ -48,7 +48,7 @@ namespace vuh {
 
 	/// Create a ArrayView into given Array.
 	template<class Array>
-	auto array_view(Array& array, std::size_t offset_begin, size_t offset_end)-> ArrayView<Array>{
-		return ArrayView<Array>(array, offset_begin, offset_end);
+	auto array_view(Array& arr, std::size_t offset_begin, size_t offset_end)-> ArrayView<Array>{
+		return ArrayView<Array>(arr, offset_begin, offset_end);
 	}
 } // namespace vuh

@@ -16,7 +16,7 @@ namespace vuh {
         /// Resources allocation is handled by allocator defined by a template parameter which is supposed to provide
         /// memory and underlying vulkan image with suitable flags.
         template<class T, class Alloc>
-        class DeviceOnly2DImage: public Basic2DImage<T, Alloc> {
+        class DeviceOnly2DImage: virtual public Basic2DImage<T, Alloc> {
         public:
             using value_type = T;
             /// Constructs object of the class on given device.

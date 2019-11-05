@@ -7,15 +7,14 @@
 namespace vuh {
 	/// Class used for synchronization with host.
 	/// vulkan fence  
-class Fence : public vhn::Fence, public vuh::VuhBasic {
+	class Fence : virtual public vuh::VuhBasic, public vhn::Fence {
 	public:
 		Fence() : vhn::Fence() {
 
 		}
 
 		explicit Fence(vuh::Device& dev, bool signaled=false)
-				: _dev(&dev)
-		{
+				: _dev(&dev) {
 #if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
         #ifdef VK_USE_PLATFORM_WIN32_KHR
             // which one is correct on windows ?
@@ -54,15 +53,13 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 #endif			
 		}
 		
-		explicit Fence(const vuh::Fence& fence)
-		{
+		explicit Fence(const vuh::Fence& fence) {
 			static_cast<vhn::Fence&>(*this) = std::move(fence);
 			_dev = std::move(const_cast<vuh::Fence&>(fence)._dev);
 			_res = std::move(fence._res);
 		}
 
-		~Fence()
-		{
+		~Fence() {
 			if(success()) {
 				_dev->destroyFence(*this);
 			}
@@ -86,8 +83,7 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 			return success();
 		}
 
-		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkFence () const
-		{
+		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkFence () const {
 			return VkFence(static_cast<const vhn::Fence&>(*this));
 		}
 

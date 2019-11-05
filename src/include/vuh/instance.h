@@ -18,7 +18,7 @@ namespace vuh {
 	/// In debug builds adds default validation layer/extension.
 	/// Default debug reporter sends messages to std::cerr.
 	/// Reentrant.
-	class Instance : public VuhBasic {
+	class Instance : virtual public VuhBasic {
 	public:
 		explicit Instance(const std::vector<const char*>& layers={}
 		                 , const std::vector<const char*>& ext={}

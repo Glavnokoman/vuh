@@ -13,7 +13,7 @@ namespace vuh {
 /// Keeps the data, handles initialization, copy/move, common interface,
 /// binding memory to buffer objects, etc...
         template<class T, class Alloc>
-        class BasicImage: public vhn::Image, public vuh::mem::BasicMemory {
+        class BasicImage: virtual public vuh::mem::BasicMemory, public vhn::Image {
         public:
             static constexpr auto descriptor_class = basic_memory_image_clz;
 
@@ -27,8 +27,7 @@ namespace vuh {
                     , vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
                     : vhn::Image(Alloc::makeImage(dev, imageType, width, height, usage, _res))
-                    , _dev(dev)
-            {
+                    , _dev(dev) {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
                 if (vhn::Result::eSuccess == _res) {
@@ -60,8 +59,7 @@ namespace vuh {
 
             /// Move constructor. Passes the underlying buffer ownership.
             BasicImage(BasicImage&& other) noexcept
-                    : vhn::Image(other), _mem(other._mem), _flags(other._flags), _dev(other._dev)
-            {
+                    : vhn::Image(other), _mem(other._mem), _flags(other._flags), _dev(other._dev) {
                 static_cast<vhn::Image&>(other) = nullptr;
             }
 
@@ -109,10 +107,10 @@ namespace vuh {
             }
 
             virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& override {
-                descImageInfo.setSampler(sampler());
-                descImageInfo.setImageView(imageView());
-                descImageInfo.setImageLayout(imageLayout());
-                return descImageInfo;
+                _descImageInfo.setSampler(sampler());
+                _descImageInfo.setImageView(imageView());
+                _descImageInfo.setImageLayout(imageLayout());
+                return _descImageInfo;
             }
 
             virtual auto descriptorType() const -> vhn::DescriptorType override  {
@@ -133,7 +131,6 @@ namespace vuh {
             vhn::DeviceMemory          _mem;      ///< associated chunk of device memory
             vhn::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
             vuh::Device&               _dev;      ///< referes underlying logical device
-            vhn::Result                _res;
             vhn::ImageView             _imageView;
             vhn::Sampler               _sampler;
             vhn::ImageLayout           _imageLayout;

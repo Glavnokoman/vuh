@@ -6,15 +6,14 @@
 
 namespace vuh {
 	/// vulkan Event  
-	class Event : public vhn::Event, public vuh::VuhBasic {
+	class Event : virtual public vuh::VuhBasic, public vhn::Event {
 	public:
 		Event() : vhn::Event() {
 
 		}
 
 		explicit Event(vuh::Device& dev)
-				: _dev(&dev)
-		{
+				: _dev(&dev) {
 			auto ev = _dev->createEvent(vhn::EventCreateInfo());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			_res = ev.result;
@@ -25,15 +24,13 @@ namespace vuh {
 #endif	
 		}
 		
-		explicit Event(const vuh::Event& ev)
-		{
+		explicit Event(const vuh::Event& ev) {
 			static_cast<vhn::Event&>(*this) = std::move(ev);
 			_dev = std::move(const_cast<vuh::Event&>(ev)._dev);
 			_res = std::move(ev._res);
 		}
 
-		~Event()
-		{
+		~Event() {
 			if(success()) {
 				_dev->destroyEvent(*this);
 			}
@@ -57,8 +54,7 @@ namespace vuh {
 			return success();
 		}
 
-		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkEvent() const
-		{
+		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkEvent() const {
 			return VkEvent(static_cast<const vhn::Event&>(*this));
 		}
 
