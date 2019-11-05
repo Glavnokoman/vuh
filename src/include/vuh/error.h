@@ -1,13 +1,13 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "vuh/core/core.hpp"
 
 #ifndef VULKAN_HPP_NO_EXCEPTIONS
 
 namespace vuh {
 	/// Exception indicating that memory with requested properties
 	/// has not been found on a device.
-	class NoSuitableMemoryFound: public vk::OutOfDeviceMemoryError {
+	class NoSuitableMemoryFound: public vhn::OutOfDeviceMemoryError {
 	public:
 		NoSuitableMemoryFound(const std::string& message);
 		NoSuitableMemoryFound(const char* message);

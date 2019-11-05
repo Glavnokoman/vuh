@@ -21,7 +21,7 @@ namespace vuh {
 	public:
 		explicit Instance(const std::vector<const char*>& layers={}
 		                 , const std::vector<const char*>& extension={}
-		                 , const vk::ApplicationInfo& info={nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}
+		                 , const vhn::ApplicationInfo& info={nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}
 		                 , debug_reporter_t report_callback=nullptr
 		                 , debug_reporter_flags_t report_flags=DEF_DBG_REPORT_FLAGS
 		                 , void* report_userdata=nullptr

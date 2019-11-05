@@ -263,7 +263,7 @@ public:
 		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == result);
 		return buffer.value;
 #else
-		result = vbk::Result::eSuccess;
+		result = vhn::Result::eSuccess;
 		return buffer;
 #endif
 	}
