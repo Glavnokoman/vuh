@@ -135,7 +135,7 @@ namespace vuh {
 		}
 
         virtual bool success() const override {
-			return vhn::Result::eSuccess == _res;
+			return static_cast<const vuh::Event&>(*this).success() ||  static_cast<const vuh::Fence&>(*this).success();
 		}
 
 	private: // data
