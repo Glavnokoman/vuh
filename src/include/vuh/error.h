@@ -9,15 +9,15 @@ namespace vuh {
 	/// has not been found on a device.
 	class NoSuitableMemoryFound: public vhn::OutOfDeviceMemoryError {
 	public:
-		NoSuitableMemoryFound(const std::string& message);
-		NoSuitableMemoryFound(const char* message);
+		NoSuitableMemoryFound(const std::string& msg);
+		NoSuitableMemoryFound(const char* msg);
 	};
 
 	/// Exception indicating failure to read a file.
 	class FileReadFailure: public std::runtime_error {
 	public:
-		FileReadFailure(const std::string& message);
-		FileReadFailure(const char* message);
+		FileReadFailure(const std::string& msg);
+		FileReadFailure(const char* msg);
 	};
 } // namespace vuh
 

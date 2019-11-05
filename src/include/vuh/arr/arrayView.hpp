@@ -16,12 +16,12 @@ namespace vuh {
 		static constexpr auto descriptor_class = Array::descriptor_class;
 
 		/// Constructor
-		explicit ArrayView(Array& array, std::size_t offset_begin, std::size_t offset_end)
-		   : _array(&array), _offset_begin(offset_begin), _offset_end(offset_end)
+		explicit ArrayView(Array& arr, std::size_t offset_begin, std::size_t offset_end)
+		   : _arr(&arr), _offset_begin(offset_begin), _offset_end(offset_end)
 		{}
 
 		/// @return reference to Vulkan buffer of the corresponding array
-		auto buffer()-> vhn::Buffer& { return *_array; }
+		auto buffer()-> vhn::Buffer& { return *_arr; }
 		/// @return offset (number of elements) of the beggining of the span wrt to buffer
 		auto offset() const-> std::size_t {return _offset_begin;}
 		/// @return number of elements in the view
@@ -41,7 +41,7 @@ namespace vuh {
 		}
 
 	private: // data
-		Array* _array;             ///< referes to underlying array object
+		Array* _arr;             ///< referes to underlying array object
 		std::size_t _offset_begin; ///< offset (number of array elements) of the beginning of the span
 		std::size_t _offset_end;   ///< offset (number of array elements) of the end (one past the last valid elements) of the span.
 	}; // class ArrayView

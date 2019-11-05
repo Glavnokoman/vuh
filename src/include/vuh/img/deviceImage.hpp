@@ -21,13 +21,13 @@ namespace vuh {
             using value_type = T;
             /// Constructs object of the class on given device.
             /// Memory is left unintitialized.
-            DeviceOnly2DImage( vuh::Device& device  ///< deice to create array on
+            DeviceOnly2DImage( vuh::Device& dev  ///< deice to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
                     , vhn::Format format=vhn::Format::eR8G8B8A8Unorm/// format
                     , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
                     , vhn::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
-                    : Basic2DImage<T, Alloc>(device, width, height, format, flags_memory, flags_image)
+                    : Basic2DImage<T, Alloc>(dev, width, height, format, flags_memory, flags_image)
             {}
         }; // class DeviceOnly2DImage
 
@@ -44,24 +44,24 @@ namespace vuh {
         public:
             using value_type = T;
             /// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
-            Device2DImage(vuh::Device& device   ///< device to create array on
+            Device2DImage(vuh::Device& dev   ///< device to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
-                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm /// format
-                    , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
+                    , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
                     , vhn::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
-                    : Base(device, width, height, format, flags_memory, flags_image)
+                    : Base(dev, width, height, fmt, flags_mem, flags_image)
             {}
 
             /// Create an instance of Device2DImage and initialize memory by content of some host iterable.
             template<class C, class=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
-            Device2DImage(vuh::Device& device  ///< device to create array on
+            Device2DImage(vuh::Device& dev  ///< device to create array on
                     , const C& c          ///< iterable to initialize from
                     , size_t width     ///< width of image
-                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm /// format
-                    , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
+                    , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
                     , vhn::ImageUsageFlags flags_image={})	  ///< additional (to defined by allocator) buffer usage flags
-                    : Base(device, width, c.size() / width + 1, format, flags_memory, flags_image)
+                    : Base(dev, width, c.size() / width + 1, fmt, flags_mem, flags_image)
             {
                 using std::begin; using std::end;
                 fromHost(begin(c), end(c));

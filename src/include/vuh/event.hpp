@@ -12,10 +12,10 @@ namespace vuh {
 
 		}
 
-		explicit Event(vuh::Device& device)
-				: _device(&device)
+		explicit Event(vuh::Device& dev)
+				: _dev(&dev)
 		{
-			auto ev = _device->createEvent(vhn::EventCreateInfo());
+			auto ev = _dev->createEvent(vhn::EventCreateInfo());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			_res = ev.result;
 			VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
@@ -28,16 +28,16 @@ namespace vuh {
 		explicit Event(const vuh::Event& ev)
 		{
 			static_cast<vhn::Event&>(*this) = std::move(ev);
-			_device = std::move(const_cast<vuh::Event&>(ev)._device);
+			_dev = std::move(const_cast<vuh::Event&>(ev)._dev);
 			_res = std::move(ev._res);
 		}
 
 		~Event()
 		{
 			if(success()) {
-				_device->destroyEvent(*this);
+				_dev->destroyEvent(*this);
 			}
-			_device.release();
+			_dev.release();
 		}
 
 		auto operator= (const vuh::Event&)-> vuh::Event& = delete;
@@ -48,7 +48,7 @@ namespace vuh {
 		/// till that is signalled and only then proceed to taking over the move-from object.
 		auto operator= (vuh::Event&& other) noexcept-> vuh::Event& {
 			static_cast<vhn::Event&>(*this) = std::move(other);
-			_device = std::move(other._device);
+			_dev = std::move(other._dev);
 			_res = std::move(other._res);
 			return *this;
 		}
@@ -64,14 +64,14 @@ namespace vuh {
 
 		bool setEvent() const {
 			if(success()) {
-				_device->setEvent(*this);
+				_dev->setEvent(*this);
 				return true;
 			}
 			return false;
 		}
 
-		bool success() const { return VuhBasic::success() && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _device); }
+		bool success() const { return VuhBasic::success() && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _dev); }
 	private: // data
-		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _device; ///< refers to the device owning corresponding the underlying fence.
+		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
 	};	
 } // namespace vuh

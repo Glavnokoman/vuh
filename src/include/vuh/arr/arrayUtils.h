@@ -5,7 +5,7 @@
 
 namespace vuh{
 namespace arr {
-	auto copyBuf(vuh::Device& device
+	auto copyBuf(vuh::Device& dev
 	             , vhn::Buffer src
 	             , vhn::Buffer dst
 	             , size_t size_bytes
@@ -13,7 +13,7 @@ namespace arr {
 	             , size_t dst_offset=0
 	             )-> void;
 
-	auto copyBufferToImage(vuh::Device& device
+	auto copyBufferToImage(vuh::Device& dev
 			, vhn::Buffer src
 			, vhn::Image dst
 			, uint32_t imageWidth
@@ -21,7 +21,7 @@ namespace arr {
 			, size_t bufferOffset=0
 	)-> void;
 
-	auto copyImageToBuffer(vuh::Device& device
+	auto copyImageToBuffer(vuh::Device& dev
 			, vhn::Image src
 			, vhn::Buffer dst
 			, uint32_t imageWidth

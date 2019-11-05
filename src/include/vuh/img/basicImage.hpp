@@ -15,26 +15,26 @@ namespace vuh {
         template<class T, class Alloc>
         class BasicImage: public vhn::Image, public vuh::mem::BasicMemory {
         public:
-            static constexpr auto descriptor_class = basic_memory_image_class;
+            static constexpr auto descriptor_class = basic_memory_image_clz;
 
             /// Construct Image of given size in device memory
-            BasicImage(vuh::Device& device                     ///< device to allocate array
+            BasicImage(vuh::Device& dev                     ///< device to allocate array
                     , vhn::ImageType imageType
                     , size_t width    ///< desired width
                     , size_t height    ///< desired height
-                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm/// format
-                    , vhn::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm/// format
+                    , vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
                     , vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : vhn::Image(Alloc::makeImage(device, imageType, width, height, format, usage, _res))
-                    , _dev(device)
+                    : vhn::Image(Alloc::makeImage(dev, imageType, width, height, usage, _res))
+                    , _dev(dev)
             {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
                 if (vhn::Result::eSuccess == _res) {
                     auto alloc = Alloc();
-                    _mem = alloc.allocMemory(device, *this, properties);
-                    _flags = alloc.memoryProperties(device);
+                    _mem = alloc.allocMemory(dev, *this, props);
+                    _flags = alloc.memoryProperties(dev);
                     _dev.bindImageMemory(*this, _mem, 0);
                 } else {
                 	release();
@@ -42,8 +42,8 @@ namespace vuh {
 #else
                 try{
                     auto alloc = Alloc();
-                    _mem = alloc.allocMemory(device, *this, properties);
-                    _flags = alloc.memoryProperties(device);
+                    _mem = alloc.allocMemory(dev, *this, props);
+                    _flags = alloc.memoryProperties(dev);
                     _dev.bindImageMemory(*this, _mem, 0);
                 } catch(std::runtime_error&){ // destroy buffer if memory allocation was not successful
                     release();
@@ -144,14 +144,14 @@ namespace vuh {
             using Base = BasicImage<T, Alloc>;
         public:
             /// Construct Image of given size in device memory
-            Basic2DImage(vuh::Device& device                     ///< device to allocate array
+            Basic2DImage(vuh::Device& dev                     ///< device to allocate array
                     , size_t width                     ///< desired width in bytes
                     , size_t height                     ///< desired height in bytes
-                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm /// format
-                    , vhn::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
+                    , vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
                     , vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : Base(device, vhn::ImageType::e2D, width, height, format, properties, usage)
+                    : Base(dev, vhn::ImageType::e2D, width, height, fmt, props, usage)
                     , _width(width)
                     , _height(height)
             {}
@@ -161,7 +161,7 @@ namespace vuh {
             auto size_bytes() const-> uint32_t {return _height * _width * sizeof(T);}
 
             /// @return number of elements
-            auto size() const-> size_t {return _height*_width;}
+            auto size() const-> size_t {return _height * _width;}
 
             auto width() const-> uint32_t {return _width;}
 

@@ -16,24 +16,24 @@ template<class T, class Alloc>
 class BasicArray: public vhn::Buffer, public vuh::mem::BasicMemory {
 	static constexpr auto descriptor_flags = vhn::BufferUsageFlagBits::eStorageBuffer;
 public:
-	static constexpr auto descriptor_class = basic_memory_array_class;
+	static constexpr auto descriptor_class = basic_memory_array_clz;
 
 	/// Construct SBO array of given size in device memory
-	BasicArray(vuh::Device& device                     ///< device to allocate array
+	BasicArray(vuh::Device& dev                     ///< device to allocate array
 	           , size_t n_elements                     ///< number of elements
-	           , vhn::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+	           , vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
 	           , vhn::BufferUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
 	           )
-	   : vhn::Buffer(Alloc::makeBuffer(device, n_elements * sizeof(T), descriptor_flags | usage, _res))
-	   , _dev(device)
+	   : vhn::Buffer(Alloc::makeBuffer(dev, n_elements * sizeof(T), descriptor_flags | usage, _res))
+	   , _dev(dev)
 	   , _size(n_elements)
    {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 		if (vhn::Result::eSuccess == _res) {
 			auto alloc = Alloc();
-			_mem = alloc.allocMemory(device, *this, properties);
-			_flags = alloc.memoryProperties(device);
+			_mem = alloc.allocMemory(dev, *this, props);
+			_flags = alloc.memoryProperties(dev);
 			_dev.bindBufferMemory(*this, _mem, 0);
 		} else {
 			release();
@@ -41,8 +41,8 @@ public:
 #else
       try{
          auto alloc = Alloc();
-         _mem = alloc.allocMemory(device, *this, properties);
-         _flags = alloc.memoryProperties(device);
+         _mem = alloc.allocMemory(_dev, *this, props);
+         _flags = alloc.memoryProperties(_dev);
          _dev.bindBufferMemory(*this, _mem, 0);
       } catch(std::runtime_error&){ // destroy buffer if memory allocation was not successful
          release();
@@ -128,11 +128,11 @@ private: // helpers
 		}
 	}
 protected: // data
-	vuh::Device& 								_dev;               ///< referes underlying logical device
+	vuh::Device& 			   _dev;               ///< referes underlying logical device
 	vhn::DeviceMemory          _mem;           ///< associated chunk of device memory
 	vhn::MemoryPropertyFlags   _flags;  ///< actual flags of allocated memory (may differ from those requested)
 	vhn::Result                _res;
-	uint32_t  									_size; ///< number of elements
+	uint32_t  				   _size; ///< number of elements
 }; // class BasicArray
 } // namespace arr
 } // namespace vuh

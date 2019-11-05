@@ -13,8 +13,8 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 
 		}
 
-		explicit Fence(vuh::Device& device, bool signaled=false)
-				: _device(&device)
+		explicit Fence(vuh::Device& dev, bool signaled=false)
+				: _dev(&dev)
 		{
 #if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
         #ifdef VK_USE_PLATFORM_WIN32_KHR
@@ -41,10 +41,10 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 			if (signaled) {
 				fci.setFlags(vhn::FenceCreateFlagBits::eSignaled);
 			}
-			if(_device->supportFenceFd()) {
+			if(_dev->supportFenceFd()) {
 				fci.setPNext(&efci);
 			}
-			auto fen = _device->createFence(fci);
+			auto fen = _dev->createFence(fci);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			_res = fen.result;
 		    VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
@@ -57,16 +57,16 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 		explicit Fence(const vuh::Fence& fence)
 		{
 			static_cast<vhn::Fence&>(*this) = std::move(fence);
-			_device = std::move(const_cast<vuh::Fence&>(fence)._device);
+			_dev = std::move(const_cast<vuh::Fence&>(fence)._dev);
 			_res = std::move(fence._res);
 		}
 
 		~Fence()
 		{
 			if(success()) {
-				_device->destroyFence(*this);
+				_dev->destroyFence(*this);
 			}
-			_device.release();
+			_dev.release();
 		}
 
 		auto operator= (const vuh::Fence&)-> vuh::Fence& = delete;
@@ -77,7 +77,7 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 		/// till that is signalled and only then proceed to taking over the move-from object.
 		auto operator= (vuh::Fence&& other) noexcept-> vuh::Fence& {
 			static_cast<vhn::Fence&>(*this) = std::move(other);
-			_device = std::move(other._device);
+			_dev = std::move(other._dev);
 			_res = std::move(other._res);
 			return *this;
 		}
@@ -95,8 +95,8 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 		/// please call epoll_wait/select/poll wait for fd's signal
 		auto wait(size_t period=size_t(-1))-> bool {
 			if(success()) {
-				_device->waitForFences({*this}, true, period);
-				auto res = _device->getFenceStatus(*this);
+				_dev->waitForFences({*this}, true, period);
+				auto res = _dev->getFenceStatus(*this);
 				return (vhn::Result::eSuccess == res);
 			}
 			return false;
@@ -104,13 +104,13 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 		
 		/// if fenceFd is support, we can use epoll or select wait for fence complete
 		bool supportFenceFd() {
-			return _device->supportFenceFd();
+			return _dev->supportFenceFd();
 		}		
 	
 #ifdef VK_USE_PLATFORM_WIN32_KHR
         auto fenceFd(HANDLE& fd)-> vhn::Result {
 			vhn::FenceGetWin32HandleInfoKHR info(*this);
-			auto res = _device->getFenceWin32HandleKHR(info);
+			auto res = _dev->getFenceWin32HandleKHR(info);
 #else
 		auto fenceFd(int& fd)-> vhn::Result {
 			// following https://www.khronos.org/registry/vulkan/specs/1.0-wsi_extensions/html/vkspec.html
@@ -124,7 +124,7 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
             #else
 				vhn::FenceGetFdInfoKHR info(*this,vhn::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
             #endif
-			auto res = _device->getFenceFdKHR(info,vhn::DispatchLoaderDynamic(vhn::Instance(_device->instance()),*_device));
+			auto res = _dev->getFenceFdKHR(info,vhn::DispatchLoaderDynamic(vhn::Instance(_dev->instance()),*_dev));
         #else
 			#if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
 				vhn::FenceGetFdInfoKHR info(*this,vhn::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
@@ -143,9 +143,9 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
 #endif
 		}
 
-		bool success() const override { return VuhBasic::success() && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _device) ; }
+		bool success() const override { return VuhBasic::success() && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _dev) ; }
 
 	private: // data
-		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _device; ///< refers to the device owning corresponding the underlying fence.
+		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
 	};	
 } // namespace vuh

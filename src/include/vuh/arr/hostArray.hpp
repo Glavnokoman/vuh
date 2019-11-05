@@ -20,12 +20,12 @@ public:
 	using value_type = T;
 	/// Construct object of the class on given device.
 	/// Memory is not initialized with any data.
-	HostArray(vuh::Device& device  ///< device to create array on
+	HostArray(vuh::Device& dev  ///< device to create array on
 	          , size_t n_elements  ///< number of elements
-	          , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	          , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
 	          , vhn::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	          )
-	   : BasicArray<T, Alloc>(device, n_elements, flags_memory, flags_buffer)
+	   : BasicArray<T, Alloc>(dev, n_elements, flags_mem, flags_buffer)
 	   , _res(vhn::Result::eSuccess)
 	{
 		auto data = Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T));
@@ -39,26 +39,26 @@ public:
 	}
 
 	/// Construct array on given device and initialize with a provided value.
-	HostArray(vuh::Device& device ///< device to create array on
+	HostArray(vuh::Device& dev ///< device to create array on
 	         , size_t n_elements   ///< number of elements
 	         , T value             ///< initializer value
-	         , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	         , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
 	         , vhn::BufferUsageFlags flags_buffer={}	   ///< additional (to defined by allocator) buffer usage flags
 	         )
-	   : HostArray(device, n_elements, flags_memory, flags_buffer)
+	   : HostArray(dev, n_elements, flags_mem, flags_buffer)
 	{
 		std::fill_n(begin(), n_elements, value);
 	}
 
 	/// Construct array on given device and initialize it from range of values
 	template<class It1, class It2>
-	HostArray(vuh::Device& device ///< device to create array on
+	HostArray(vuh::Device& dev ///< device to create array on
 	         , It1 begin          ///< beginning of initialization range
 	         , It2 end            ///< end (one past end) of initialization range
-	         , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+	         , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
 	         , vhn::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	         )
-	   : HostArray(device, std::distance(begin, end)/sizeof(T), flags_memory, flags_buffer)
+	   : HostArray(dev, std::distance(begin, end)/sizeof(T), flags_mem, flags_buffer)
 	{
 		std::copy(begin, end, this->begin());
 	}

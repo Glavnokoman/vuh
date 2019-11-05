@@ -15,10 +15,10 @@ namespace vuh {
 		/// Command buffer data packed with allocation and deallocation methods.
 		struct _CmdBuffer {
 			/// Constructor. Creates the new command buffer on a provided device and manages its resources.
-			_CmdBuffer(vuh::Device& device): device(&device){
-				auto bufferAI = vhn::CommandBufferAllocateInfo(device.transferCmdPool()
+			_CmdBuffer(vuh::Device& dev): _dev(&dev){
+				auto bufferAI = vhn::CommandBufferAllocateInfo(dev.transferCmdPool()
 																			 , vhn::CommandBufferLevel::ePrimary, 1);
-				auto buffer = device.allocateCommandBuffers(bufferAI);
+				auto buffer = dev.allocateCommandBuffers(bufferAI);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				_res = buffer.result;
 				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
@@ -35,19 +35,19 @@ namespace vuh {
 
 			/// Constructor. Takes ownership over the provided buffer.
 			/// @pre buffer should belong to the provided device. No check is made even in a debug build.
-			_CmdBuffer(vuh::Device& device, vhn::CommandBuffer buffer)
-				: cmd_buffer(buffer), device(&device)
+			_CmdBuffer(vuh::Device& dev, vhn::CommandBuffer buffer)
+				: cmd_buffer(buffer), _dev(&dev)
 			{}
 
 			/// Release the buffer resources
 			auto release() noexcept-> void {
-				if(device){
-					device->freeCommandBuffers(device->transferCmdPool(), 1, &cmd_buffer);
+				if(_dev){
+					_dev->freeCommandBuffers(_dev->transferCmdPool(), 1, &cmd_buffer);
 				}
 			}
 		public: // data
 			vhn::CommandBuffer cmd_buffer; ///< command buffer managed by this wrapper class
-			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< device holding the buffer
+			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< device holding the buffer
 			vhn::Result _res;
 		}; // struct _CmdBuffer
 
@@ -59,7 +59,7 @@ namespace vuh {
 		/// Used to keep that alive till async copy is over.
 		/// The delayed action associated with operator() is a noop.
 		struct CopyDevice: private CmdBuffer {
-			CopyDevice(vuh::Device& device): CmdBuffer(device){}
+			CopyDevice(vuh::Device& dev): CmdBuffer(dev){}
 
 			/// delayed operation is a noop
 			constexpr auto operator()() const-> void {}
@@ -69,8 +69,8 @@ namespace vuh {
 			                , ArrayIter<Array2> dst_begin
 			                )-> Delayed<>
 			{
-				assert(device);
-				assert(*device == dst_begin.array().device());
+				assert(_dev);
+				assert(*_dev == dst_begin.array().device());
 				using value_type_src = typename ArrayIter<Array1>::value_type;
 				using value_type_dst = typename ArrayIter<Array2>::value_type;
 				static_assert(std::is_same<value_type_src, value_type_dst>::value
@@ -83,13 +83,13 @@ namespace vuh {
 				cmd_buffer.copyBuffer(src_begin.array(), dst_begin.array(), 1, &region);
 				cmd_buffer.end();
 
-				auto queue = device->transferQueue();
+				auto queue = _dev->transferQueue();
 				auto submit_info = vhn::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buffer);
-				vuh::Fence fence(*device);
+				vuh::Fence fence(*_dev);
 				if(bool(fence)) {
 					queue.submit({submit_info}, fence);
 				}
-				return Delayed<>{fence, *device,fence.error()};
+				return Delayed<>{fence, *_dev,fence.error()};
 			}
 		}; // struct CopyDevice
 
@@ -103,8 +103,8 @@ namespace vuh {
 
 			/// Constructor. Copies data from host to the internal staging buffer.
 			template<class Iter1, class Iter2>
-			CopyStageFromHost(vuh::Device& device, Iter1 src_begin, Iter2 src_end)
-				: CopyDevice(device), array(device, src_begin, src_end)
+			CopyStageFromHost(vuh::Device& dev, Iter1 src_begin, Iter2 src_end)
+				: CopyDevice(dev), array(dev, src_begin, src_end)
 			{}
 		}; // struct CopyStageFromHost
 
@@ -117,8 +117,8 @@ namespace vuh {
 			IterDst    dst_begin;  ///< iterator to beginning of the host destination range
 
 			/// Constructor.
-			explicit CopyStageToHost(vuh::Device& device, std::size_t array_size, IterDst dst_begin)
-			   : CopyDevice(device), array(device, array_size), dst_begin(dst_begin)
+			explicit CopyStageToHost(vuh::Device& dev, std::size_t array_size, IterDst dst_begin)
+			   : CopyDevice(dev), array(dev, array_size), dst_begin(dst_begin)
 			{}
 
 			/// Delayed action. Copies data from staging buffer to the host.

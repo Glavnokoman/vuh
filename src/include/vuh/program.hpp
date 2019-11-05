@@ -62,20 +62,20 @@ namespace vuh {
 
 		// helper
 		template<class T, size_t... I>
-		auto dscinfos2writesets(vhn::DescriptorSet dscset, T& infos
+		auto dscinfos2writesets(vhn::DescriptorSet dsc_set, T& infos
 		                        , std::index_sequence<I...>
 		                        )-> std::array<vhn::WriteDescriptorSet, sizeof...(I)>
 		{
 			std::array<vhn::WriteDescriptorSet, sizeof...(I)> r;
 			for(size_t i = 0; i < r.size(); i++ ) {
-				r[i].setDstSet(dscset);
+				r[i].setDstSet(dsc_set);
 				r[i].setDstBinding(uint32_t(i));
 				r[i].setDstArrayElement(0);
 				r[i].setDescriptorCount(1);
 				r[i].setDescriptorType(infos[i].descriptorType());
-				if(vuh::mem::BasicMemory::basic_memory_image_class == infos[i].descriptorType()) {
+				if(vuh::mem::BasicMemory::basic_memory_image_clz == infos[i].descriptorType()) {
 					r[i].setPImageInfo(&(infos[i].descriptorImageInfo()));
-				} else if (vuh::mem::BasicMemory::basic_memory_array_class == infos[i].descriptorType()) {
+				} else if (vuh::mem::BasicMemory::basic_memory_array_clz == infos[i].descriptorType()) {
 					r[i].setPBufferInfo(&(infos[i].descriptorBufferInfo()));
 				}
 			}
@@ -85,19 +85,19 @@ namespace vuh {
 		/// Transient command buffer data with a releaseable interface.
 		struct ComputeBuffer {
 			/// Constructor. Takes ownership over provided buffer.
-			ComputeBuffer(vuh::Device& device, vhn::CommandBuffer buffer)
-			   : cmd_buffer(buffer), device(&device){}
+			ComputeBuffer(vuh::Device& dev, vhn::CommandBuffer buffer)
+			   : cmd_buffer(buffer), _dev(&dev){}
 
 			/// Release resources associated with owned command buffer.
 			/// Buffer is released from device's compute command pool.
 			auto release() noexcept-> void {
-				if(device){
-					device->freeCommandBuffers(device->computeCmdPool(), 1, &cmd_buffer);
+				if(_dev){
+					_dev->freeCommandBuffers(_dev->computeCmdPool(), 1, &cmd_buffer);
 				}
 			}
 		public: // data
 			vhn::CommandBuffer cmd_buffer; ///< command buffer to submit async computation commands
-			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< underlying device
+			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< underlying device
 		}; // struct ComputeData
 
 		/// Helper class for use as a Delayed<> parameter extending the lifetime of the command
@@ -120,10 +120,10 @@ namespace vuh {
 			/// @pre bacth sizes should be specified before calling this.
 			/// @pre all paramerters should be specialized, pushed and bound before calling this.
 			auto run()-> void {
-				auto submitInfo = vhn::SubmitInfo(0, nullptr, nullptr, 1, &_device.computeCmdBuffer()); // submit a single command buffer
+				auto submitInfo = vhn::SubmitInfo(0, nullptr, nullptr, 1, &_dev.computeCmdBuffer()); // submit a single command buffer
 
 				// submit the command buffer to the queue and set up a fence.
-				auto queue = _device.computeQueue();
+				auto queue = _dev.computeQueue();
 				queue.submit({submitInfo}, nullptr);
 				queue.waitIdle();
 			}
@@ -138,12 +138,12 @@ namespace vuh {
 			auto run_async(bool suspend=false)-> vuh::Delayed<Compute> {
 				vhn::Result res = vhn::Result::eSuccess;
 				vuh::Event event;
-				auto buffer = _device.releaseComputeCmdBuffer(res);
+				auto buffer = _dev.releaseComputeCmdBuffer(res);
 				if (vhn::Result::eSuccess == res) {
 					auto submitInfo = vhn::SubmitInfo(0, nullptr, nullptr, 1,
 													 &buffer); // submit a single command buffer
 					if (suspend) {
-						event = vuh::Event(_device);
+						event = vuh::Event(_dev);
 						if (bool(event)) {
 							buffer.waitEvents(1, &event, vhn::PipelineStageFlagBits::eHost,
 											  vhn::PipelineStageFlagBits::eTopOfPipe, 0, NULL, 0,
@@ -154,38 +154,38 @@ namespace vuh {
 					}
 					if ((!suspend) || bool(event)) {
 						// submit the command buffer to the queue and set up a fence.
-						auto queue = _device.computeQueue();
-						vuh::Fence fence(_device);  // fence makes sure the control is not returned to CPU till command buffer is deplet
+						auto queue = _dev.computeQueue();
+						vuh::Fence fence(_dev);  // fence makes sure the control is not returned to CPU till command buffer is deplet
 						if (bool(fence)) {
 							queue.submit({submitInfo}, fence);
 
-							return Delayed<Compute>{fence, event, _device,
-													Compute(_device, buffer)};
+							return Delayed<Compute>{fence, event, _dev,
+													Compute(_dev, buffer)};
 						}
 					}
 				}
-				return Delayed<Compute>(_device, res, event,Compute(_device, nullptr));
+				return Delayed<Compute>(_dev, res, event,Compute(_dev, nullptr));
 			}
 
-			explicit operator bool() const { return bool(_device); };
-			bool operator!() const {return !_device; };
+			explicit operator bool() const { return bool(_dev); };
+			bool operator!() const {return !_dev; };
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
-			ProgramBase(vuh::Device& device        ///< device used to run the code
+			ProgramBase(vuh::Device& dev        ///< device used to run the code
 			            , const char* filepath     ///< file path to SPIR-V shader code
 			            , vhn::ShaderModuleCreateFlags flags={}
 			            )
-				: ProgramBase(device, read_spirv(filepath), flags)
+				: ProgramBase(dev, read_spirv(filepath), flags)
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
-			ProgramBase(vuh::Device& device              ///< device used to run the code
+			ProgramBase(vuh::Device& dev              ///< device used to run the code
 			            , const std::vector<char>& code  ///< actual binary SPIR-V shader code
 			            , vhn::ShaderModuleCreateFlags flags={}
 			            )
-			   : _device(device)
+			   : _dev(dev)
 			{
-				auto shader = device.createShaderModule({ flags, uint32_t(code.size())
+				auto shader = _dev.createShaderModule({ flags, uint32_t(code.size())
 																 , reinterpret_cast<const uint32_t*>(code.data())
 														 });
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
@@ -214,7 +214,7 @@ namespace vuh {
 			   , _pipecache(o._pipecache)
 			   , _pipelayout(o._pipelayout)
 			   , _pipeline(o._pipeline)
-			   , _device(o._device)
+			   , _dev(o._dev)
 			   , _batch(o._batch)
 			{
 				o._shader = nullptr; //
@@ -232,7 +232,7 @@ namespace vuh {
 				_pipecache  = o._pipecache; 
 				_pipelayout	= o._pipelayout;
 				_pipeline   = o._pipeline;
-				_device     = o._device;
+				_dev     	= o._dev;
 				_batch      = o._batch;	
 			
 				o._shader = nullptr;
@@ -242,12 +242,12 @@ namespace vuh {
 			/// Release resources associated with current object.
 			auto release() noexcept-> void {
 				if(_shader){
-					_device.destroyShaderModule(_shader);
-					_device.destroyDescriptorPool(_dscpool);
-					_device.destroyDescriptorSetLayout(_dsclayout);
-					_device.destroyPipelineCache(_pipecache);
-					_device.destroyPipeline(_pipeline);
-					_device.destroyPipelineLayout(_pipelayout);
+					_dev.destroyShaderModule(_shader);
+					_dev.destroyDescriptorPool(_dscpool);
+					_dev.destroyDescriptorSetLayout(_dsclayout);
+					_dev.destroyPipelineCache(_pipecache);
+					_dev.destroyPipeline(_pipeline);
+					_dev.destroyPipelineLayout(_pipelayout);
 				}
 			}
 
@@ -257,7 +257,7 @@ namespace vuh {
 			auto init_pipelayout(const std::array<vhn::PushConstantRange, N>& psrange, Arrs&...)-> void {
 				auto dscTypes = typesToDscTypes<Arrs...>();
 				auto bindings = dscTypesToLayout(dscTypes);
-				auto layout = _device.createDescriptorSetLayout(
+				auto layout = _dev.createDescriptorSetLayout(
 				                                       { vhn::DescriptorSetLayoutCreateFlags()
 				                                       , uint32_t(bindings.size()), bindings.data()
 				                                       });
@@ -269,7 +269,7 @@ namespace vuh {
 				_dsclayout = layout;
 #endif
 				if(bool(_dsclayout)) {
-					auto pipe_cache = _device.createPipelineCache({});
+					auto pipe_cache = _dev.createPipelineCache({});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 					_res = pipe_cache.result;
 					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
@@ -279,7 +279,7 @@ namespace vuh {
 #endif
 				}
 				if(bool(_pipecache)) {
-					auto pipe_layout = _device.createPipelineLayout(
+					auto pipe_layout = _dev.createPipelineLayout(
 							{vhn::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N),
 							 psrange.data()});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
@@ -299,7 +299,7 @@ namespace vuh {
 				auto sbo_descriptors_size = vhn::DescriptorPoolSize(vhn::DescriptorType::eStorageBuffer
 				                                                   , sizeof...(Arrs));
 				auto descriptor_sizes = std::array<vhn::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
-				auto pool =  _device.createDescriptorPool(
+				auto pool =  _dev.createDescriptorPool(
 						{vhn::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
 								, uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
 						});
@@ -312,7 +312,7 @@ namespace vuh {
 				_dscpool = pool;
 #endif
 				if (bool(_dscpool)) {
-					auto desc_set = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout});
+					auto desc_set = _dev.allocateDescriptorSets({_dscpool, 1, &_dsclayout});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 					_res = pool.result;
 					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
@@ -333,11 +333,11 @@ namespace vuh {
 				auto dscinfos = std::array<vuh::mem::BasicMemory, N>{ args ... };
 				auto write_dscsets = dscinfos2writesets(_dscset, dscinfos
 				                                       , std::make_index_sequence<N>{});
-				_device.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
+				_dev.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 				// Start recording commands into the newly allocated command buffer.
 				//	auto beginInfo = VULKAN_HPP_NAMESPACE::CommandBufferBeginInfo(VULKAN_HPP_NAMESPACE::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
-				auto cmdbuf = _device.computeCmdBuffer();
+				auto cmdbuf = _dev.computeCmdBuffer();
 				auto beginInfo = vhn::CommandBufferBeginInfo();
 				cmdbuf.begin(beginInfo);
 
@@ -349,7 +349,7 @@ namespace vuh {
 
 			/// Ends command buffer creation. Writes dispatch info and signals end of commands recording.
 			auto command_buffer_end()-> void {
-				auto cmdbuf = _device.computeCmdBuffer();
+				auto cmdbuf = _dev.computeCmdBuffer();
 				cmdbuf.dispatch(_batch[0], _batch[1], _batch[2]); // start compute pipeline, execute the shader
 				cmdbuf.end(); // end recording commands
 			}
@@ -362,7 +362,7 @@ namespace vuh {
 			vhn::PipelineLayout _pipelayout;      ///< pipeline layout
 			mutable vhn::Pipeline _pipeline;      ///< pipeline itself
 
-			vuh::Device& _device;                ///< refer to device to run shader on
+			vuh::Device& _dev;                ///< refer to device to run shader on
 			std::array<uint32_t, 3> _batch={0, 0, 0}; ///< 3D evaluation grid dimensions (number of workgroups to run)
 		}; // class ProgramBase
 
@@ -377,13 +377,13 @@ namespace vuh {
 		class SpecsBase<Specs<Spec_Ts...>>: public ProgramBase {
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
-			SpecsBase(Device& device, const char* filepath, vhn::ShaderModuleCreateFlags flags={})
-			   : ProgramBase(device, filepath, flags)
+			SpecsBase(Device& dev, const char* filepath, vhn::ShaderModuleCreateFlags flags={})
+			   : ProgramBase(dev, filepath, flags)
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
-			SpecsBase(Device& device, const std::vector<char>& code, vhn::ShaderModuleCreateFlags f={})
-			   : ProgramBase(device, code, f)
+			SpecsBase(Device& dev, const std::vector<char>& code, vhn::ShaderModuleCreateFlags f={})
+			   : ProgramBase(dev, code, f)
 			{}
 
 			/// Initialize the pipeline.
@@ -397,7 +397,7 @@ namespace vuh {
 				auto stageCI = vhn::PipelineShaderStageCreateInfo(vhn::PipelineShaderStageCreateFlags()
 																				 , vhn::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", &specInfo);
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _res);
+				_pipeline = _dev.createPipeline(_pipelayout, _pipecache, stageCI, _res);
 			}
 		protected:
 			std::tuple<Spec_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
@@ -408,13 +408,13 @@ namespace vuh {
 		class SpecsBase<typelist<>>: public ProgramBase{
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
-			SpecsBase(Device& device, const char* filepath, vhn::ShaderModuleCreateFlags flags={})
-			   : ProgramBase(device, filepath, flags)
+			SpecsBase(Device& dev, const char* filepath, vhn::ShaderModuleCreateFlags flags={})
+			   : ProgramBase(dev, filepath, flags)
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
-			SpecsBase(Device& device, const std::vector<char>& code, vhn::ShaderModuleCreateFlags f={})
-			   : ProgramBase(device, code, f)
+			SpecsBase(Device& dev, const std::vector<char>& code, vhn::ShaderModuleCreateFlags f={})
+			   : ProgramBase(dev, code, f)
 			{}
 
 			/// Initialize the pipeline with empty specialialization constants interface.
@@ -423,7 +423,7 @@ namespace vuh {
 																				 , vhn::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", nullptr);
 
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _res);
+				_pipeline = _dev.createPipeline(_pipelayout, _pipecache, stageCI, _res);
 			}
 		}; // class SpecsBase
 	} // namespace detail
@@ -443,15 +443,15 @@ namespace vuh {
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;
 	public:
 		/// Initialize program on a device using SPIR-V code at a given path
-		Program(vuh::Device& device, const char* filepath, vhn::ShaderModuleCreateFlags flags={})
-		   : Base(device, read_spirv(filepath), flags)
+		Program(vuh::Device& dev, const char* filepath, vhn::ShaderModuleCreateFlags flags={})
+		   : Base(dev, read_spirv(filepath), flags)
 		{}
 
 		/// Initialize program on a device from binary SPIR-V code
-		Program(vuh::Device& device, const std::vector<char>& code
+		Program(vuh::Device& dev, const std::vector<char>& code
 		        , vhn::ShaderModuleCreateFlags flags={}
 		        )
-		   : Base(device, code, flags)
+		   : Base(dev, code, flags)
 		{}
 
 		using Base::run;
@@ -538,7 +538,7 @@ namespace vuh {
 		template<class... Arrs>
 		auto create_command_buffer(const Params& p, Arrs&... args)-> void {
 			Base::command_buffer_begin(args...);
-			Base::_device.computeCmdBuffer().pushConstants(Base::_pipelayout
+			Base::_dev.computeCmdBuffer().pushConstants(Base::_pipelayout
 			                           , vhn::ShaderStageFlagBits::eCompute , 0, sizeof(p), &p);
 			Base::command_buffer_end();
 		}
@@ -550,15 +550,15 @@ namespace vuh {
 		using Base = detail::SpecsBase<Specs<Specs_Ts...>>;
 	public:
 		/// Initialize program on a device using SPIR-V code at a given path
-		Program(vuh::Device& device, const char* filepath, vhn::ShaderModuleCreateFlags flags={})
-		   : Base(device, filepath, flags)
+		Program(vuh::Device& dev, const char* filepath, vhn::ShaderModuleCreateFlags flags={})
+		   : Base(dev, filepath, flags)
 		{}
 
 		/// Initialize program on a device from binary SPIR-V code
-		Program(vuh::Device& device, const std::vector<char>& code
+		Program(vuh::Device& dev, const std::vector<char>& code
 		        , vhn::ShaderModuleCreateFlags flags={}
 		        )
-		   : Base (device, code, flags)
+		   : Base (dev, code, flags)
 		{}
 
 		using Base::run;
