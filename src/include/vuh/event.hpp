@@ -6,7 +6,7 @@
 
 namespace vuh {
 	/// vulkan Event  
-	class Event : public vhn::Event {
+	class Event : public vhn::Event, public vuh::VuhBasic {
 	public:
 		Event() : vhn::Event() {
 
@@ -14,12 +14,11 @@ namespace vuh {
 
 		explicit Event(vuh::Device& device)
 				: _device(&device)
-				, _result(vhn::Result::eSuccess)
 		{
 			auto ev = _device->createEvent(vhn::EventCreateInfo());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-			_result = ev.result;
-			VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+			_res = ev.result;
+			VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 			static_cast<vhn::Event&>(*this) = std::move(ev.value);
 #else
 			static_cast<vhn::Event&>(*this) = std::move(ev);
@@ -30,7 +29,7 @@ namespace vuh {
 		{
 			static_cast<vhn::Event&>(*this) = std::move(ev);
 			_device = std::move(const_cast<vuh::Event&>(ev)._device);
-			_result = std::move(ev._result);
+			_res = std::move(ev._res);
 		}
 
 		~Event()
@@ -50,7 +49,7 @@ namespace vuh {
 		auto operator= (vuh::Event&& other) noexcept-> vuh::Event& {
 			static_cast<vhn::Event&>(*this) = std::move(other);
 			_device = std::move(other._device);
-			_result = std::move(other._result);
+			_res = std::move(other._res);
 			return *this;
 		}
 
@@ -71,12 +70,8 @@ namespace vuh {
 			return false;
 		}
 
-		vhn::Result error() const { return _result; };
-		bool success() const { return (vhn::Result::eSuccess == _result) && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _device); }
-		std::string error_to_string() const { return vhn::to_string(_result); };
-
+		bool success() const { return VuhBasic::success() && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _device); }
 	private: // data
 		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _device; ///< refers to the device owning corresponding the underlying fence.
-		vhn::Result _result;
 	};	
 } // namespace vuh

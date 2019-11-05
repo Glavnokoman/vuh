@@ -7,7 +7,7 @@
 namespace vuh {
 	/// Class used for synchronization with host.
 	/// vulkan fence  
-	class Fence : public vhn::Fence {
+class Fence : public vhn::Fence, public vuh::VuhBasic {
 	public:
 		Fence() : vhn::Fence() {
 
@@ -15,7 +15,6 @@ namespace vuh {
 
 		explicit Fence(vuh::Device& device, bool signaled=false)
 				: _device(&device)
-				, _result(vhn::Result::eSuccess)
 		{
 #if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
         #ifdef VK_USE_PLATFORM_WIN32_KHR
@@ -47,8 +46,8 @@ namespace vuh {
 			}
 			auto fen = _device->createFence(fci);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		    _result = fen.result;
-		    VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+			_res = fen.result;
+		    VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 		    static_cast<vhn::Fence&>(*this) = std::move(fen.value);
 #else
 			static_cast<vhn::Fence&>(*this) = std::move(fen);
@@ -59,7 +58,7 @@ namespace vuh {
 		{
 			static_cast<vhn::Fence&>(*this) = std::move(fence);
 			_device = std::move(const_cast<vuh::Fence&>(fence)._device);
-			_result = std::move(fence._result);
+			_res = std::move(fence._res);
 		}
 
 		~Fence()
@@ -79,7 +78,7 @@ namespace vuh {
 		auto operator= (vuh::Fence&& other) noexcept-> vuh::Fence& {
 			static_cast<vhn::Fence&>(*this) = std::move(other);
 			_device = std::move(other._device);
-			_result = std::move(other._result);
+			_res = std::move(other._res);
 			return *this;
 		}
 
@@ -97,8 +96,8 @@ namespace vuh {
 		auto wait(size_t period=size_t(-1))-> bool {
 			if(success()) {
 				_device->waitForFences({*this}, true, period);
-				auto result = _device->getFenceStatus(*this);
-				return (vhn::Result::eSuccess == result);
+				auto res = _device->getFenceStatus(*this);
+				return (vhn::Result::eSuccess == res);
 			}
 			return false;
 		}
@@ -144,12 +143,9 @@ namespace vuh {
 #endif
 		}
 
-		vhn::Result error() const { return _result; };
-		bool success() const { return (vhn::Result::eSuccess == _result) && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _device) ; }
-		std::string error_to_string() const { return vhn::to_string(_result); };
+		bool success() const override { return VuhBasic::success() && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _device) ; }
 
 	private: // data
 		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _device; ///< refers to the device owning corresponding the underlying fence.
-		vhn::Result _result;
 	};	
 } // namespace vuh

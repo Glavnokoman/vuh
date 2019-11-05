@@ -26,12 +26,12 @@ namespace vuh {
                     , vhn::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
                     , vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : vhn::Image(Alloc::makeImage(device, imageType, width, height, format, usage, _result))
+                    : vhn::Image(Alloc::makeImage(device, imageType, width, height, format, usage, _res))
                     , _dev(device)
             {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-                VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
-                if (vhn::Result::eSuccess == _result) {
+                VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
+                if (vhn::Result::eSuccess == _res) {
                     auto alloc = Alloc();
                     _mem = alloc.allocMemory(device, *this, properties);
                     _flags = alloc.memoryProperties(device);
@@ -65,7 +65,7 @@ namespace vuh {
                 static_cast<vhn::Image&>(other) = nullptr;
             }
 
-            /// @return underlying buffer
+            /// @return underlying image
             auto image()-> vhn::Image { return *this; }
 
             auto imageView() -> vhn::ImageView { return _imageView; }
@@ -133,7 +133,7 @@ namespace vuh {
             vhn::DeviceMemory          _mem;      ///< associated chunk of device memory
             vhn::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
             vuh::Device&               _dev;      ///< referes underlying logical device
-            vhn::Result                _result;
+            vhn::Result                _res;
             vhn::ImageView             _imageView;
             vhn::Sampler               _sampler;
             vhn::ImageLayout           _imageLayout;

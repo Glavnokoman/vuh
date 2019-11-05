@@ -22,18 +22,18 @@ public:
 	static auto makeBuffer(vuh::Device& device   ///< device to create buffer on
 	                      , size_t size_bytes    ///< desired size in bytes
 	                      , vhn::BufferUsageFlags flags ///< additional (to the ones defined in Props) buffer usage flags
-	                      , vhn::Result& result
+	                      , vhn::Result& res
 	                      )-> vhn::Buffer
 	{
 		const auto flags_combined = flags | vhn::BufferUsageFlags(Props::buffer);
 
 		auto buffer = device.createBuffer({ {}, size_bytes, flags_combined});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		result = buffer.result;
-		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == result);
+		res = buffer.result;
+		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == res);
 		return buffer.value;
 #else
-		result = vhn::Result::eSuccess;
+		res = vhn::Result::eSuccess;
 		return buffer;
 #endif
 	}
@@ -45,7 +45,7 @@ public:
             , size_t height    ///< desired height
             , vhn::Format format /// format
             , vhn::ImageUsageFlags flags ///< additional (to the ones defined in Props) image usage flags
-			, vhn::Result& result
+			, vhn::Result& res
 	)-> vhn::Image
 	{
         const auto flags_combined = flags | vhn::ImageUsageFlags(Props::image);
@@ -63,11 +63,11 @@ public:
 
 		auto image = device.createImage(imageCreateInfo);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		result = image.result;
-		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == result);
+		res = image.result;
+		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == res);
 		return image.value;
 #else
-		result = vhn::Result::eSuccess;
+		res = vhn::Result::eSuccess;
 		return image;
 #endif
 	}
@@ -254,16 +254,16 @@ public:
 	static auto makeBuffer(vuh::Device& device ///< device to create buffer on
 	                      , size_t size_bytes  ///< desired size in bytes
 	                      , vhn::BufferUsageFlags flags ///< additional buffer usage flags
-	                      , vhn::Result& result
+	                      , vhn::Result& res
 	                      )-> vhn::Buffer
 	{
 		vhn::ResultValueType<vhn::Buffer>::type buffer = device.createBuffer({ {}, size_bytes, flags});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		result = buffer.result;
-		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == result);
+		res = buffer.result;
+		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == res);
 		return buffer.value;
 #else
-		result = vhn::Result::eSuccess;
+		res = vhn::Result::eSuccess;
 		return buffer;
 #endif
 	}

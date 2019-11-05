@@ -114,7 +114,7 @@ namespace vuh {
 
 		/// Program base functionality.
 		/// Initializes and keeps most state variables, and array argument handling building blocks.
-		class ProgramBase {
+		class ProgramBase : public vuh::VuhBasic {
 		public:
 			/// Run the Program object on previously bound parameters, wait for completion.
 			/// @pre bacth sizes should be specified before calling this.
@@ -169,11 +169,6 @@ namespace vuh {
 
 			explicit operator bool() const { return bool(_device); };
 			bool operator!() const {return !_device; };
-
-			vhn::Result error() const { return _result; };
-			bool success() const { return (vhn::Result::eSuccess == _result); };
-			std::string error_to_string() const {return vhn::to_string(_result); };
-
 		protected:
 			/// Construct object using given a vuh::Device and path to SPIR-V shader code.
 			ProgramBase(vuh::Device& device        ///< device used to run the code
@@ -189,14 +184,13 @@ namespace vuh {
 			            , vhn::ShaderModuleCreateFlags flags={}
 			            )
 			   : _device(device)
-			   , _result(vhn::Result::eSuccess)
 			{
 				auto shader = device.createShaderModule({ flags, uint32_t(code.size())
 																 , reinterpret_cast<const uint32_t*>(code.data())
 														 });
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-				_result = shader.result;
-				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+				_res = shader.result;
+				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 				_shader = shader.value;
 #else
 				_shader = shader;
@@ -268,8 +262,8 @@ namespace vuh {
 				                                       , uint32_t(bindings.size()), bindings.data()
 				                                       });
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-				_result = layout.result;
-				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+				_res = layout.result;
+				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 				_dsclayout = layout.value;
 #else
 				_dsclayout = layout;
@@ -277,8 +271,8 @@ namespace vuh {
 				if(bool(_dsclayout)) {
 					auto pipe_cache = _device.createPipelineCache({});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-					_result = pipe_cache.result;
-					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+					_res = pipe_cache.result;
+					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 					_pipecache = pipe_cache.value;
 #else
 					_pipecache = pipe_cache;
@@ -289,8 +283,8 @@ namespace vuh {
 							{vhn::PipelineLayoutCreateFlags(), 1, &_dsclayout, uint32_t(N),
 							 psrange.data()});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-					_result = pipe_layout.result;
-					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+					_res = pipe_layout.result;
+					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 					_pipelayout = pipe_layout.value;
 #else
 					_pipelayout = pipe_layout;
@@ -309,10 +303,10 @@ namespace vuh {
 						{vhn::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
 								, uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
 						});
-				_result = vhn::Result::eSuccess;
+				_res = vhn::Result::eSuccess;
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-				_result = pool.result;
-				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+				_res = pool.result;
+				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 				_dscpool = pool.value;
 #else
 				_dscpool = pool;
@@ -320,8 +314,8 @@ namespace vuh {
 				if (bool(_dscpool)) {
 					auto desc_set = _device.allocateDescriptorSets({_dscpool, 1, &_dsclayout});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-					_result = pool.result;
-					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+					_res = pool.result;
+					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 					_dscset = desc_set.value[0];
 #else
 					_dscset = desc_set[0];
@@ -370,8 +364,6 @@ namespace vuh {
 
 			vuh::Device& _device;                ///< refer to device to run shader on
 			std::array<uint32_t, 3> _batch={0, 0, 0}; ///< 3D evaluation grid dimensions (number of workgroups to run)
-
-			vhn::Result	_result;
 		}; // class ProgramBase
 
 		/// Part of Program handling specialization constants.
@@ -405,7 +397,7 @@ namespace vuh {
 				auto stageCI = vhn::PipelineShaderStageCreateInfo(vhn::PipelineShaderStageCreateFlags()
 																				 , vhn::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", &specInfo);
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _result);
+				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _res);
 			}
 		protected:
 			std::tuple<Spec_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
@@ -431,7 +423,7 @@ namespace vuh {
 																				 , vhn::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", nullptr);
 
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _result);
+				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI, _res);
 			}
 		}; // class SpecsBase
 	} // namespace detail

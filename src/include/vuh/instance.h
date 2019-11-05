@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vuh/core/core.hpp"
+#include "vuh/core/vuhBasic.hpp"
 #include <vector>
 
 namespace vuh {
@@ -17,7 +18,7 @@ namespace vuh {
 	/// In debug builds adds default validation layer/extension.
 	/// Default debug reporter sends messages to std::cerr.
 	/// Reentrant.
-	class Instance {
+	class Instance : public VuhBasic {
 	public:
 		explicit Instance(const std::vector<const char*>& layers={}
 		                 , const std::vector<const char*>& extension={}
@@ -42,15 +43,11 @@ namespace vuh {
 		explicit operator bool() const;
 		bool operator!() const;
 
-		vhn::Result error() const;
-		std::string error_to_string() const;
-
-	private: // helpers
+    private: // helpers
 		auto clear() noexcept-> void;
 	private: // data
 		vhn::Instance 				_instance;     ///< vulkan instance
 		debug_reporter_t 			_reporter; ///< points to actual reporting function. This pointer is registered with a reporter callback but can also be used directly.
 		VkDebugReportCallbackEXT 	_reporter_cbk; ///< report callback. Only used to release the handle in the end.
-		vhn::Result					_result;
 	}; // class Instance
 } // namespace vuh

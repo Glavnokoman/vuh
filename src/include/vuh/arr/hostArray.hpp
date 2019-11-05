@@ -26,12 +26,12 @@ public:
 	          , vhn::BufferUsageFlags flags_buffer={}    ///< additional (to defined by allocator) buffer usage flags
 	          )
 	   : BasicArray<T, Alloc>(device, n_elements, flags_memory, flags_buffer)
-	   , _result(vhn::Result::eSuccess)
+	   , _res(vhn::Result::eSuccess)
 	{
 		auto data = Base::_dev.mapMemory(Base::_mem, 0, n_elements*sizeof(T));
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		_result = data.result;
-		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
+		_res = data.result;
+		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 		_data = static_cast<T*>(data.value);
 #else
 		_data = static_cast<T*>(data);
@@ -114,7 +114,7 @@ public:
 
 private: // data
    T* _data;       ///< host accessible pointer to the beginning of corresponding memory chunk.
-   vhn::Result _result;
+   vhn::Result _res;
 }; // class HostArray
 } // namespace arr
 } // namespace vuh

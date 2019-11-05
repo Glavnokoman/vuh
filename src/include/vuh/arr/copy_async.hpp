@@ -20,15 +20,15 @@ namespace vuh {
 																			 , vhn::CommandBufferLevel::ePrimary, 1);
 				auto buffer = device.allocateCommandBuffers(bufferAI);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-				result = buffer.result;
-				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == result);
-				if(vhn::Result::eSuccess == result) {
+				_res = buffer.result;
+				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
+				if(vhn::Result::eSuccess == _res) {
 					cmd_buffer = buffer.value[0];
 				} else {
 					cmd_buffer = vhn::CommandBuffer();
 				}
 #else
-				result = vhn::Result::eSuccess;
+				_res = vhn::Result::eSuccess;
 				cmd_buffer = buffer[0];
 #endif
 			}
@@ -48,7 +48,7 @@ namespace vuh {
 		public: // data
 			vhn::CommandBuffer cmd_buffer; ///< command buffer managed by this wrapper class
 			std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> device; ///< device holding the buffer
-			vhn::Result result;
+			vhn::Result _res;
 		}; // struct _CmdBuffer
 
 		/// Movable command buffer class.

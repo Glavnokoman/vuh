@@ -52,10 +52,10 @@ namespace {
 	/// Add default validation layers to debug build.
 	auto filter_layers(const std::vector<const char*>& layers) {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-        const auto em_layers = vk::enumerateInstanceLayerProperties();
+        const auto em_layers = vhn::enumerateInstanceLayerProperties();
         auto avail_layers = em_layers.value;
-        VULKAN_HPP_ASSERT(vk::Result::eSuccess == em_layers.result);
-        if(vk::Result::eSuccess != em_layers.result) {
+        VULKAN_HPP_ASSERT(vhn::Result::eSuccess == em_layers.result);
+        if(vhn::Result::eSuccess != em_layers.result) {
             avail_layers.clear();
         }
 #else
@@ -72,14 +72,14 @@ namespace {
 	/// Add default debug extensions to debug build.
 	auto filter_extensions(const std::vector<const char*>& extensions) {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-        const auto em_extensions = vk::enumerateInstanceExtensionProperties();
+        const auto em_extensions = vhn::enumerateInstanceExtensionProperties();
         auto avail_extensions = em_extensions.value;
-        VULKAN_HPP_ASSERT(vk::Result::eSuccess == em_extensions.result);
-        if(vk::Result::eSuccess != em_extensions.result) {
+        VULKAN_HPP_ASSERT(vhn::Result::eSuccess == em_extensions.result);
+        if(vhn::Result::eSuccess != em_extensions.result) {
             avail_extensions.clear();
         }
 #else
-		const auto avail_extensions = vk::enumerateInstanceExtensionProperties();
+		const auto avail_extensions = vhn::enumerateInstanceExtensionProperties();
 #endif
 		auto r = filter_list({}, extensions, avail_extensions
 		                     , [](const auto& l){return l.extensionName;});
@@ -103,26 +103,26 @@ namespace {
 	/// Create vulkan Instance with app specific parameters.
 	auto createInstance(const std::vector<const char*> layers
 	                   , const std::vector<const char*> extensions
-	                   , const vk::ApplicationInfo& info
-	                   , vk::Result& result
-	                   )-> vk::Instance
+	                   , const vhn::ApplicationInfo& info
+	                   , vhn::Result& res
+	                   )-> vhn::Instance
 	{
-		auto createInfo = vk::InstanceCreateInfo(vk::InstanceCreateFlags(), &info
+		auto createInfo = vhn::InstanceCreateInfo(vhn::InstanceCreateFlags(), &info
 		                                         , ARR_VIEW(layers), ARR_VIEW(extensions));
-		auto instance = vk::createInstance(createInfo);
+		auto instance = vhn::createInstance(createInfo);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-        result = instance.result;
-        VULKAN_HPP_ASSERT(vk::Result::eSuccess == result);
+        res = instance.result;
+        VULKAN_HPP_ASSERT(vhn::Result::eSuccess == res);
         return instance.value;
 #else
-        result = vk::Result::eSuccess;
+		res = vhn::Result::eSuccess;
 		return instance;
 #endif
 	}
 
 	/// Register a callback function for the extension VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
 	/// so that warnings emitted from the validation layer are actually printed.
-	auto registerReporter(vk::Instance instance, vuh::debug_reporter_t reporter,
+	auto registerReporter(vhn::Instance instance, vuh::debug_reporter_t reporter,
 	                     vuh::debug_reporter_flags_t flags = DEF_DBG_REPORT_FLAGS,
 	                     void*	userdata = nullptr
 	                     )-> VkDebugReportCallbackEXT
@@ -153,12 +153,12 @@ namespace vuh {
 	/// In debug build in addition to user-defined layers attempts to load validation layers.
 	Instance::Instance(const std::vector<const char*>& layers
 	                   , const std::vector<const char*>& extension
-	                   , const vk::ApplicationInfo& info
+	                   , const vhn::ApplicationInfo& info
 	                   , debug_reporter_t report_callback
 	                   , debug_reporter_flags_t report_flags
 					   , void* report_userdata
 	                   )
-	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info, _result))
+	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info, _res))
 	   , _reporter(report_callback ? report_callback : debugReporter)
 	   , _reporter_cbk(registerReporter(_instance, _reporter,report_flags,report_userdata))
 	{}
@@ -211,15 +211,15 @@ namespace vuh {
 	auto Instance::devices()-> std::vector<Device> {
 		auto devs = _instance.enumeratePhysicalDevices();
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-        _result = devs.result;
-        VULKAN_HPP_ASSERT(vk::Result::eSuccess == _result);
+		_res = devs.result;
+        VULKAN_HPP_ASSERT(VuhBasic::success());
         auto physdevs = devs.value;
 #else
-        _result = vk::Result::eSuccess;
+        _res = vhn::Result::eSuccess;
         auto physdevs = devs;
 #endif
 		auto r = std::vector<Device>{};
-		if (vk::Result::eSuccess == _result) {
+		if (vhn::Result::eSuccess == _res) {
             for (auto pd: physdevs) {
                 r.emplace_back(*this, pd);
             }
@@ -245,11 +245,4 @@ namespace vuh {
 		return !_instance;
 	}
 
-	vk::Result Instance::error() const {
-		return _result;
-	}
-
-	std::string Instance::error_to_string() const {
-		return vk::to_string(_result);
-	}
 } // namespace vuh

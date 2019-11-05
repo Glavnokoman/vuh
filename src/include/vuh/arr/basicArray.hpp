@@ -24,13 +24,13 @@ public:
 	           , vhn::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
 	           , vhn::BufferUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
 	           )
-	   : vhn::Buffer(Alloc::makeBuffer(device, n_elements * sizeof(T), descriptor_flags | usage, _result))
+	   : vhn::Buffer(Alloc::makeBuffer(device, n_elements * sizeof(T), descriptor_flags | usage, _res))
 	   , _dev(device)
 	   , _size(n_elements)
    {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
-		if (vhn::Result::eSuccess == _result) {
+		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
+		if (vhn::Result::eSuccess == _res) {
 			auto alloc = Alloc();
 			_mem = alloc.allocMemory(device, *this, properties);
 			_flags = alloc.memoryProperties(device);
@@ -131,7 +131,7 @@ protected: // data
 	vuh::Device& 								_dev;               ///< referes underlying logical device
 	vhn::DeviceMemory          _mem;           ///< associated chunk of device memory
 	vhn::MemoryPropertyFlags   _flags;  ///< actual flags of allocated memory (may differ from those requested)
-	vhn::Result                _result;
+	vhn::Result                _res;
 	uint32_t  									_size; ///< number of elements
 }; // class BasicArray
 } // namespace arr

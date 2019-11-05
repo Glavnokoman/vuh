@@ -70,7 +70,7 @@ namespace vuh {
 		vhn::CommandBuffer  _cmdbuf_transfer;    ///< primary command buffer associated with transfer command pool. Initialized on first transfer request.
 		uint32_t _cmp_family_id = uint32_t(-1); ///< compute queue family id. -1 if device does not have compute-capable queues.
 		uint32_t _tfr_family_id = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
-		vhn::Result	_result;					///< result of vulkan's api
+		vhn::Result	_res;					///< result of vulkan's api
 		bool		_support_fence_fd;			///< if fenceFd is support, we can use epoll or select wait for fence complete
 	}; // class Device
 }
