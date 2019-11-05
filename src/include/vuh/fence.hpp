@@ -35,7 +35,7 @@ namespace vuh {
 	#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 			vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
 	#else
-			vbk::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
+			vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
 	#endif
 #endif
 			vhn::FenceCreateInfo fci;

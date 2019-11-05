@@ -22,7 +22,7 @@ namespace vuh {
 			VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _result);
 			static_cast<vhn::Event&>(*this) = std::move(ev.value);
 #else
-			static_cast<vbk::Event&>(*this) = std::move(ev);
+			static_cast<vhn::Event&>(*this) = std::move(ev);
 #endif	
 		}
 		
