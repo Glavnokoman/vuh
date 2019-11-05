@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vuh/core/core.hpp"
+#include "vuh/mem/basicMemory.hpp"
 #include <cassert>
 
 namespace vuh {
@@ -8,7 +9,7 @@ namespace vuh {
 	/// Maybe used in place of array references in copy routines and kernel invocations
 	/// to pass parts of the array data.
 	template<class Array>
-	class ArrayView {
+	class ArrayView : public vuh::mem::BasicMemory {
 	public:
 		using array_type = Array;
 		using value_type = typename Array::value_type;
@@ -27,6 +28,18 @@ namespace vuh {
 		auto size() const-> std::size_t {return _offset_end - _offset_begin;}
 		/// @return number of bytes in the view
 		auto size_bytes() const-> std::size_t {return size()*sizeof(value_type);}
+
+		virtual auto descriptorBufferInfo() -> vhn::DescriptorBufferInfo& override {
+			descBufferInfo.setBuffer(buffer());
+			descBufferInfo.setOffset(offset());
+			descBufferInfo.setRange(size_bytes());
+			return descBufferInfo;
+		}
+
+		virtual auto descriptorType() const -> vhn::DescriptorType override  {
+			return descriptor_class;
+		}
+
 	private: // data
 		Array* _array;             ///< referes to underlying array object
 		std::size_t _offset_begin; ///< offset (number of array elements) of the beginning of the span
