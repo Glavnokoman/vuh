@@ -45,11 +45,11 @@ class DeviceArray: public BasicArray<T, Alloc> {
 public:
 	using value_type = T;
 	/// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
-	DeviceArray( vuh::Device& device   ///< device to create array on
+	DeviceArray( vuh::Device& dev  ///< device to create array on
 	           , size_t n_elements     ///< number of elements
 	           , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
 	           , vhn::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
-	   : Base(device, n_elements, flags_mem, flags_buffer)
+	   : Base(dev, n_elements, flags_mem, flags_buffer)
 	{}
 
 	/// Create an instance of DeviceArray and initialize memory by content of some host iterable.

@@ -34,42 +34,42 @@ namespace vuh {
 	public:
 		/// Constructor. Takes ownership of the fence.
 		/// It is assumed that the fence belongs to the same device that is passed together with it.
-		Delayed(vuh::Fence& fence, vuh::Device& device, Action action={})
+		Delayed(vuh::Fence& fence, vuh::Device& dev, Action act={})
 		   : vuh::Fence(fence)
-		   , Action(std::move(action))
-		   , _device(&device)
+		   , Action(std::move(act))
+		   , _dev(&dev)
 		   , _res(vhn::Result::eSuccess)
 		{}
 
-		explicit Delayed(vuh::Fence& fence, vuh::Device& device, vhn::Result res, Action action={})
+		explicit Delayed(vuh::Fence& fence, vuh::Device& dev, vhn::Result res, Action act={})
 				: vuh::Fence(fence)
-				, Action(std::move(action))
-				, _device(&device)
+				, Action(std::move(act))
+				, _dev(&dev)
 				, _res(res)
 		{}
 
-        explicit Delayed(vuh::Fence& fence, vuh::Event& event, vuh::Device& device, Action action={})
+        explicit Delayed(vuh::Fence& fence, vuh::Event& ev, vuh::Device& dev, Action act={})
                 : vuh::Fence(fence)
-				, vuh::Event(event)
-                , Action(std::move(action))
-                , _device(&device)
+				, vuh::Event(ev)
+                , Action(std::move(act))
+                , _dev(&dev)
                 , _res(vhn::Result::eSuccess)
         {}
 
 		/// Constructs for VULKAN_HPP_NO_EXCEPTIONS
-		explicit Delayed(vuh::Device& device, vhn::Result res, vuh::Event& event, Action action={})
+		explicit Delayed(vuh::Device& dev, vhn::Result res, vuh::Event& ev, Action act={})
 				: vuh::Fence()
-				, vuh::Event(event)
-				, Action(std::move(action))
-				, _device(&device)
+				, vuh::Event(ev)
+				, Action(std::move(act))
+				, _dev(&dev)
 				, _res(res)
 		{}
 
 		/// Constructor. Creates the fence in a signalled state.
-		explicit Delayed(vuh::Device& device, Action action={})
-				: vuh::Fence(device, true)
-				, Action(std::move(action))
-				, _device(&device)
+		explicit Delayed(vuh::Device& dev, Action act={})
+				: vuh::Fence(dev, true)
+				, Action(std::move(act))
+				, _dev(&dev)
 				, _res(vhn::Result::eSuccess)
 		{}
 
@@ -77,8 +77,8 @@ namespace vuh {
 		/// Constructs from the object of Delayed<Noop> and inherits the state of that.
 		/// Takes over the undelying fence ownership.
 		/// Mostly substitute its own action in place of Noop.
-		explicit Delayed(Delayed<detail::Noop>&& noop, Action action={})
-		   : vuh::Fence(std::move(noop)), Action(std::move(action)), _device(std::move(noop._device)), _res(vhn::Result::eSuccess)
+		explicit Delayed(Delayed<detail::Noop>&& noop, Action act={})
+		   : vuh::Fence(std::move(noop)), Action(std::move(act)), _dev(std::move(noop._dev)), _res(vhn::Result::eSuccess)
 		{}
 
 		/// Destructor. Blocks till the undelying fence is signalled (waits forever).
@@ -97,7 +97,7 @@ namespace vuh {
 			wait();
 			static_cast<vuh::Fence&>(*this) = std::move(static_cast<vuh::Fence&>(other));
 			static_cast<Action&>(*this) = std::move(static_cast<Action&>(other));
-			_device = std::move(other._device);
+			_dev = std::move(other._dev);
 			_res = std::move(other._res);
 			return *this;
 		}
@@ -113,7 +113,7 @@ namespace vuh {
 		auto wait(size_t period=size_t(-1) ///< time period (nanoseconds) to wait for the fence to be signalled.
 		         ) noexcept-> void
 		{
-			if(_device){
+			if(bool(_dev)){
 				bool release = false;
 				if (success()) {
 					release = static_cast<vuh::Fence&>(*this).wait(period);
@@ -123,7 +123,7 @@ namespace vuh {
 
 				if(release) {
 					static_cast<Action &>(*this)(); // exercise action
-					_device.release();
+					_dev.release();
 				}
 			}
 		}
@@ -137,12 +137,12 @@ namespace vuh {
 			return static_cast<vuh::Event&>(*this).setEvent();
 		}
 
-		vhn::Result error() const { return _res; };
-		bool success() const { return vhn::Result::eSuccess == _res; }
-		std::string error_to_string() const { return vhn::to_string(_res); };
+		virtual vhn::Result error() const override { return _res; };
+        virtual bool success() const override { return vhn::Result::eSuccess == _res; }
+        virtual std::string error_to_string() const override { return vhn::to_string(_res); };
 
 	private: // data
-		std::unique_ptr<Device, util::NoopDeleter<Device>> _device; ///< refers to the device owning corresponding the underlying fence.
+		std::unique_ptr<Device, util::NoopDeleter<Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
 		vhn::Result _res;
 	}; // class Delayed
 } // namespace vuh

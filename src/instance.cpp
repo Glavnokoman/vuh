@@ -152,13 +152,13 @@ namespace vuh {
 	/// Creates Instance object.
 	/// In debug build in addition to user-defined layers attempts to load validation layers.
 	Instance::Instance(const std::vector<const char*>& layers
-	                   , const std::vector<const char*>& extension
+	                   , const std::vector<const char*>& ext
 	                   , const vhn::ApplicationInfo& info
 	                   , debug_reporter_t report_callback
 	                   , debug_reporter_flags_t report_flags
 					   , void* report_userdata
 	                   )
-	   : _instance(createInstance(filter_layers(layers), filter_extensions(extension), info, _res))
+	   : _instance(createInstance(filter_layers(layers), filter_extensions(ext), info, _res))
 	   , _reporter(report_callback ? report_callback : debugReporter)
 	   , _reporter_cbk(registerReporter(_instance, _reporter,report_flags,report_userdata))
 	{}

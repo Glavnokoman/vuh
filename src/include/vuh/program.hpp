@@ -137,34 +137,34 @@ namespace vuh {
 			/// @return Delayed<Compute> object used for synchronization with host
 			auto run_async(bool suspend=false)-> vuh::Delayed<Compute> {
 				vhn::Result res = vhn::Result::eSuccess;
-				vuh::Event event;
+				vuh::Event ev;
 				auto buffer = _dev.releaseComputeCmdBuffer(res);
 				if (vhn::Result::eSuccess == res) {
 					auto submitInfo = vhn::SubmitInfo(0, nullptr, nullptr, 1,
 													 &buffer); // submit a single command buffer
 					if (suspend) {
-						event = vuh::Event(_dev);
-						if (bool(event)) {
-							buffer.waitEvents(1, &event, vhn::PipelineStageFlagBits::eHost,
+						ev = vuh::Event(_dev);
+						if (bool(ev)) {
+							buffer.waitEvents(1, &ev, vhn::PipelineStageFlagBits::eHost,
 											  vhn::PipelineStageFlagBits::eTopOfPipe, 0, NULL, 0,
 											  NULL,
 											  0,
 											  NULL);
 						}
 					}
-					if ((!suspend) || bool(event)) {
+					if ((!suspend) || bool(ev)) {
 						// submit the command buffer to the queue and set up a fence.
 						auto queue = _dev.computeQueue();
 						vuh::Fence fence(_dev);  // fence makes sure the control is not returned to CPU till command buffer is deplet
 						if (bool(fence)) {
 							queue.submit({submitInfo}, fence);
 
-							return Delayed<Compute>{fence, event, _dev,
+							return Delayed<Compute>{fence, ev, _dev,
 													Compute(_dev, buffer)};
 						}
 					}
 				}
-				return Delayed<Compute>(_dev, res, event,Compute(_dev, nullptr));
+				return Delayed<Compute>(_dev, res, ev,Compute(_dev, nullptr));
 			}
 
 			explicit operator bool() const { return bool(_dev); };

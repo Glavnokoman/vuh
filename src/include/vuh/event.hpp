@@ -70,7 +70,7 @@ namespace vuh {
 			return false;
 		}
 
-		bool success() const { return VuhBasic::success() && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _dev); }
+		bool success() const override { return VuhBasic::success() && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _dev); }
 	private: // data
 		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
 	};	
