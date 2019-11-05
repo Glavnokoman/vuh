@@ -131,7 +131,7 @@ class Fence : public vhn::Fence, public vuh::VuhBasic {
         	#else
 				vhn::FenceGetFdInfoKHR info(*this,vhn::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
         	#endif
-			auto res = _device->getFenceFdKHR(info);
+			auto res = _dev->getFenceFdKHR(info);
         #endif
 #endif
 #ifdef VULKAN_HPP_NO_EXCEPTIONS

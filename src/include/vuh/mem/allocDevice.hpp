@@ -89,9 +89,9 @@ public:
 					, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 #else
 		try{
-			mem = dev.allocateMemory({device.getImageMemoryRequirements(image).size, _memid});
+			mem = dev.allocateMemory({dev.getImageMemoryRequirements(image).size, _memid});
 		} catch (vhn::Error& e){
-			device.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
+			dev.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 			                         , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 #endif
 			auto allocFallback = AllocFallback{};
@@ -122,7 +122,7 @@ public:
 		try{
 			mem = dev.allocateMemory({dev.getBufferMemoryRequirements(buffer).size, _memid});
 		} catch (vhn::Error& e){
-			device.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
+			dev.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 			                         , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 #endif
 			auto allocFallback = AllocFallback{};
