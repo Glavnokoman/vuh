@@ -44,23 +44,23 @@ namespace vuh {
         public:
             using value_type = T;
             /// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
-            Device2DImage(vuh::Device& dev   ///< device to create array on
-                    , size_t width     ///< width of image
-                    , size_t height     ///< height of image
-                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
-                    , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
-                    , vhn::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
+            Device2DImage(const vuh::Device& dev   ///< device to create array on
+                    , const size_t width     ///< width of image
+                    , const size_t height     ///< height of image
+                    , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
+                    , const vhn::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, width, height, fmt, flags_mem, flags_image)
             {}
 
             /// Create an instance of Device2DImage and initialize memory by content of some host iterable.
             template<class C, class=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
-            Device2DImage(vuh::Device& dev  ///< device to create array on
+            Device2DImage(const vuh::Device& dev  ///< device to create array on
                     , const C& c          ///< iterable to initialize from
-                    , size_t width     ///< width of image
-                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
-                    , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
-                    , vhn::ImageUsageFlags flags_image={})	  ///< additional (to defined by allocator) buffer usage flags
+                    , const size_t width     ///< width of image
+                    , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
+                    , const vhn::ImageUsageFlags flags_image={})	  ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, width, c.size() / width + 1, fmt, flags_mem, flags_image)
             {
                 using std::begin; using std::end;

@@ -18,37 +18,36 @@ namespace vuh {
             static constexpr auto descriptor_class = basic_memory_image_clz;
 
             /// Construct Image of given size in device memory
-            BasicImage(vuh::Device& dev                     ///< device to allocate array
-                    , vhn::ImageType imageType
-                    , size_t width    ///< desired width
-                    , size_t height    ///< desired height
-                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm/// format
-                    , vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
-                    , vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+            BasicImage(const vuh::Device& dev                     ///< device to allocate array
+                    , const vhn::ImageType imageType
+                    , const vhn::ImageViewType imageViewType
+                    , const size_t width    ///< desired width
+                    , const size_t height    ///< desired height
+                    , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm/// format
+                    , const vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+                    , const vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : vhn::Image(Alloc::makeImage(dev, imageType, width, height, usage, _res))
+                    : vhn::Image(Alloc::makeImage(dev, imageType, width, height, fmt, usage, _res))
                     , _dev(dev) {
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
-                if (vhn::Result::eSuccess == _res) {
+                do {
+                    if (vhn::Result::eSuccess != _res)
+                        break;
+
                     auto alloc = Alloc();
-                    _mem = alloc.allocMemory(dev, *this, props);
-                    _flags = alloc.memoryProperties(dev);
+                    _mem = alloc.allocMemory(_dev, *this, props, _res);
+                    if (vhn::Result::eSuccess != _res)
+                        break;
+                    _flags = alloc.memoryProperties(_dev, *this, props);
                     _dev.bindImageMemory(*this, _mem, 0);
-                } else {
-                	release();
-                }
-#else
-                try{
-                    auto alloc = Alloc();
-                    _mem = alloc.allocMemory(dev, *this, props);
-                    _flags = alloc.memoryProperties(dev);
-                    _dev.bindImageMemory(*this, _mem, 0);
-                } catch(std::runtime_error&){ // destroy buffer if memory allocation was not successful
+                    _imageView = alloc.makeImageView(_dev, *this, imageViewType, fmt, _res);
+                } while(0);
+                if (vhn::Result::eSuccess != _res) { // destroy buffer if memory allocation was not successful
                     release();
+                #ifndef VULKAN_HPP_NO_EXCEPTIONS
                     throw;
+                #endif
                 }
-#endif
             }
 
             /// Release resources associated with current object.
@@ -130,7 +129,7 @@ namespace vuh {
         protected: // data
             vhn::DeviceMemory          _mem;      ///< associated chunk of device memory
             vhn::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
-            vuh::Device&               _dev;      ///< referes underlying logical device
+            const vuh::Device&         _dev;      ///< referes underlying logical device
             vhn::ImageView             _imageView;
             vhn::Sampler               _sampler;
             vhn::ImageLayout           _imageLayout;
@@ -141,14 +140,14 @@ namespace vuh {
             using Base = BasicImage<T, Alloc>;
         public:
             /// Construct Image of given size in device memory
-            Basic2DImage(vuh::Device& dev                     ///< device to allocate array
-                    , size_t width                     ///< desired width in bytes
-                    , size_t height                     ///< desired height in bytes
-                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
-                    , vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
-                    , vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+            Basic2DImage(const vuh::Device& dev                     ///< device to allocate array
+                    , const size_t width                     ///< desired width in bytes
+                    , const size_t height                     ///< desired height in bytes
+                    , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+                    , const vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : Base(dev, vhn::ImageType::e2D, width, height, fmt, props, usage)
+                    : Base(dev, vhn::ImageType::e2D, vhn::ImageViewType::e2D, width, height, fmt, props, usage)
                     , _width(width)
                     , _height(height)
             {}

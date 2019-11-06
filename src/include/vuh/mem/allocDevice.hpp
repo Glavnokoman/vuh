@@ -19,7 +19,7 @@ namespace vuh {
 			using AllocFallback = AllocDevice<typename Props::fallback_t>; ///< fallback allocator
 
 			/// Create buffer on a device.
-			static auto makeBuffer(vuh::Device& dev   ///< device to create buffer on
+			static auto makeBuffer(const vuh::Device& dev   ///< device to create buffer on
 								  , size_t size_bytes    ///< desired size in bytes
 								  , vhn::BufferUsageFlags flags ///< additional (to the ones defined in Props) buffer usage flags
 								  , vhn::Result& res
@@ -38,10 +38,11 @@ namespace vuh {
 			}
 
 			/// Create image on a device.
-			static auto makeImage(vuh::Device& dev   ///< device to create buffer on
+			static auto makeImage(const vuh::Device& dev   ///< device to create buffer on
 					, vhn::ImageType imageType
 					, size_t width    ///< desired width
 					, size_t height    ///< desired height
+					, vhn::Format fmt
 					, vhn::ImageUsageFlags flags ///< additional (to the ones defined in Props) image usage flags
 					, vhn::Result& res
 			)-> vhn::Image {
@@ -54,6 +55,7 @@ namespace vuh {
 
 				vhn::ImageCreateInfo imageCreateInfo;
 				imageCreateInfo.setImageType(imageType);
+				imageCreateInfo.setFormat(fmt);
 				imageCreateInfo.setExtent(extent);
 				imageCreateInfo.setUsage(flags_combined);
 				imageCreateInfo.setTiling(vhn::ImageTiling::eOptimal);
@@ -69,16 +71,41 @@ namespace vuh {
 		#endif
 			}
 
+			/// Create image on a device.
+			static auto makeImageView(const vuh::Device& dev   ///< device to create buffer on
+					, vhn::Image image
+					, vhn::ImageViewType viewType
+					, vhn::Format fmt
+					, vhn::Result& res
+			)-> vhn::ImageView {
+				vhn::ImageViewCreateInfo imageViewCreateInfo;
+				imageViewCreateInfo.setImage(image);
+				imageViewCreateInfo.setViewType(viewType);
+				imageViewCreateInfo.setFormat(fmt);
+
+				auto imageView = dev.createImageView(imageViewCreateInfo);
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+				res = imageView.result;
+				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == res);
+				return imageView.value;
+#else
+				res = vhn::Result::eSuccess;
+				return imageView;
+#endif
+			}
+
 			/// Allocate memory for the image.
-			auto allocMemory(vuh::Device& dev  ///< device to allocate memory
+			auto allocMemory(const vuh::Device& dev  ///< device to allocate memory
 					, vhn::Image image  ///< buffer to allocate memory for
-					, vhn::MemoryPropertyFlags flags_mem={} ///< additional (to the ones defined in Props) memory property flags
+					, vhn::MemoryPropertyFlags flags_mem ///< additional (to the ones defined in Props) memory property flags
+					, vhn::Result& res
 			)-> vhn::DeviceMemory {
-				_mem_id = findMemory(dev, image, flags_mem);
+				auto mem_id = findMemory(dev, image, flags_mem);
 				auto mem = vhn::DeviceMemory{};
 		#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				auto alloc_mem = dev.allocateMemory({dev.getImageMemoryRequirements(image).size, _mem_id});
+				auto alloc_mem = dev.allocateMemory({dev.getImageMemoryRequirements(image).size, mem_id});
 				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == alloc_mem.result);
+                res = alloc_mem.result;
 				if (vhn::Result::eSuccess == alloc_mem.result) {
 					mem = alloc_mem.value;
 				} else {
@@ -86,28 +113,29 @@ namespace vuh {
 							, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		#else
 				try{
-					mem = dev.allocateMemory({dev.getImageMemoryRequirements(image).size, _mem_id});
+					mem = dev.allocateMemory({dev.getImageMemoryRequirements(image).size, mem_id});
+					res = vhn::Result::eSuccess;
 				} catch (vhn::Error& e){
 					dev.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 											 , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		#endif
 					auto allocFallback = AllocFallback{};
-					mem = allocFallback.allocMemory(dev, image, flags_mem);
-					_mem_id = allocFallback.memId();
+					mem = allocFallback.allocMemory(dev, image, flags_mem, res);
 				}
 
 				return mem;
 			}
 
 			/// Allocate memory for the buffer.
-			auto allocMemory(vuh::Device& dev  ///< device to allocate memory
+			auto allocMemory(const vuh::Device& dev  ///< device to allocate memory
 							 , vhn::Buffer buffer  ///< buffer to allocate memory for
-							 , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to the ones defined in Props) memory property flags
+							 , vhn::MemoryPropertyFlags flags_mem ///< additional (to the ones defined in Props) memory property flags
+							 , vhn::Result& res
 							 )-> vhn::DeviceMemory {
-				_mem_id = findMemory(dev, buffer, flags_mem);
+				auto mem_id = findMemory(dev, buffer, flags_mem);
 				auto mem = vhn::DeviceMemory{};
 		#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				auto alloc_mem = dev.allocateMemory({dev.getBufferMemoryRequirements(buffer).size, _mem_id});
+				auto alloc_mem = dev.allocateMemory({dev.getBufferMemoryRequirements(buffer).size, mem_id});
 				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == alloc_mem.result);
 				if (vhn::Result::eSuccess == alloc_mem.result) {
 					mem = alloc_mem.value;
@@ -116,29 +144,28 @@ namespace vuh {
 							, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		#else
 				try{
-					mem = dev.allocateMemory({dev.getBufferMemoryRequirements(buffer).size, _mem_id});
+					mem = dev.allocateMemory({dev.getBufferMemoryRequirements(buffer).size, mem_id});
 				} catch (vhn::Error& e){
 					dev.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 											 , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		#endif
 					auto allocFallback = AllocFallback{};
-					mem = allocFallback.allocMemory(dev, buffer, flags_mem);
-					_mem_id = allocFallback.memId();
+					mem = allocFallback.allocMemory(dev, buffer, flags_mem, res);
 				}
 
 				return mem;
 			}
 
-			/// @return memory id on which actual allocation took place.
-			auto memId() const-> uint32_t {
-				assert(_mem_id != uint32_t(-1)); // should only be called after successful allocMemory() call
-				return _mem_id;
+			/// @return memory property flags of the memory on which actual allocation took place.
+			auto memoryProperties(const vuh::Device& dev, const vhn::Buffer& buffer, const vhn::MemoryPropertyFlags flags_mem) const-> vhn::MemoryPropertyFlags {
+                uint32_t mem_id = findMemory(dev, buffer, flags_mem);
+                return dev.memoryProperties(mem_id);
 			}
 
-			/// @return memory property flags of the memory on which actual allocation took place.
-			auto memoryProperties(const vuh::Device& dev) const-> vhn::MemoryPropertyFlags {
-				return dev.memoryProperties(_mem_id);
-			}
+            auto memoryProperties(const vuh::Device& dev, const vhn::Image& image, const vhn::MemoryPropertyFlags flags_mem) const-> vhn::MemoryPropertyFlags {
+                uint32_t mem_id = findMemory(dev, image, flags_mem);
+                return dev.memoryProperties(mem_id);
+            }
 
 			/// @return id of the first memory matched requirements of the given buffer and Props
 			/// If requirements are not matched memory properties defined in Props are relaxed to
@@ -147,9 +174,9 @@ namespace vuh {
 			/// was originally requested but not available on a given device.
 			/// This would only be reported through reporter associated with Instance, and no error
 			/// raised.
-			static auto findMemory(vuh::Device& dev ///< device on which to search for suitable memory
-								   , vhn::Buffer& buffer       ///< buffer to find suitable memory for
-								   , vhn::MemoryPropertyFlags flags_mem={} ///< additional memory flags
+			static auto findMemory(const vuh::Device& dev ///< device on which to search for suitable memory
+								   , const vhn::Buffer& buffer       ///< buffer to find suitable memory for
+								   , const vhn::MemoryPropertyFlags flags_mem={} ///< additional memory flags
 								   )-> uint32_t {
 				auto mem_id = dev.selectMemory(buffer
 										   , vhn::MemoryPropertyFlags(vhn::MemoryPropertyFlags(Props::memory)
@@ -169,9 +196,9 @@ namespace vuh {
 			/// was originally requested but not available on a given device.
 			/// This would only be reported through reporter associated with Instance, and no error
 			/// raised.
-			static auto findMemory(vuh::Device& dev ///< device on which to search for suitable memory
-					, vhn::Image& image       ///< image to find suitable memory for
-					, vhn::MemoryPropertyFlags flags_mem={} ///< additional memory flags
+			static auto findMemory(const vuh::Device& dev ///< device on which to search for suitable memory
+					, const vhn::Image& image       ///< image to find suitable memory for
+					, const vhn::MemoryPropertyFlags flags_mem={} ///< additional memory flags
 			)-> uint32_t {
 				auto mem_id = dev.selectMemory(image
 						, vhn::MemoryPropertyFlags(vhn::MemoryPropertyFlags(Props::memory)
@@ -183,8 +210,6 @@ namespace vuh {
 						, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 				return AllocFallback::findMemory(dev, image, flags_mem);
 			}
-		private: // data
-			uint32_t _mem_id = uint32_t(-1); ///< allocated memory id
 		}; // class AllocDevice
 
 		/// Specialize allocator for void properties type.
@@ -196,89 +221,81 @@ namespace vuh {
 			using properties_t = void;
 
 			/// @throws vbk::OutOfDeviceMemoryError
-			auto allocMemory(vuh::Device&, vhn::Buffer&, vhn::MemoryPropertyFlags)-> vhn::DeviceMemory {
-		#ifdef VULKAN_HPP_NO_EXCEPTIONS
+			auto allocMemory(const vuh::Device&, const vhn::Buffer&, const vhn::MemoryPropertyFlags, vhn::Result& res)-> vhn::DeviceMemory {
+		    #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				VULKAN_HPP_ASSERT(0);
+                res = vhn::Result::eErrorOutOfDeviceMemory;
 				return vhn::DeviceMemory();
-		#else
+		    #else
 				throw vhn::OutOfDeviceMemoryError("failed to allocate device memory"
 												 " and no fallback available");
-		#endif
+		    #endif
 			}
 
 			/// @throws vbk::OutOfDeviceMemoryError
-			auto allocMemory(vuh::Device&, vhn::Image&, vhn::MemoryPropertyFlags)-> vhn::DeviceMemory {
-		#ifdef VULKAN_HPP_NO_EXCEPTIONS
+			auto allocMemory(const vuh::Device&, const vhn::Image&, const vhn::MemoryPropertyFlags, vhn::Result& res)-> vhn::DeviceMemory {
+		    #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				VULKAN_HPP_ASSERT(0);
+                res = vhn::Result::eErrorOutOfDeviceMemory;
 				return vhn::DeviceMemory();
-		#else
+		    #else
 				throw vhn::OutOfDeviceMemoryError("failed to allocate device memory"
 												 " and no fallback available");
-		#endif
+		    #endif
 			}
 
 			/// @throws vuh::NoSuitableMemoryFound
-			static auto findMemory(vuh::Device&, vhn::Buffer&, vhn::MemoryPropertyFlags flags
+			static auto findMemory(const vuh::Device&, const vhn::Buffer&, const vhn::MemoryPropertyFlags flags
 								   )-> uint32_t {
-		#ifdef VULKAN_HPP_NO_EXCEPTIONS
+		    #ifdef VULKAN_HPP_NO_EXCEPTIONS
 				VULKAN_HPP_ASSERT(0);
 				return VK_NULL_HANDLE;
-		#else
+		    #else
 				throw NoSuitableMemoryFound("no memory with flags " + std::to_string(uint32_t(flags))
 											+ " could be found and not fallback available");
-		#endif
+		    #endif
 			}
 
 			/// @throws vuh::NoSuitableMemoryFound
-			static auto findMemory(vuh::Device&, vhn::Image&, vhn::MemoryPropertyFlags flags
+			static auto findMemory(const vuh::Device&, const vhn::Image&, const vhn::MemoryPropertyFlags flags
 			)-> uint32_t {
-		#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				VULKAN_HPP_ASSERT(0);
-				return VK_NULL_HANDLE;
-		#else
-				throw NoSuitableMemoryFound("no memory with flags " + std::to_string(uint32_t(flags))
-											+ " could be found and not fallback available");
-		#endif
+		    #ifdef VULKAN_HPP_NO_EXCEPTIONS
+                VULKAN_HPP_ASSERT(0);
+                return VK_NULL_HANDLE;
+		    #else
+                throw NoSuitableMemoryFound("no memory with flags " + std::to_string(uint32_t(flags))
+                                            + " could be found and not fallback available");
+		    #endif
 			}
 
-			/// Create buffer. Normally this should only be called in tests.
-			static auto makeBuffer(vuh::Device& dev ///< device to create buffer on
-								  , size_t size_bytes  ///< desired size in bytes
-								  , vhn::BufferUsageFlags flags ///< additional buffer usage flags
-								  , vhn::Result& res
-								  )-> vhn::Buffer {
-				vhn::ResultValueType<vhn::Buffer>::type buffer = dev.createBuffer({ {}, size_bytes, flags});
-		#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				res = buffer.result;
-				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == res);
-				return buffer.value;
-		#else
-				res = vhn::Result::eSuccess;
-				return buffer;
-		#endif
-			}
+            /// Create buffer. Normally this should only be called in tests.
+            static auto makeBuffer(const vuh::Device& dev ///< device to create buffer on
+                                  , const size_t size_bytes  ///< desired size in bytes
+                                  , const vhn::BufferUsageFlags flags ///< additional buffer usage flags
+                                  , vhn::Result& res
+                                  )-> vhn::Buffer {
+                vhn::ResultValueType<vhn::Buffer>::type buffer = dev.createBuffer({ {}, size_bytes, flags});
+		    #ifdef VULKAN_HPP_NO_EXCEPTIONS
+                res = buffer.result;
+                VULKAN_HPP_ASSERT(vhn::Result::eSuccess == res);
+                return buffer.value;
+		    #else
+                res = vhn::Result::eSuccess;
+                return buffer;
+		    #endif
+            }
 
-			/// @throw std::logic_error
-			/// Should not normally be called.
-			auto memoryProperties(vuh::Device&) const-> vhn::MemoryPropertyFlags {
-		#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				VULKAN_HPP_ASSERT(0);
-				return vhn::MemoryPropertyFlags();
-		#else
-				throw std::logic_error("this functions is not supposed to be called");
-		#endif
-			}
+            /// @throw std::logic_error
+            /// Should not normally be called.
+            auto memoryProperties(const vuh::Device&, const vhn::Buffer&, const vhn::MemoryPropertyFlags) const-> vhn::MemoryPropertyFlags {
+		    #ifdef VULKAN_HPP_NO_EXCEPTIONS
+                VULKAN_HPP_ASSERT(0);
+                return vhn::MemoryPropertyFlags();
+		    #else
+                throw std::logic_error("this functions is not supposed to be called");
+		    #endif
+            }
 
-			/// @throw std::logic_error
-			/// Should not normally be called.
-			auto memId() const-> uint32_t {
-		#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				VULKAN_HPP_ASSERT(0);
-				return VK_NULL_HANDLE;
-		#else
-				throw std::logic_error("this function is not supposed to be called");
-		#endif
-			}
-		};
+        };
 	} // namespace arr
 } // namespace vuh
