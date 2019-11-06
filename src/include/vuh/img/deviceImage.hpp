@@ -24,10 +24,10 @@ namespace vuh {
             DeviceOnly2DImage( vuh::Device& dev  ///< deice to create array on
                     , size_t width     ///< width of image
                     , size_t height     ///< height of image
-                    , vhn::Format format=vhn::Format::eR8G8B8A8Unorm/// format
-                    , vhn::MemoryPropertyFlags flags_memory={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm/// format
+                    , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
                     , vhn::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
-                    : Basic2DImage<T, Alloc>(dev, width, height, format, flags_memory, flags_image)
+                    : Basic2DImage<T, Alloc>(dev, width, height, fmt, flags_mem, flags_image)
             {}
         }; // class DeviceOnly2DImage
 
