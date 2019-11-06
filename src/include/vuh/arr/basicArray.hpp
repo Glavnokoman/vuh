@@ -65,17 +65,17 @@ namespace vuh {
 			}
 
 			/// @return underlying buffer
-			auto buffer()-> vhn::Buffer& { return *this; }
+			auto buffer() const -> const vhn::Buffer& { return *this; }
 
 			/// @return offset of the current buffer from the beginning of associated device memory.
 			/// For arrays managing their own memory this is always 0.
-			auto offset() const-> std::size_t { return 0;}
+			auto offset() const -> std::size_t { return 0;}
 
 			/// @return number of elements
-			auto size() const-> size_t {return _size;}
+			auto size() const -> size_t {return _size;}
 
 			/// @return size of array in bytes.
-			auto size_bytes() const-> uint32_t { return _size*sizeof(T); }
+			auto size_bytes() const -> uint32_t { return _size*sizeof(T); }
 
 			/// @return reference to device on which underlying buffer is allocated
             auto device()-> vuh::Device& { return const_cast<vuh::Device&>(_dev); }

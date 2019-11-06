@@ -70,13 +70,13 @@ namespace vuh {
             }
 
             /// @return underlying image
-            auto image()-> vhn::Image { return *this; }
+            auto image() const -> const vhn::Image& { return *this; }
 
-            auto imageView() -> vhn::ImageView { return _imageView; }
+            auto imageView() const -> const vhn::ImageView& { return _imageView; }
 
-            auto imageLayout() -> vhn::ImageLayout { return _imageLayout; }
+            auto imageLayout() const -> const vhn::ImageLayout& { return _imageLayout; }
 
-            auto sampler() -> vhn::Sampler { return _sampler; }
+            auto sampler() const -> const vhn::Sampler& { return _sampler; }
 
             /// @return reference to device on which underlying buffer is allocated
             auto device()-> vuh::Device& { return const_cast<vuh::Device&>(_dev); }
