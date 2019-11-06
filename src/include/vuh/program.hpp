@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <tuple>
 #include <utility>
+#include <map>
 
 namespace vuh {
 	namespace detail {
@@ -292,13 +293,34 @@ namespace vuh {
 				}
 			}
 
+			template<class... Args>
+			auto descriptor_pool_size(Args&... args)-> std::vector<vhn::DescriptorPoolSize> {
+				constexpr auto N = sizeof...(args);
+				auto arr_mem = std::array<vuh::mem::BasicMemory*, N>{ &args ... };
+				std::map<vhn::DescriptorType, size_t> desc_types;
+				std::map<vhn::DescriptorType, size_t>::iterator it;
+				for(size_t i = 0; i < N ; i ++) {
+					it = desc_types.find(arr_mem[i]->descriptorType());
+					if(it == desc_types.end()) {
+						desc_types.insert(std::make_pair(arr_mem[i]->descriptorType(),1));
+					} else {
+						it->second = it->second + 1;
+					}
+				}
+				std::vector<vhn::DescriptorPoolSize> desc_pool_size;
+				for(it = desc_types.begin(); it != desc_types.end(); it++) {
+					vhn::DescriptorType desc_type = it->first;
+					uint32_t count = it->second;
+					desc_pool_size.push_back({desc_type, count});
+				}
+				return desc_pool_size;
+			}
+
 			/// Allocates descriptors sets
-			template<class... Arrs>
-			auto alloc_descriptor_sets(Arrs&...)-> void {
+			template<class... Args>
+			auto alloc_descriptor_sets(Args&... args)-> void {
 				assert(_dsclayout);
-				auto sbo_descriptors_size = vhn::DescriptorPoolSize(vhn::DescriptorType::eStorageBuffer
-				                                                   , sizeof...(Arrs));
-				auto descriptor_sizes = std::array<vhn::DescriptorPoolSize, 1>({sbo_descriptors_size}); // can be done compile-time, but not worth it
+				auto descriptor_sizes = descriptor_pool_size(args...);
 				auto pool =  _dev.createDescriptorPool(
 						{vhn::DescriptorPoolCreateFlags(), 1 // 1 here is the max number of descriptor sets that can be allocated from the pool
 								, uint32_t(descriptor_sizes.size()), descriptor_sizes.data()
