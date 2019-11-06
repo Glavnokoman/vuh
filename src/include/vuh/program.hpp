@@ -336,7 +336,7 @@ namespace vuh {
 				_dev.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
 				// Start recording commands into the newly allocated command buffer.
-				//	auto beginInfo = VULKAN_HPP_NAMESPACE::CommandBufferBeginInfo(VULKAN_HPP_NAMESPACE::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
+				//	auto beginInfo = vhn::CommandBufferBeginInfo(vhn::CommandBufferUsageFlagBits::eOneTimeSubmit); // buffer is only submitted and used once
 				auto cmdbuf = _dev.computeCmdBuffer();
 				auto beginInfo = vhn::CommandBufferBeginInfo();
 				cmdbuf.begin(beginInfo);
