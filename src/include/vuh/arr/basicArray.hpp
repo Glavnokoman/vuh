@@ -54,14 +54,18 @@ namespace vuh {
 
 			/// Move constructor. Passes the underlying buffer ownership.
 			BasicArray(BasicArray&& other) noexcept
-			   : vuh::mem::BasicMemory()
-			   , vhn::Buffer(other), _mem(other._mem), _flags(other._flags), _dev(other._dev)
+			   : vhn::Buffer(other)
+			   , _dev(other._dev)
+			   , _mem(other._mem)
+			   , _flags(other._flags)
+			   , _size(other._size)
 			{
 				static_cast<vhn::Buffer&>(other) = nullptr;
+                other._mem = nullptr;
 			}
 
 			/// @return underlying buffer
-			auto buffer()-> vhn::Buffer { return *this; }
+			auto buffer()-> vhn::Buffer& { return *this; }
 
 			/// @return offset of the current buffer from the beginning of associated device memory.
 			/// For arrays managing their own memory this is always 0.
@@ -97,11 +101,12 @@ namespace vuh {
 			/// object goes out of scope).
 			auto operator= (BasicArray&& other) noexcept-> BasicArray& {
 				release();
+                _dev = other._dev;
 				_mem = other._mem;
 				_flags = other._flags;
-				_dev = other._dev;
-				reinterpret_cast<vhn::Buffer&>(*this) = reinterpret_cast<vhn::Buffer&>(other);
-				reinterpret_cast<vhn::Buffer&>(other) = nullptr;
+                _size = other._size;
+				static_cast<vhn::Buffer&>(*this) = static_cast<vhn::Buffer&>(other);
+                static_cast<vhn::Buffer&>(other) = nullptr;
 				return *this;
 			}
 
@@ -109,9 +114,10 @@ namespace vuh {
 			auto swap(BasicArray& other) noexcept-> void {
 				using std::swap;
 				swap(static_cast<vhn::Buffer&>(&this), static_cast<vhn::Buffer&>(other));
+                swap(_dev, other._dev);
 				swap(_mem, other._mem);
 				swap(_flags, other._flags);
-				swap(_dev, other._dev);
+                swap(_size, other._size);
 			}
 		private: // helpers
 			/// release resources associated with current BasicArray object
@@ -120,7 +126,9 @@ namespace vuh {
 					if (bool(_mem)) {
 						_dev.freeMemory(_mem);
 					}
+                    _mem = nullptr;
 					_dev.destroyBuffer(*this);
+                    static_cast<vhn::Buffer&>(*this) = nullptr;
 				}
 			}
 		protected: // data

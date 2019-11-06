@@ -33,7 +33,6 @@ namespace vuh {
                 do {
                     if (vhn::Result::eSuccess != _res)
                         break;
-
                     auto alloc = Alloc();
                     _mem = alloc.allocMemory(_dev, *this, props, _res);
                     if (vhn::Result::eSuccess != _res)
@@ -58,8 +57,16 @@ namespace vuh {
 
             /// Move constructor. Passes the underlying buffer ownership.
             BasicImage(BasicImage&& other) noexcept
-                    : vhn::Image(other), _mem(other._mem), _flags(other._flags), _dev(other._dev) {
+                    : vhn::Image(other)
+                    , _mem(other._mem)
+                    , _flags(other._flags)
+                    , _dev(other._dev)
+                    , _imageView(other._imageView)
+                    , _sampler(other._sampler)
+                    , _imageLayout(other._imageLayout) {
                 static_cast<vhn::Image&>(other) = nullptr;
+                other._imageView = nullptr;
+                other._mem = nullptr;
             }
 
             /// @return underlying image
@@ -71,17 +78,8 @@ namespace vuh {
 
             auto sampler() -> vhn::Sampler { return _sampler; }
 
-            /// @return offset of the current buffer from the beginning of associated device memory.
-            /// For arrays managing their own memory this is always 0.
-            auto offset() const-> std::size_t { return 0;}
-
             /// @return reference to device on which underlying buffer is allocated
-            auto device()-> vuh::Device& { return _dev; }
-
-            /// @return true if array is host-visible, ie can expose its data via a normal host pointer.
-            auto isHostVisible() const-> bool {
-                return bool(_flags & vhn::MemoryPropertyFlagBits::eHostVisible);
-            }
+            auto device()-> vuh::Device& { return const_cast<vuh::Device&>(_dev); }
 
             /// Move assignment.
             /// Resources associated with current array are released immidiately (and not when moved from
@@ -91,8 +89,11 @@ namespace vuh {
                 _mem = other._mem;
                 _flags = other._flags;
                 _dev = other._dev;
-                reinterpret_cast<vhn::Image&>(*this) = reinterpret_cast<vhn::Image&>(other);
-                reinterpret_cast<vhn::Image&>(other) = nullptr;
+                _imageView = other._imageView;
+                _sampler = other._sampler;
+                _imageLayout = other._imageLayout;
+                static_cast<vhn::Image&>(*this) = static_cast<vhn::Image&>(other);
+                static_cast<vhn::Image&>(other) = nullptr;
                 return *this;
             }
 
@@ -103,6 +104,9 @@ namespace vuh {
                 swap(_mem, other._mem);
                 swap(_flags, other._flags);
                 swap(_dev, other._dev);
+                swap(_imageView, other._imageView);
+                swap(_sampler, other._sampler);
+                swap(_imageLayout, other._imageLayout);
             }
 
             virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& override {
@@ -119,11 +123,18 @@ namespace vuh {
         private: // helpers
             /// release resources associated with current BasicArray object
             auto release() noexcept-> void {
-                if(static_cast<vhn::Image&>(*this)){
-                    if(bool(_mem)) {
-                        _dev.freeMemory(_mem);
-                    }
-                    _dev.destroyImage(*this);
+                if(bool(_imageView)) {
+                    _dev.destroyImageView(_imageView);
+                    _imageView = nullptr;
+                }
+                vhn::Image& im = static_cast<vhn::Image&>(*this);
+                if(bool(im)) {
+                    _dev.destroyImage(im);
+                    im = nullptr;
+                }
+                if(bool(_mem)) {
+                    _dev.freeMemory(_mem);
+                    _mem = nullptr;
                 }
             }
         protected: // data

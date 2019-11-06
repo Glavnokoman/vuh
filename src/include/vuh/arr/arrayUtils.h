@@ -14,19 +14,19 @@ namespace arr {
 	             )-> void;
 
 	auto copyBufferToImage(const vuh::Device& dev
-			, vhn::Buffer src
-			, vhn::Image dst
-			, uint32_t imageWidth
-			, uint32_t imageHeight
-			, size_t bufferOffset=0
+			, const vhn::Buffer& src
+			, vhn::Image& dst
+			, const uint32_t imageWidth
+			, const uint32_t imageHeight
+			, const size_t bufferOffset=0
 	)-> void;
 
 	auto copyImageToBuffer(const vuh::Device& dev
-			, vhn::Image src
-			, vhn::Buffer dst
-			, uint32_t imageWidth
-			, uint32_t imageHeight
-			, size_t bufferOffset=0
+			, const vhn::Image& src
+			, vhn::Buffer& dst
+			, const uint32_t imageWidth
+			, const uint32_t imageHeight
+			, const size_t bufferOffset=0
 	)-> void;
 } // namespace arr
 } // namespace vuh

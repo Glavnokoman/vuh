@@ -47,11 +47,11 @@ namespace arr {
 	}
 
 	auto copyImageToBuffer(const vuh::Device& dev
-			, vhn::Image src
-			, vhn::Buffer dst
-			, uint32_t imageWidth
-			, uint32_t imageHeight
-			, size_t bufferOffset
+			, const vhn::Image& src
+			, vhn::Buffer& dst
+			, const uint32_t imageWidth
+			, const uint32_t imageHeight
+			, const size_t bufferOffset
 	)-> void
 	{
 		auto cmd_buf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
@@ -68,11 +68,11 @@ namespace arr {
 	}
 
 	auto copyBufferToImage(const vuh::Device& dev
-			, vhn::Buffer src
-			, vhn::Image dst
-			, uint32_t imageWidth
-			, uint32_t imageHeight
-			, size_t bufferOffset
+			, const vhn::Buffer& src
+			, vhn::Image& dst
+			, const uint32_t imageWidth
+			, const uint32_t imageHeight
+			, const size_t bufferOffset
 	)-> void
 	{
 		auto cmd_buf = const_cast<vuh::Device&>(dev).transferCmdBuffer();

@@ -21,12 +21,6 @@ namespace vuh {
         struct ImageClass<vuh::mem::properties::Device>{
             template<class T, class Alloc> using type = vuh::img::Device2DImage<T, Alloc>;
         };
-
-/// Explicit trait specialization mapping ImageClass<arr::properties::DeviceOnly> -> arr::DeviceOnly2DImage
-        template<>
-        struct ImageClass<vuh::mem::properties::DeviceOnly>{
-            template<class T, class Alloc> using type = vuh::img::DeviceOnly2DImage<T, Alloc>;
-        };
     } // namespace detail
 
 /// Maps Image classes with different data exchange interfaces, to a single template type.
