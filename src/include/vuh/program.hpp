@@ -72,11 +72,11 @@ namespace vuh {
 				r[i].setDstBinding(uint32_t(i));
 				r[i].setDstArrayElement(0);
 				r[i].setDescriptorCount(1);
-				r[i].setDescriptorType(infos[i].descriptorType());
-				if(vuh::mem::BasicMemory::basic_memory_image_clz == infos[i].descriptorType()) {
-					r[i].setPImageInfo(&(infos[i].descriptorImageInfo()));
-				} else if (vuh::mem::BasicMemory::basic_memory_array_clz == infos[i].descriptorType()) {
-					r[i].setPBufferInfo(&(infos[i].descriptorBufferInfo()));
+				r[i].setDescriptorType(infos[i]->descriptorType());
+				if(vuh::mem::BasicMemory::basic_memory_image_clz == infos[i]->descriptorType()) {
+					r[i].setPImageInfo(&(infos[i]->descriptorImageInfo()));
+				} else if (vuh::mem::BasicMemory::basic_memory_array_clz == infos[i]->descriptorType()) {
+					r[i].setPBufferInfo(&(infos[i]->descriptorBufferInfo()));
 				}
 			}
 			return r;
@@ -330,8 +330,8 @@ namespace vuh {
 				assert(_pipeline); /// pipeline supposed to be initialized before this
 
 				constexpr auto N = sizeof...(args);
-				auto dscinfos = std::array<vuh::mem::BasicMemory, N>{ args ... };
-				auto write_dscsets = dscinfos2writesets(_dscset, dscinfos
+				auto arr_mem = std::array<vuh::mem::BasicMemory*, N>{ &args ... };
+				auto write_dscsets = dscinfos2writesets(_dscset, arr_mem
 				                                       , std::make_index_sequence<N>{});
 				_dev.updateDescriptorSets(write_dscsets, {}); // associate buffers to binding points in bindLayout
 
