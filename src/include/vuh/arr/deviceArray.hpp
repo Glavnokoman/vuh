@@ -45,8 +45,8 @@ namespace vuh {
 		public:
 			using value_type = T;
 			/// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
-			DeviceArray( vuh::Device& dev  ///< device to create array on
-					   , size_t n_elements     ///< number of elements
+			DeviceArray( const vuh::Device& dev  ///< device to create array on
+					   , const size_t n_elements     ///< number of elements
 					   , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
 					   , vhn::BufferUsageFlags flags_buffer={})   ///< additional (to defined by allocator) buffer usage flags
 			   : Base(dev, n_elements, flags_mem, flags_buffer)
@@ -54,7 +54,7 @@ namespace vuh {
 
 			/// Create an instance of DeviceArray and initialize memory by content of some host iterable.
 			template<class C, class=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
-			DeviceArray(vuh::Device& dev  ///< device to create array on
+			DeviceArray( const vuh::Device& dev  ///< device to create array on
 					   , const C& c          ///< iterable to initialize from
 					   , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
 					   , vhn::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
@@ -66,7 +66,7 @@ namespace vuh {
 
 			/// Create an instance of DeviceArray and initialize it from a range of values.
 			template<class It1, class It2>
-		   DeviceArray(vuh::Device& dev   ///< device to create array on
+		   DeviceArray( const vuh::Device& dev   ///< device to create array on
 						, It1 begin           ///< range begin
 						, It2 end             ///< range end (points to one past the last element of the range)
 						, vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
@@ -78,7 +78,7 @@ namespace vuh {
 
 			/// Create an instance of DeviceArray of given size and initialize it using index based initializer function.
 			template<class F>
-			DeviceArray( vuh::Device& dev  ///< device to create array on
+			DeviceArray( const vuh::Device& dev  ///< device to create array on
 					   , size_t n_elements    ///< number of elements
 					   , F&& fun              ///< callable of a form function<T(size_t)> mapping an offset to array value
 					   , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
