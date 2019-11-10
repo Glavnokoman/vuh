@@ -97,6 +97,30 @@ namespace vuh {
 #endif
 			}
 
+			/// Create image sampler on a device.
+			static auto makeSampler(const vuh::Device& dev   ///< device to create buffer on
+					, const vhn::Filter filter
+					, const vhn::SamplerAddressMode addressMode
+					, vhn::Result& res
+			)-> vhn::Sampler {
+
+				vhn::SamplerCreateInfo sci;
+				sci.setMagFilter(filter);
+				sci.setMinFilter(filter);
+				sci.setAddressModeU(addressMode);
+				sci.setAddressModeV(addressMode);
+				sci.setAddressModeW(addressMode);
+
+				auto sp = dev.createSampler(sci);
+#ifdef VULKAN_HPP_NO_EXCEPTIONS
+				res = sp.result;
+				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == res);
+				return sp.value;
+#else
+				res = vhn::Result::eSuccess;
+				return sp;
+#endif
+			}
 			/// Allocate memory for the image.
 			auto allocMemory(const vuh::Device& dev  ///< device to allocate memory
 					, const vhn::Image image  ///< buffer to allocate memory for

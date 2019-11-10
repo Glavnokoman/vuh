@@ -19,12 +19,12 @@ namespace vuh {
         /// in that case. Some do not. In case all memory is host-visible (like on integrated GPUs) using this class
         /// may result in performance penalty.
         template<class T, class Alloc>
-        class Device2DImage: public Basic2DImage<T, Alloc>{
-            using Base = Basic2DImage<T, Alloc>;
+        class DeviceImage2D: public BasicImage2D<T, Alloc>{
+            using Base = BasicImage2D<T, Alloc>;
         public:
             using value_type = T;
             /// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
-            Device2DImage(const vuh::Device& dev   ///< device to create array on
+            DeviceImage2D(const vuh::Device& dev   ///< device to create array on
                     , const size_t width     ///< width of image
                     , const size_t height     ///< height of image
                     , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
@@ -32,8 +32,8 @@ namespace vuh {
                     , const vhn::ImageUsageFlags flags_image={})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, width, height, fmt, flags_mem, flags_image){}
 
-            /// Create an instance of Device2DImage and initialize memory by content of vuh::Array host iterable.
-            Device2DImage(const vuh::Device& dev  ///< device to create array on
+            /// Create an instance of DeviceImage2D and initialize memory by content of vuh::Array host iterable.
+            DeviceImage2D(const vuh::Device& dev  ///< device to create array on
                     , const vuh::Array<T>& arr          ///< iterable to initialize from
                     , const size_t width     ///< width of image
                     , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
@@ -55,6 +55,6 @@ namespace vuh {
                 arr::copyImageToBuffer(Base::_dev, *this, arr, Base::width(), Base::height());
                 return arr;
             }
-        }; // class Device2DImage
+        }; // class DeviceImage2D
     } // namespace img
 } // namespace vuh

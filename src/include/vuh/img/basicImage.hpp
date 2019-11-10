@@ -40,6 +40,9 @@ namespace vuh {
                     _flags = alloc.memoryProperties(_dev, *this, props);
                     _dev.bindImageMemory(*this, _mem, 0);
                     _imageView = alloc.makeImageView(_dev, *this, imageViewType, fmt, _res);
+                    if (vhn::Result::eSuccess != _res)
+                        break;
+                    _sampler = alloc.makeSampler(_dev, vhn::Filter::eNearest, vhn::SamplerAddressMode::eClampToBorder, _res);
                 } while(0);
                 if (vhn::Result::eSuccess != _res) { // destroy buffer if memory allocation was not successful
                     release();
@@ -67,6 +70,7 @@ namespace vuh {
                 static_cast<vhn::Image&>(other) = nullptr;
                 other._imageView = nullptr;
                 other._mem = nullptr;
+                other._sampler = nullptr;
             }
 
             /// @return underlying image
@@ -94,6 +98,10 @@ namespace vuh {
                 _imageLayout = other._imageLayout;
                 static_cast<vhn::Image&>(*this) = static_cast<vhn::Image&>(other);
                 static_cast<vhn::Image&>(other) = nullptr;
+                other._imageView = nullptr;
+                other._mem = nullptr;
+                other._sampler = nullptr;
+                other._dev = nullptr;
                 return *this;
             }
 
@@ -147,11 +155,11 @@ namespace vuh {
         }; // class BasicImage
 
         template<class T, class Alloc>
-        class Basic2DImage: public BasicImage<T, Alloc> {
+        class BasicImage2D: public BasicImage<T, Alloc> {
             using Base = BasicImage<T, Alloc>;
         public:
             /// Construct Image of given size in device memory
-            Basic2DImage(const vuh::Device& dev                     ///< device to allocate array
+            BasicImage2D(const vuh::Device& dev                     ///< device to allocate array
                     , const size_t width                     ///< desired width in bytes
                     , const size_t height                     ///< desired height in bytes
                     , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
@@ -177,6 +185,7 @@ namespace vuh {
         private: // helpers
             size_t                                      _width;    ///< desired width in bytes
             size_t                                      _height;   ///< desired height in bytes
-        }; //// class Basic2DImage
+        }; //// class BasicImage2D
+
     } // namespace img
 } // namespace vuh

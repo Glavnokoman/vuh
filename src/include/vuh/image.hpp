@@ -13,13 +13,13 @@ namespace vuh {
 /// Default mapping is ArrayClass<T> -> arr::HostArray.
         template<class Props>
         struct ImageClass {
-            template<class T, class Alloc> using type = vuh::img::Device2DImage<T, Alloc>;
+            template<class T, class Alloc> using type = vuh::img::DeviceImage2D<T, Alloc>;
         };
 
 /// Explicit trait specialization mapping ImageClass<arr::properties::Device> -> arr::Device2DImage
         template<>
         struct ImageClass<vuh::mem::properties::Device>{
-            template<class T, class Alloc> using type = vuh::img::Device2DImage<T, Alloc>;
+            template<class T, class Alloc> using type = vuh::img::DeviceImage2D<T, Alloc>;
         };
     } // namespace detail
 
