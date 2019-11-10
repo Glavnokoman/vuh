@@ -59,6 +59,8 @@ namespace vuh {
 				ici.setExtent(ext);
 				ici.setUsage(flags_comb);
 				ici.setTiling(vhn::ImageTiling::eOptimal);
+                ici.setMipLevels(1);
+                ici.setArrayLayers(1);
 
 				auto im = dev.createImage(ici);
 		#ifdef VULKAN_HPP_NO_EXCEPTIONS
