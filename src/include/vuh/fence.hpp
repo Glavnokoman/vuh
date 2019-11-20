@@ -120,7 +120,7 @@ namespace vuh {
             #else
 				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
             #endif
-			auto res = _dev->getFenceFdKHR(info,vhn::DispatchLoaderDynamic(vhn::Instance(_dev->instance()), *_dev));
+			auto res = _dev->getFenceFdKHR(info, vhn::DispatchLoaderDynamic(vhn::Instance(_dev->instance()), *_dev));
         #else
 			#if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
 				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
