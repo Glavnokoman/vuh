@@ -61,6 +61,7 @@ namespace vuh {
 		auto release() noexcept-> void;
 
 		auto fenceFdSupported() noexcept-> bool;
+		auto fenceFdFuncExists() noexcept-> bool;
 	private: // data
 		const vuh::Instance&     			_instance;           ///< refer to Instance object used to create device
 		vhn::PhysicalDevice _phy_dev;            ///< handle to associated physical device

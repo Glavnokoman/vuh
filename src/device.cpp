@@ -190,6 +190,15 @@ namespace vuh {
 		}
 	}
 
+    // try Dynamic load API Huawei P30 vkGetFenceFdKHR return NULL
+    auto Device::fenceFdFuncExists() noexcept-> bool {
+        auto vkGetFenceFdKHR = PFN_vkGetFenceFdKHR(this->getProcAddr( "vkGetFenceFdKHR"));
+        if(nullptr != vkGetFenceFdKHR) {
+            return true;
+        }
+        return false;
+	}
+
 	// if fenceFd is support, we can use epoll or select wait for fence complete
 	// following https://www.khronos.org/registry/vulkan/specs/1.0-extensions/html/vkspec.html#VK_KHR_external_fence
 	// vulkan 1.1 support VK_KHR_external_fence default (Promoted to Vulkan 1.1)
@@ -199,10 +208,7 @@ namespace vuh {
 		auto props = properties();
 		if (props.apiVersion >= VK_API_VERSION_1_1) {
 			// try Dynamic load API Huawei P30 vkGetFenceFdKHR return NULL
-            auto vkGetFenceFdKHR = PFN_vkGetFenceFdKHR(this->getProcAddr( "vkGetFenceFdKHR"));
-			if(NULL != vkGetFenceFdKHR) {
-				return true;
-			}
+			return fenceFdFuncExists();
 		} else {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			const auto em_extensions = _phy_dev.enumerateDeviceExtensionProperties();
@@ -221,10 +227,7 @@ namespace vuh {
 				if(0 == strcmp(avail_extensions[i].extensionName, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME)) {
 #endif
 					// try Dynamic load API Huawei P30 vkGetFenceFdKHR return NULL
-                    auto vkGetFenceFdKHR = PFN_vkGetFenceFdKHR(this->getProcAddr( "vkGetFenceFdKHR"));
-                    if(NULL != vkGetFenceFdKHR) {
-                        return true;
-                    }
+                    return fenceFdFuncExists();
 				}
 			}
 		}
