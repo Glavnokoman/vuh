@@ -6,7 +6,7 @@
 
 namespace vuh {
 	/// vulkan Event  
-	class Event : virtual public vuh::VuhBasic, public vhn::Event {
+	class Event : virtual public vuh::base, public vhn::Event {
 	public:
 		Event() : vhn::Event() {
 
@@ -54,7 +54,7 @@ namespace vuh {
 			return success();
 		}
 
-		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkEvent() const {
+		explicit operator VkEvent() const {
 			return VkEvent(static_cast<const vhn::Event&>(*this));
 		}
 
@@ -66,7 +66,7 @@ namespace vuh {
 			return false;
 		}
 
-		bool success() const override { return VuhBasic::success() && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _dev); }
+		bool success() const override { return vuh::base::success() && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _dev); }
 	private: // data
 		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
 	};	

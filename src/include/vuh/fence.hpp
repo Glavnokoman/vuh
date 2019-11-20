@@ -7,7 +7,7 @@
 namespace vuh {
 	/// Class used for synchronization with host.
 	/// vulkan fence  
-	class Fence : virtual public vuh::VuhBasic, public vhn::Fence {
+	class Fence : virtual public vuh::base, public vhn::Fence {
 	public:
 		Fence() : vhn::Fence() {
 
@@ -83,7 +83,7 @@ namespace vuh {
 			return success();
 		}
 
-		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkFence () const {
+		explicit operator VkFence () const {
 			return VkFence(static_cast<const vhn::Fence&>(*this));
 		}
 
@@ -116,16 +116,16 @@ namespace vuh {
 			// The import operation will succeed and the VkFence will have a temporarily imported payload as if a valid file descriptor had been provided.
 		#ifdef VK_USE_PLATFORM_ANDROID_KHR /* Android need dynamic load KHR extension */
         	#if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
-				vhn::FenceGetFdInfoKHR info(*this,vhn::ExternalFenceHandleTypeFlagBits::eSyncFd);
+				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBits::eSyncFd);
             #else
-				vhn::FenceGetFdInfoKHR info(*this,vhn::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
+				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
             #endif
-			auto res = _dev->getFenceFdKHR(info,vhn::DispatchLoaderDynamic(vhn::Instance(_dev->instance()),*_dev));
+			auto res = _dev->getFenceFdKHR(info,vhn::DispatchLoaderDynamic(vhn::Instance(_dev->instance()), *_dev));
         #else
 			#if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
-				vhn::FenceGetFdInfoKHR info(*this,vhn::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
+				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
         	#else
-				vhn::FenceGetFdInfoKHR info(*this,vhn::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
+				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
         	#endif
 			auto res = _dev->getFenceFdKHR(info);
         #endif
@@ -139,7 +139,7 @@ namespace vuh {
 #endif
 		}
 
-		bool success() const override { return VuhBasic::success() && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _dev) ; }
+		bool success() const override { return vuh::base::success() && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _dev) ; }
 
 	private: // data
 		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.

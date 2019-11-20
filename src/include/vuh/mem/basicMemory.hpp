@@ -13,7 +13,7 @@ namespace vuh {
         using HostCached = vuh::mem::AllocDevice<vuh::mem::properties::HostCached>;
         using HostCoherent = vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>;
 
-        class BasicMemory : virtual public vuh::VuhBasic {
+        class BasicMemory : virtual public vuh::base {
         public:
             static constexpr auto basic_memory_image_clz = vhn::DescriptorType::eStorageImage;
             static constexpr auto basic_memory_array_clz = vhn::DescriptorType::eStorageBuffer;

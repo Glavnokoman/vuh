@@ -44,7 +44,7 @@ namespace vuh {
 				: vuh::Fence(fence)
 				, Action(std::move(act))
 				, _dev(&dev)
-				, vuh::VuhBasic(res)
+				, vuh::base(res)
 		{}
 
         explicit Delayed(vuh::Fence& fence, vuh::Event& ev, vuh::Device& dev, Action act={})
@@ -60,7 +60,7 @@ namespace vuh {
 				, vuh::Event(ev)
 				, Action(std::move(act))
 				, _dev(&dev)
-				, vuh::VuhBasic(res)
+				, vuh::base(res)
 		{}
 
 		/// Constructor. Creates the fence in a signalled state.

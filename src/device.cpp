@@ -115,30 +115,35 @@ namespace vuh {
 	  , _support_fence_fd(fenceFdSupported())
 	{
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		auto pool = createCommandPool({vhn::CommandPoolCreateFlagBits::eResetCommandBuffer
-													 , computeFamilyId});
-		_res = pool.result;
-		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
-		if(vhn::Result::eSuccess == _res) {
+		do {
+			auto pool = createCommandPool(
+					{vhn::CommandPoolCreateFlagBits::eResetCommandBuffer, computeFamilyId});
+			_res = pool.result;
+			VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
+			if (vhn::Result::eSuccess != _res) {
+				break;
+			}
 			_cmdpool_compute = pool.value;
 			_cmdbuf_compute = allocCmdBuffer(*this, _cmdpool_compute, _res);
 			VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
-			if(vhn::Result::eSuccess == _res) {
-				if (_tfr_family_id == _cmp_family_id) {
-					_cmdpool_transfer = _cmdpool_compute;
-					_cmdbuf_transfer = _cmdbuf_compute;
-				} else {
-					auto transfer = createCommandPool(
-							{vhn::CommandPoolCreateFlagBits::eResetCommandBuffer, _tfr_family_id});
-					_res = transfer.result;
-					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
-					if (vhn::Result::eSuccess == _res) {
-						_cmdpool_transfer = transfer.value;
-						_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer, _res);
-					}
-				}
+			if (vhn::Result::eSuccess != _res) {
+				break;
 			}
-		}
+			if (_tfr_family_id == _cmp_family_id) {
+				_cmdpool_transfer = _cmdpool_compute;
+				_cmdbuf_transfer = _cmdbuf_compute;
+			} else {
+				auto transfer = createCommandPool({ vhn::CommandPoolCreateFlagBits::eResetCommandBuffer,_tfr_family_id});
+				_res = transfer.result;
+				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
+				if (vhn::Result::eSuccess != _res) {
+					break;
+				}
+				_cmdpool_transfer = transfer.value;
+				_cmdbuf_transfer = allocCmdBuffer(*this, _cmdpool_transfer, _res);
+			}
+		} while(0);
+
 		VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 		if(vhn::Result::eSuccess != _res) {
 			release(); // because vk::Device does not know how to clean after itself
@@ -193,7 +198,11 @@ namespace vuh {
 	auto Device::fenceFdSupported() noexcept-> bool {
 		auto props = properties();
 		if (props.apiVersion >= VK_API_VERSION_1_1) {
-			return true;
+			// try Dynamic load API Huawei P30 vkGetFenceFdKHR return NULL
+            auto vkGetFenceFdKHR = PFN_vkGetFenceFdKHR(this->getProcAddr( "vkGetFenceFdKHR"));
+			if(NULL != vkGetFenceFdKHR) {
+				return true;
+			}
 		} else {
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			const auto em_extensions = _phy_dev.enumerateDeviceExtensionProperties();
@@ -207,11 +216,15 @@ namespace vuh {
 #endif
 			for(int i = 0; i< avail_extensions.size(); i++) {
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-				if(0 == strcmp(avail_extensions[i].extensionName,VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME)) {
+				if(0 == strcmp(avail_extensions[i].extensionName, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME)) {
 #else
-				if(0 == strcmp(avail_extensions[i].extensionName,VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME)) {
+				if(0 == strcmp(avail_extensions[i].extensionName, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME)) {
 #endif
-					return true;
+					// try Dynamic load API Huawei P30 vkGetFenceFdKHR return NULL
+                    auto vkGetFenceFdKHR = PFN_vkGetFenceFdKHR(this->getProcAddr( "vkGetFenceFdKHR"));
+                    if(NULL != vkGetFenceFdKHR) {
+                        return true;
+                    }
 				}
 			}
 		}
@@ -302,14 +315,14 @@ namespace vuh {
 	/// Find first memory matching desired properties.
 	/// Does NOT check for free space availability, only matches the properties.
 	/// @return id of the suitable memory, -1 if no suitable memory found.
-	auto Device::selectMemory(const vhn::Image& image, vhn::MemoryPropertyFlags properties
+	auto Device::selectMemory(const vhn::Image& image, vhn::MemoryPropertyFlags props
 	) const-> uint32_t
 	{
 		auto memProperties = _phy_dev.getMemoryProperties();
-		auto memoryReqs = getImageMemoryRequirements(image);
+		auto memReqs = getImageMemoryRequirements(image);
 		for(uint32_t i = 0; i < memProperties.memoryTypeCount; ++i){
-			if( (memoryReqs.memoryTypeBits & (1u << i))
-				&& ((properties & memProperties.memoryTypes[i].propertyFlags) == properties))
+			if( (memReqs.memoryTypeBits & (1u << i))
+				&& ((props & memProperties.memoryTypes[i].propertyFlags) == props))
 			{
 				return i;
 			}

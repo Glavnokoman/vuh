@@ -115,7 +115,7 @@ namespace vuh {
 
 		/// Program base functionality.
 		/// Initializes and keeps most state variables, and array argument handling building blocks.
-		class ProgramBase : virtual public vuh::VuhBasic {
+		class ProgramBase : virtual public vuh::base {
 		public:
 			/// Run the Program object on previously bound parameters, wait for completion.
 			/// @pre bacth sizes should be specified before calling this.

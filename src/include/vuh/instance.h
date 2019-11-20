@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vuh/core/core.hpp"
-#include "vuh/core/vuhBasic.hpp"
+#include "vuh/core/base.hpp"
 #include <vector>
 
 namespace vuh {
@@ -18,7 +18,7 @@ namespace vuh {
 	/// In debug builds adds default validation layer/extension.
 	/// Default debug reporter sends messages to std::cerr.
 	/// Reentrant.
-	class Instance : virtual public VuhBasic {
+	class Instance : virtual public vuh::base {
 	public:
 		explicit Instance(const std::vector<const char*>& layers={}
 		                 , const std::vector<const char*>& ext={}
@@ -39,7 +39,7 @@ namespace vuh {
 		auto report(const char* prefix, const char* message
 		            , VkDebugReportFlagsEXT flags=VK_DEBUG_REPORT_INFORMATION_BIT_EXT) const-> void;
 
-		VULKAN_HPP_TYPESAFE_EXPLICIT operator vhn::Instance() const { return _instance; }
+		explicit operator vhn::Instance() const { return _instance; }
 		explicit operator bool() const;
 		bool operator!() const;
 
