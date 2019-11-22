@@ -7,12 +7,21 @@ layout(push_constant) uniform Parameters {  // push constants
 } params;
 
 layout(std430, binding = 0) buffer lay0 { float arr_y[]; }; // array parameters
-layout(std430, binding = 1) buffer lay1 { float arr_x[]; };
+layout(binding=1) uniform isampler2D lay1; // VK_FORMAT_R8G8B8A8_UNORM -> isampler2D
 
-void main(){
-    const uint id = gl_GlobalInvocationID.x; // current offset
-    if(params.size <= id){                   // drop threads outside the buffer
+void main() {
+    const uint id = gl_GlobalInvocationID.x;// current offset
+    if(params.size <= id) {// drop threads outside the buffer
         return;
     }
-    arr_y[id] += params.a*arr_x[id];         // saxpy
+
+    ivec2 si = textureSize(lay1, 0);
+    ivec2 idx =  ivec2(0,0);//ivec2(id/si.x, id/si.x + si.y);
+    //ivec4 vi = ivec4(0,0,0,0);
+    ivec4 vi = texelFetch(lay1, idx, 0);
+    vec4 vf;
+    vf.x = intBitsToFloat(vi.x);
+    arr_y[id] += params.a * vf.x;// saxpy
+    //arr_y[0] += params.a * vec4(3);// saxpy
+
 }
