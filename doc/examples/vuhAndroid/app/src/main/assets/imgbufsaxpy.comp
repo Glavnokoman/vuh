@@ -17,11 +17,8 @@ void main() {
 
     ivec2 si = textureSize(lay1, 0);
     ivec2 idx =  ivec2(0,0);//ivec2(id/si.x, id/si.x + si.y);
-    //ivec4 vi = ivec4(0,0,0,0);
-    ivec4 vi = texelFetch(lay1, idx, 0);
-    vec4 vf;
-    vf.x = intBitsToFloat(vi.x);
-    arr_y[id] += params.a * vf.x;// saxpy
-    //arr_y[0] += params.a * vec4(3);// saxpy
-
+    ivec4 vi = ivec4(0,0,0,0);
+    //ivec4 vi = texelFetch(lay1, idx, 0);
+    vec4 vf = intBitsToFloat(vi.rgba);
+    arr_y[id] += params.a * vf.r;
 }

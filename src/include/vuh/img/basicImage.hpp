@@ -28,7 +28,8 @@ namespace vuh {
                     , const vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
                     : vhn::Image(Alloc::makeImage(dev, imageType, width, height, fmt, usage, _res))
-                    , _dev(dev) {
+                    , _dev(dev)
+                    , _imageLayout(vhn::ImageLayout::eGeneral) {
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
                 do {
                     if (vhn::Result::eSuccess != _res)
