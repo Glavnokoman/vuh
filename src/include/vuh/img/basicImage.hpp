@@ -21,6 +21,7 @@ namespace vuh {
             BasicImage(const vuh::Device& dev                     ///< device to allocate array
                     , const vhn::ImageType imageType
                     , const vhn::ImageViewType imageViewType
+                    , const vhn::DescriptorType descriptorType
                     , const size_t width    ///< desired width
                     , const size_t height    ///< desired height
                     , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm/// format
@@ -29,7 +30,8 @@ namespace vuh {
             )
                     : vhn::Image(Alloc::makeImage(dev, imageType, width, height, fmt, usage, _res))
                     , _dev(dev)
-                    , _imageLayout(vhn::ImageLayout::eGeneral) {
+                    , _imageLayout(vhn::ImageLayout::eGeneral)
+                    , _descriptorType(descriptorType) {
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
                 do {
                     if (vhn::Result::eSuccess != _res)
@@ -67,7 +69,8 @@ namespace vuh {
                     , _dev(other._dev)
                     , _imageView(other._imageView)
                     , _sampler(other._sampler)
-                    , _imageLayout(other._imageLayout) {
+                    , _imageLayout(other._imageLayout)
+                    , _descriptorType(other._descriptorType) {
                 static_cast<vhn::Image&>(other) = nullptr;
                 other._imageView = nullptr;
                 other._mem = nullptr;
@@ -97,6 +100,7 @@ namespace vuh {
                 _imageView = other._imageView;
                 _sampler = other._sampler;
                 _imageLayout = other._imageLayout;
+                _descriptorType = other._descriptorType;
                 static_cast<vhn::Image&>(*this) = static_cast<vhn::Image&>(other);
                 static_cast<vhn::Image&>(other) = nullptr;
                 other._imageView = nullptr;
@@ -116,6 +120,7 @@ namespace vuh {
                 swap(_imageView, other._imageView);
                 swap(_sampler, other._sampler);
                 swap(_imageLayout, other._imageLayout);
+                swap(_descriptorType, other._descriptorType);
             }
 
             virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& override {
@@ -126,7 +131,7 @@ namespace vuh {
             }
 
             virtual auto descriptorType() const -> vhn::DescriptorType override  {
-                return descriptor_class;
+                return _descriptorType;
             }
 
         private: // helpers
@@ -153,6 +158,7 @@ namespace vuh {
             vhn::ImageView             _imageView;
             vhn::Sampler               _sampler;
             vhn::ImageLayout           _imageLayout;
+            vhn::DescriptorType        _descriptorType;
         }; // class BasicImage
 
         template<class T, class Alloc>
@@ -163,11 +169,12 @@ namespace vuh {
             BasicImage2D(const vuh::Device& dev                     ///< device to allocate array
                     , const size_t width                     ///< desired width in bytes
                     , const size_t height                     ///< desired height in bytes
-                    , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
-                    , const vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+                    , const vhn::Format fmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::DescriptorType descriptorType = vhn::DescriptorType::eStorageImage
+                    , const vhn::MemoryPropertyFlags props= {} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+                    , const vhn::ImageUsageFlags usage= {}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : Base(dev, vhn::ImageType::e2D, vhn::ImageViewType::e2D, width, height, fmt, props, usage)
+                    : Base(dev, vhn::ImageType::e2D, vhn::ImageViewType::e2D, descriptorType, width, height, fmt, props, usage)
                     , _width(width)
                     , _height(height)
             {}

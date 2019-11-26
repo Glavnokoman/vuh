@@ -385,7 +385,7 @@ static auto saxpy_buffer_image(AAssetManager* mgr)-> bool {
                                      y); // allocate memory on device and copy data from host
         auto d_x = vuh::Array<float>(device, x); // same for x
 
-        auto i_x = vuh::Image2D<float>(device, d_x, 16);
+        auto i_x = vuh::Sampler2D<float>(device, d_x, 16);
 
         using Specs = vuh::typelist<uint32_t>;
         struct Params {
