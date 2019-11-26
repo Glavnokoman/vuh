@@ -15,9 +15,6 @@ namespace vuh {
 
         class BasicMemory : virtual public vuh::base {
         public:
-            static constexpr auto basic_memory_image_clz = vhn::DescriptorType::eStorageImage;
-            static constexpr auto basic_memory_array_clz = vhn::DescriptorType::eStorageBuffer;
-        public:
             BasicMemory() {};
             virtual auto descriptorBufferInfo() -> vhn::DescriptorBufferInfo& { return _descBufferInfo; };
             virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& { return _descImageInfo; };

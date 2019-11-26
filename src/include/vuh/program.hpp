@@ -14,11 +14,6 @@
 namespace vuh {
 	namespace detail {
 
-		/// Traits to map array type to descriptor type
-		template<class T> struct DictTypeToDsc {
-			static constexpr auto value = T::descriptor_class;
-		};
-
 		/// @return tuple element offset
 		template<size_t Idx, class T>
 		constexpr auto tuple_element_offset(const T& tup)-> std::size_t {
@@ -35,12 +30,6 @@ namespace vuh {
 			          , uint32_t(tuple_element_offset<I>(specs))
 			          , uint32_t(sizeof(typename std::tuple_element<I, T>::type))
 			          }... }};
-		}
-
-		// helper
-		template<class... Ts>
-		auto typesToDscTypes()->std::array<vhn::DescriptorType, sizeof...(Ts)> {
-			return {detail::DictTypeToDsc<Ts>::value...};
 		}
 
 		// helper
@@ -74,10 +63,12 @@ namespace vuh {
 				r[i].setDstArrayElement(0);
 				r[i].setDescriptorCount(1);
 				r[i].setDescriptorType(infos[i]->descriptorType());
-				if(vuh::mem::BasicMemory::basic_memory_image_clz == infos[i]->descriptorType()) {
+				if(vhn::DescriptorType::eStorageImage == infos[i]->descriptorType()) {
 					r[i].setPImageInfo(&(infos[i]->descriptorImageInfo()));
-				} else if (vuh::mem::BasicMemory::basic_memory_array_clz == infos[i]->descriptorType()) {
+				} else if (vhn::DescriptorType::eStorageBuffer == infos[i]->descriptorType()) {
 					r[i].setPBufferInfo(&(infos[i]->descriptorBufferInfo()));
+				} else if(vhn::DescriptorType::eSampler == infos[i]->descriptorType()) {
+					r[i].setPImageInfo(&(infos[i]->descriptorImageInfo()));
 				}
 			}
 			return r;
@@ -255,8 +246,14 @@ namespace vuh {
 			/// Initialize the pipeline.
 			/// Creates descriptor set layout, pipeline cache and the pipeline layout.
 			template<size_t N, class... Arrs>
-			auto init_pipelayout(const std::array<vhn::PushConstantRange, N>& psrange, Arrs&...)-> void {
-				auto dscTypes = typesToDscTypes<Arrs...>();
+			auto init_pipelayout(const std::array<vhn::PushConstantRange, N>& psrange, Arrs&... args)-> void {
+				constexpr auto M = sizeof...(Arrs);
+				auto arr_mem = std::array<vuh::mem::BasicMemory*, M>{ &args ... };
+				std::array<vhn::DescriptorType, M> dscTypes;
+				for(size_t i = 0; i < M ; i ++) {
+					dscTypes[i] = arr_mem[i]->descriptorType();
+				}
+
 				auto bindings = dscTypesToLayout(dscTypes);
 				auto layout = _dev.createDescriptorSetLayout(
 				                                       { vhn::DescriptorSetLayoutCreateFlags()

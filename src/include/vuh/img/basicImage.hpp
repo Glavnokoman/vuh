@@ -15,8 +15,6 @@ namespace vuh {
         template<class T, class Alloc>
         class BasicImage: virtual public vuh::mem::BasicMemory, public vhn::Image {
         public:
-            static constexpr auto descriptor_class = basic_memory_image_clz;
-
             /// Construct Image of given size in device memory
             BasicImage(const vuh::Device& dev                     ///< device to allocate array
                     , const vhn::ImageType imageType

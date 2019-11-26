@@ -16,8 +16,6 @@ namespace vuh {
 		class BasicArray: virtual public vuh::mem::BasicMemory, public vhn::Buffer {
 			static constexpr auto descriptor_flags = vhn::BufferUsageFlagBits::eStorageBuffer;
 		public:
-			static constexpr auto descriptor_class = basic_memory_array_clz;
-
 			/// Construct SBO array of given size in device memory
 			BasicArray(const vuh::Device& dev                     ///< device to allocate array
 					   , const size_t n_elements                     ///< number of elements
@@ -93,7 +91,7 @@ namespace vuh {
 			}
 
 			virtual auto descriptorType() const -> vhn::DescriptorType override  {
-				return descriptor_class;
+				return vhn::DescriptorType::eStorageBuffer;
 			}
 
 			/// Move assignment.
