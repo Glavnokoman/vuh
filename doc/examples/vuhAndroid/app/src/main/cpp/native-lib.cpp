@@ -345,16 +345,13 @@ static auto saxpy_image(AAssetManager* mgr)-> bool {
 
         auto d_y = vuh::Array<float>(device, y); // allocate memory on device and copy data from host
         auto d_x = vuh::Array<float>(device, x); // same for x
-        LOGD("saxpy image 00 before %f",y[0]);
         auto i_y = vuh::Image2D<float>(device, d_y, 16);
-        LOGD("saxpy image 2 before %f",y[0]);
         auto i_x = vuh::Image2D<float>(device, d_x, 16);
-        LOGD("saxpy image 3 before %f",y[0]);
         using Specs = vuh::typelist<uint32_t>;
         struct Params {
             float a;
         };
-        LOGD("saxpy image before %f",y[0]);
+        LOGD("saxpy_image before %f",y[0]);
         std::vector<char> code;
         bool suc = loadComp(mgr, "imgsaxpy.comp", code);
         if (suc) {
@@ -363,15 +360,13 @@ static auto saxpy_image(AAssetManager* mgr)-> bool {
             program.grid(128 / 64).spec(64)({a}, i_y, i_x); // run once, wait for completion
             auto v = i_y.toHost();                              // copy data back to host
             v.toHost(begin(y));
-            LOGD("saxpy image after %f", y[0]);
+            LOGD("saxpy_image %f", y[0]);
         }
 
         return suc;
     }
     return false;
 }
-
-typedef float vec4[4];
 
 static auto saxpy_buffer_image(AAssetManager* mgr)-> bool {
     auto y = std::vector<float>(128, 1.0f);
@@ -392,18 +387,18 @@ static auto saxpy_buffer_image(AAssetManager* mgr)-> bool {
             uint32_t size;
             float a;
         };
-        LOGD("saxpy image buffer before %f",y[0]);
+        LOGD("saxpy_buffer_image before %f",y[0]);
         std::vector<char> code;
         bool suc = loadComp(mgr, "imgbufsaxpy.comp", code);
         if (suc) {
             auto program = vuh::Program<Specs, Params>(device,
                                                        code); // define the kernel by linking interface and spir-v implementation
-            LOGD("saxpy image bufferddd afterdddww %f",y[0]);
+            LOGD("saxpy_buffer_image before %f",y[0]);
             program.grid(128 / 64).spec(64)({128, a}, d_y, i_x); // run once, wait for completion
-            LOGD("saxpy image bufferddd after %f",y[0]);
+            LOGD("saxpy_buffer_image after %f",y[0]);
             auto z = std::vector<float>(128, 0.0f);
             d_y.toHost(begin(z));                              // copy data back to host
-            LOGD("saxpy image buffer after %f",z[0]);
+            LOGD("saxpy_buffer_image after %f",z[0]);
         }
 
         return suc;
