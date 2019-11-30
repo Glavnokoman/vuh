@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vuh/core/core.hpp"
+#include "vuh/core/vnh.hpp"
 #include <type_traits>
 
 namespace vuh {

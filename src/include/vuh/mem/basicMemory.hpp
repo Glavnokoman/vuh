@@ -13,7 +13,7 @@ namespace vuh {
         using HostCached = vuh::mem::AllocDevice<vuh::mem::properties::HostCached>;
         using HostCoherent = vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>;
 
-        class BasicMemory : virtual public vuh::base {
+        class BasicMemory : virtual public vuh::core {
         public:
             BasicMemory() {};
             virtual auto descriptorBufferInfo() -> vhn::DescriptorBufferInfo& { return _descBufferInfo; };

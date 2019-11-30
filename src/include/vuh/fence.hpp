@@ -7,7 +7,7 @@
 namespace vuh {
 	/// Class used for synchronization with host.
 	/// vulkan fence  
-	class Fence : virtual public vuh::base, public vhn::Fence {
+	class Fence : virtual public vuh::core, public vhn::Fence {
 	public:
 		Fence() : vhn::Fence() {
 
@@ -139,7 +139,7 @@ namespace vuh {
 #endif
 		}
 
-		bool success() const override { return vuh::base::success() && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _dev) ; }
+		bool success() const override { return vuh::core::success() && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _dev) ; }
 
 	private: // data
 		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.

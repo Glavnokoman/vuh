@@ -212,7 +212,7 @@ namespace vuh {
 		auto devs = _instance.enumeratePhysicalDevices();
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 		_res = devs.result;
-        VULKAN_HPP_ASSERT(vuh::base::success());
+        VULKAN_HPP_ASSERT(vuh::core::success());
         auto physdevs = devs.value;
 #else
         _res = vhn::Result::eSuccess;
