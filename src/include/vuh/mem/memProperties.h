@@ -55,7 +55,7 @@ namespace vuh {
 			   static constexpr memflags_t memory = memflags_t(vhn::MemoryPropertyFlagBits::eDeviceLocal);
 			   static constexpr bufflags_t buffer = bufflags_t(vhn::BufferUsageFlagBits::eTransferSrc)
 												  | bufflags_t(vhn::BufferUsageFlagBits::eTransferDst);
-			   static constexpr bufflags_t image = imgflags_t(vhn::ImageUsageFlagBits::eTransferSrc)
+			   static constexpr imgflags_t image = imgflags_t(vhn::ImageUsageFlagBits::eTransferSrc)
 												  | imgflags_t(vhn::ImageUsageFlagBits::eTransferDst);
 			};
 
@@ -66,7 +66,7 @@ namespace vuh {
 			   using fallback_t = Host;
 			   static constexpr memflags_t memory = memflags_t(vhn::MemoryPropertyFlagBits::eDeviceLocal);
 			   static constexpr bufflags_t buffer = {};
-			   static constexpr bufflags_t image = {};
+			   static constexpr imgflags_t image = imgflags_t(vhn::MemoryPropertyFlagBits::eDeviceLocal);
 			};
 		} // namespace props
 	} // namespace mem
