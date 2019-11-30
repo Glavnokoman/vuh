@@ -18,7 +18,7 @@ namespace vuh {
             BasicMemory() {};
             virtual auto descriptorBufferInfo() -> vhn::DescriptorBufferInfo& { return _descBufferInfo; };
             virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& { return _descImageInfo; };
-            virtual auto descriptorType() const -> vhn::DescriptorType { return vhn::DescriptorType::eSampler; };
+            virtual auto descriptorType() const -> vhn::DescriptorType { return vhn::DescriptorType::eCombinedImageSampler; };
 
         protected:
             vhn::DescriptorBufferInfo  _descBufferInfo;

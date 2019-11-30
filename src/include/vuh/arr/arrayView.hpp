@@ -13,7 +13,6 @@ namespace vuh {
 	public:
 		using array_type = Array;
 		using value_type = typename Array::value_type;
-		static constexpr auto descriptor_class = Array::descriptor_class;
 
 		/// Constructor
 		explicit ArrayView(Array& arr, std::size_t offset_begin, std::size_t offset_end)
@@ -37,7 +36,7 @@ namespace vuh {
 		}
 
 		virtual auto descriptorType() const -> vhn::DescriptorType override  {
-			return descriptor_class;
+			return vhn::DescriptorType::eStorageBuffer;
 		}
 
 	private: // data
