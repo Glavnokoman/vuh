@@ -4,7 +4,11 @@
 
 // VULKAN_HPP_NAMESPACE
 #if !defined(vhn)
-#define vhn VULKAN_HPP_NAMESPACE
+    #if defined(VULKAN_HPP_NAMESPACE)
+        #define vhn VULKAN_HPP_NAMESPACE
+    #else
+        #define vhn vk
+    #endif
 #endif
 
 
