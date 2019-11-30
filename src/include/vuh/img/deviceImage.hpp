@@ -100,7 +100,7 @@ namespace vuh {
                     , const vhn::Format fmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::MemoryPropertyFlags flags_mem = {} ///< additional (to defined by allocator) memory usage flags
                     , const vhn::ImageUsageFlags flags_image = {})   ///< additional (to defined by allocator) buffer usage flags
-                    : Base(dev, width, height, fmt, vhn::DescriptorType::eSampler, flags_mem,
+                    : Base(dev, width, height, fmt, vhn::DescriptorType::eCombinedImageSampler, flags_mem,
                            flags_image) {}
 
             /// Create an instance of DeviceImage2D and initialize memory by content of vuh::Array host iterable.
@@ -111,7 +111,7 @@ namespace vuh {
                     , const vhn::MemoryPropertyFlags flags_mem = {} ///< additional (to defined by allocator) memory usage flags
                     , const vhn::ImageUsageFlags flags_image = {})      ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, width, arr.size() / width + 1, fmt,
-                           vhn::DescriptorType::eSampler, flags_mem, flags_image) {
+                           vhn::DescriptorType::eCombinedImageSampler, flags_mem, flags_image) {
             }
         };
 

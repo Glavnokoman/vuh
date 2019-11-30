@@ -1,4 +1,4 @@
-#version 440
+#version 440 core
 
 layout(local_size_x_id = 0) in;             // workgroup size set with specialization constant
 layout(push_constant) uniform Parameters {  // push constants
@@ -17,8 +17,7 @@ void main() {
 
     ivec2 si = textureSize(lay1, 0);
     ivec2 idx =  ivec2(0,0);//ivec2(id/si.x, id/si.x + si.y);
-    ivec4 vi = ivec4(0,0,0,0);
-    //vi = texelFetch(lay1, idx, 0);
+    ivec4 vi = texelFetch(lay1, idx, 0);
     vec4 vf = intBitsToFloat(vi.rgba);
-    arr_y[id] += params.a * vf.r;
+    arr_y[id] += params.a * vf.x;
 }

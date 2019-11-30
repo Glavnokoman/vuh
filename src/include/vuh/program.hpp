@@ -67,7 +67,7 @@ namespace vuh {
 					r[i].setPImageInfo(&(infos[i]->descriptorImageInfo()));
 				} else if (vhn::DescriptorType::eStorageBuffer == infos[i]->descriptorType()) {
 					r[i].setPBufferInfo(&(infos[i]->descriptorBufferInfo()));
-				} else if(vhn::DescriptorType::eSampler == infos[i]->descriptorType()) {
+				} else if(vhn::DescriptorType::eCombinedImageSampler == infos[i]->descriptorType()) {
 					r[i].setPImageInfo(&(infos[i]->descriptorImageInfo()));
 				}
 			}
