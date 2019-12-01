@@ -101,7 +101,7 @@ namespace vuh {
 			{}
 
 			/// Noop. Action to be triggered when the fence is signaled.
-			constexpr auto operator()() noexcept-> void {}
+			auto operator()() noexcept-> void {}
 		}; // struct Compute
 
 		/// Program base functionality.
@@ -382,7 +382,7 @@ namespace vuh {
 			mutable vhn::Pipeline _pipeline;      ///< pipeline itself
 
 			vuh::Device& _dev;                ///< refer to device to run shader on
-			std::array<uint32_t, 3> _batch={0, 0, 0}; ///< 3D evaluation grid dimensions (number of workgroups to run)
+			std::array<uint32_t, 3> _batch={{0, 0, 0}}; ///< 3D evaluation grid dimensions (number of workgroups to run)
 		}; // class ProgramBase
 
 		/// Part of Program handling specialization constants.

@@ -62,7 +62,7 @@ namespace vuh {
 			CopyDevice(vuh::Device& dev): CmdBuffer(dev){}
 
 			/// delayed operation is a noop
-			constexpr auto operator()() const-> void {}
+			auto operator()() const-> void {}
 
 			template<class Array1, class Array2>
 			auto copy_async(ArrayIter<Array1> src_begin, ArrayIter<Array1> src_end
