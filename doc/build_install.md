@@ -25,6 +25,7 @@ Build out of source.
 sudo apt-get install python
 sudo apt-get install cmake
 sudo apt-get install git
+sudo apt-get install libxrandr-dev
 export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]; root=os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(mod))))); print os.path.join(root,"bin")'`
 export PATH="$BINPATH:$PATH"
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
