@@ -36,7 +36,7 @@ export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]
 export PATH="$BINPATH:$PATH"
 
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
-${VUH_SOURCE_DIR}/config/install_dependencies.sh
+bash ${VUH_SOURCE_DIR}/config/install_dependencies.sh
 
 # glslangValidator
 export PATH="${DEPENDENCIES_INSTALL_DIR}/bin/:$PATH"
