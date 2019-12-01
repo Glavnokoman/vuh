@@ -22,6 +22,11 @@ Install script depends on ```cmake``` and ```cget``` (```pip install cget```) to
 Replace ```VUH_SOURCE_DIR``` and ```DEPENDENCIES_INSTALL_DIR``` by their values on your system.
 Build out of source.
 ```bash
+sudo apt-get install python
+sudo apt-get install cmake
+sudo apt-get install git
+export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]; root=os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(mod))))); print os.path.join(root,"bin")'`
+export PATH="$BINPATH:$PATH"
 export CGET_PREFIX=${DEPENDENCIES_INSTALL_DIR}
 ${VUH_SOURCE_DIR}/config/install_dependencies.sh
 cmake -DCMAKE_PREFIX_PATH=${DEPENDENCIES_INSTALL_DIR} ${VUH_SOURCE_DIR}
