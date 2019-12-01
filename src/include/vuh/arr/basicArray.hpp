@@ -112,7 +112,7 @@ namespace vuh {
 			auto swap(BasicArray& other) noexcept-> void {
 				using std::swap;
 				swap(static_cast<vhn::Buffer&>(&this), static_cast<vhn::Buffer&>(other));
-                swap(_dev, other._dev);
+                swap(const_cast<vuh::Device&>(_dev), const_cast<vuh::Device&>(other._dev));
 				swap(_mem, other._mem);
 				swap(_flags, other._flags);
                 swap(_size, other._size);
