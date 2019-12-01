@@ -29,6 +29,9 @@ sudo apt-get install git
 sudo apt-get install libxrandr-dev
 sudo apt-get install libspdlog-dev
 
+sudo python -m pip install --upgrade pip
+pip install cget --user
+
 export BINPATH=`python -c 'import imp; import os; mod=imp.find_module("cget")[1]; root=os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(mod))))); print os.path.join(root,"bin")'`
 export PATH="$BINPATH:$PATH"
 
