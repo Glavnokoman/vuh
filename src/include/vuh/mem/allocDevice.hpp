@@ -46,7 +46,7 @@ namespace vuh {
 					, const vhn::ImageUsageFlags imF ///< additional (to the ones defined in Props) image usage flags
 					, vhn::Result& res
 			)-> vhn::Image {
-				const auto flags_comb = imF | vhn::ImageUsageFlags(Props::image);
+				const auto combF = imF | vhn::ImageUsageFlags(Props::image);
 
 				vhn::Extent3D ext;
 				ext.setWidth(imW);
@@ -57,7 +57,7 @@ namespace vuh {
 				ici.setImageType(imT);
 				ici.setFormat(imFmt);
 				ici.setExtent(ext);
-				ici.setUsage(flags_comb);
+				ici.setUsage(combF);
 				ici.setTiling(vhn::ImageTiling::eOptimal);
                 ici.setMipLevels(1);
                 ici.setArrayLayers(1);
@@ -131,8 +131,9 @@ namespace vuh {
 			)-> vhn::DeviceMemory {
 				auto m_id = findMemory(dev, im, memF);
 				auto mem = vhn::DeviceMemory{};
+				auto sz = dev.getImageMemoryRequirements(im).size;
 		#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				auto alloc_mem = dev.allocateMemory({dev.getImageMemoryRequirements(im).size, m_id});
+				auto alloc_mem = dev.allocateMemory({sz, m_id});
 				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == alloc_mem.result);
                 res = alloc_mem.result;
 				if (vhn::Result::eSuccess == alloc_mem.result) {
@@ -142,7 +143,7 @@ namespace vuh {
 							, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		#else
 				try{
-					mem = dev.allocateMemory({dev.getImageMemoryRequirements(im).size, m_id});
+					mem = dev.allocateMemory({sz, m_id});
 					res = vhn::Result::eSuccess;
 				} catch (vhn::Error& e){
 					dev.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
@@ -226,18 +227,18 @@ namespace vuh {
 			/// This would only be reported through reporter associated with Instance, and no error
 			/// raised.
 			static auto findMemory(const vuh::Device& dev ///< device on which to search for suitable memory
-					, const vhn::Image& image       ///< image to find suitable memory for
-					, const vhn::MemoryPropertyFlags flags_mem={} ///< additional memory flags
+					, const vhn::Image& im       ///< image to find suitable memory for
+					, const vhn::MemoryPropertyFlags memF={} ///< additional memory flags
 			)-> uint32_t {
-				auto m_id = dev.selectMemory(image
+				auto m_id = dev.selectMemory(im
 						, vhn::MemoryPropertyFlags(vhn::MemoryPropertyFlags(Props::memory)
-																	| flags_mem));
+																	| memF));
 				if(m_id != uint32_t(-1)){
 					return m_id;
 				}
 				dev.instance().report("AllocDevice could not find desired memory type, using fallback", " "
 						, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
-				return AllocFallback::findMemory(dev, image, flags_mem);
+				return AllocFallback::findMemory(dev, im, memF);
 			}
 		}; // class AllocDevice
 
