@@ -23,7 +23,7 @@ namespace vuh {
             using Base = BasicImage2D<T, Alloc>;
         public:
             using value_type = T;
-            /// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
+            /// Create an instance of BasicDeviceImage2D with given number of elements. Memory is uninitialized.
             BasicDeviceImage2D(const vuh::Device& dev   ///< device to create array on
                     , const size_t width     ///< width of image
                     , const size_t height     ///< height of image
@@ -33,7 +33,7 @@ namespace vuh {
                     , const vhn::ImageUsageFlags flags_image = {})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, width, height, fmt, descriptorType, flags_mem, flags_image){}
 
-            /// Create an instance of DeviceImage2D and initialize memory by content of vuh::Array host iterable.
+            /// Create an instance of BasicDeviceImage2D and initialize memory by content of vuh::Array host iterable.
             BasicDeviceImage2D(const vuh::Device& dev  ///< device to create array on
                     , const vuh::Array<T>& arr          ///< iterable to initialize from
                     , const size_t width     ///< width of image
@@ -65,7 +65,7 @@ namespace vuh {
         public:
             using value_type = T;
 
-            /// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
+            /// Create an instance of DeviceImage2D with given number of elements. Memory is uninitialized.
             DeviceImage2D(const vuh::Device &dev   ///< device to create array on
                     , const size_t width     ///< width of image
                     , const size_t height     ///< height of image
@@ -93,7 +93,7 @@ namespace vuh {
         public:
             using value_type = T;
 
-            /// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
+            /// Create an instance of DeviceCombinedImage2D with given number of elements. Memory is uninitialized.
             DeviceCombinedImage2D(const vuh::Device &dev   ///< device to create array on
                     , const size_t width     ///< width of image
                     , const size_t height     ///< height of image
@@ -103,7 +103,7 @@ namespace vuh {
                     : Base(dev, width, height, fmt, vhn::DescriptorType::eCombinedImageSampler, flags_mem,
                            flags_image) {}
 
-            /// Create an instance of DeviceImage2D and initialize memory by content of vuh::Array host iterable.
+            /// Create an instance of DeviceCombinedImage2D and initialize memory by content of vuh::Array host iterable.
             DeviceCombinedImage2D(const vuh::Device &dev  ///< device to create array on
                     , const vuh::Array<T> &arr          ///< iterable to initialize from
                     , const size_t width     ///< width of image
