@@ -13,6 +13,20 @@ namespace arr {
 	             , size_t dstOff=0
 	             )-> void;
 
+	auto genTransImageLayoutCmd(const vhn::CommandBuffer& transCmdBuf
+			, const vhn::Image& im
+			, const vhn::ImageLayout& lyOld
+			, const vhn::ImageLayout& lyNew
+	)-> bool;
+
+	auto genCopyBufferToImageCmd(const vhn::CommandBuffer& transCmdBuf
+			, const vhn::Buffer& buf
+			, vhn::Image& im
+			, const uint32_t imW
+			, const uint32_t imH
+			, const size_t bufOff=0
+	)-> void;
+
 	auto copyBufferToImage(const vuh::Device& dev
 			, const vhn::Buffer& buf
 			, vhn::Image& im

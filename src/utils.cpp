@@ -67,7 +67,53 @@ namespace arr {
 		transQueue.waitIdle();
 	}
 
-	auto copyBufferToImage(const vuh::Device& dev
+	auto genTransImageLayoutCmd(const vhn::CommandBuffer& transCmdBuf
+			, const vhn::Image& im
+			, const vhn::ImageLayout& lyOld
+			, const vhn::ImageLayout& lyNew
+	)-> bool
+	{
+		transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+
+		vhn::ImageMemoryBarrier barrier;
+		barrier.setOldLayout(lyOld);
+		barrier.setNewLayout(lyNew);
+		barrier.setImage(im);
+		vhn::ImageSubresourceRange imSR;
+		imSR.setAspectMask(vhn::ImageAspectFlagBits::eColor);
+		imSR.setBaseMipLevel(0);
+		imSR.setLevelCount(1);
+		imSR.setBaseArrayLayer(0);
+		imSR.setLayerCount(1);
+		barrier.setSubresourceRange(imSR);
+
+		vhn::PipelineStageFlags srcStageMask;
+		vhn::PipelineStageFlags dstStageMask;
+
+		if (vhn::ImageLayout::eUndefined == lyOld && vhn::ImageLayout::eTransferDstOptimal == lyNew) {
+			barrier.setSrcAccessMask(vhn::AccessFlags());
+			barrier.setDstAccessMask(vhn::AccessFlagBits::eTransferWrite);
+
+			srcStageMask = vhn::PipelineStageFlagBits::eTopOfPipe;
+			dstStageMask = vhn::PipelineStageFlagBits::eTransfer;
+		}
+		else if (vhn::ImageLayout::eTransferDstOptimal == lyOld && vhn::ImageLayout::eShaderReadOnlyOptimal == lyNew) {
+			barrier.setSrcAccessMask(vhn::AccessFlagBits::eTransferWrite);
+			barrier.setDstAccessMask(vhn::AccessFlagBits::eShaderRead);
+
+			srcStageMask = vhn::PipelineStageFlagBits::eTransfer;
+			dstStageMask = vhn::PipelineStageFlagBits::eComputeShader;
+		}
+		else {
+			return false;
+		}
+
+		transCmdBuf.pipelineBarrier(srcStageMask, dstStageMask, vhn::DependencyFlags(), nullptr, nullptr, barrier);
+		transCmdBuf.end();
+		return true;
+	}
+
+	auto genCopyBufferToImageCmd(const vhn::CommandBuffer& transCmdBuf
 			, const vhn::Buffer& buf
 			, vhn::Image& im
 			, const uint32_t imW
@@ -77,7 +123,6 @@ namespace arr {
 	{
 		const int layerCount = 1;
 		const int regionCount = 1;
-		auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
 		transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 		vhn::BufferImageCopy cpyRegion;
 		cpyRegion.setBufferOffset(bufOff);
@@ -88,6 +133,20 @@ namespace arr {
 		cpyRegion.setImageSubresource(imSR);
 		transCmdBuf.copyBufferToImage(buf, im, vhn::ImageLayout::eTransferDstOptimal, regionCount, &cpyRegion);
 		transCmdBuf.end();
+	}
+
+	auto copyBufferToImage(const vuh::Device& dev
+			, const vhn::Buffer& buf
+			, vhn::Image& im
+			, const uint32_t imW
+			, const uint32_t imH
+			, const size_t bufOff
+	)-> void
+	{
+		auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
+		genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eUndefined, vhn::ImageLayout::eTransferDstOptimal);
+		genCopyBufferToImageCmd(transCmdBuf, buf, im, imW, imH, bufOff);
+		genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eTransferDstOptimal, vhn::ImageLayout::eShaderReadOnlyOptimal);
 		auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
 		auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &transCmdBuf);
 		transQueue.submit({submitInfo}, nullptr);
