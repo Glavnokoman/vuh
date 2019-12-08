@@ -39,23 +39,23 @@ namespace vuh {
 
 			/// Create image on a device.
 			static auto makeImage(const vuh::Device& dev   ///< device to create buffer on
-					, const vhn::ImageType imageType
-					, const size_t width    ///< desired width
-					, const size_t height    ///< desired height
-					, const vhn::Format fmt
-					, const vhn::ImageUsageFlags flags ///< additional (to the ones defined in Props) image usage flags
+					, const vhn::ImageType imT
+					, const size_t imW    ///< desired width
+					, const size_t imH    ///< desired height
+					, const vhn::Format imFmt
+					, const vhn::ImageUsageFlags imF ///< additional (to the ones defined in Props) image usage flags
 					, vhn::Result& res
 			)-> vhn::Image {
-				const auto flags_comb = flags | vhn::ImageUsageFlags(Props::image);
+				const auto flags_comb = imF | vhn::ImageUsageFlags(Props::image);
 
 				vhn::Extent3D ext;
-				ext.setWidth(width);
-				ext.setHeight(height);
+				ext.setWidth(imW);
+				ext.setHeight(imH);
 				ext.setDepth(1);
 
 				vhn::ImageCreateInfo ici;
-				ici.setImageType(imageType);
-				ici.setFormat(fmt);
+				ici.setImageType(imT);
+				ici.setFormat(imFmt);
 				ici.setExtent(ext);
 				ici.setUsage(flags_comb);
 				ici.setTiling(vhn::ImageTiling::eOptimal);
@@ -75,16 +75,16 @@ namespace vuh {
 
 			/// Create image on a device.
 			static auto makeImageView(const vuh::Device& dev   ///< device to create buffer on
-					, const vhn::Image image
-					, const vhn::ImageViewType viewType
-					, const vhn::Format fmt
+					, const vhn::Image im
+					, const vhn::ImageViewType imVT
+					, const vhn::Format imFmt
 					, vhn::Result& res
 			)-> vhn::ImageView {
 
 				vhn::ImageViewCreateInfo ivci;
-				ivci.setImage(image);
-				ivci.setViewType(viewType);
-				ivci.setFormat(fmt);
+				ivci.setImage(im);
+				ivci.setViewType(imVT);
+				ivci.setFormat(imFmt);
 				ivci.setComponents({vhn::ComponentSwizzle::eR, vhn::ComponentSwizzle::eG, vhn::ComponentSwizzle::eB, vhn::ComponentSwizzle::eA});
 				ivci.setSubresourceRange({vhn::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
 
@@ -125,14 +125,14 @@ namespace vuh {
 			}
 			/// Allocate memory for the image.
 			auto allocMemory(const vuh::Device& dev  ///< device to allocate memory
-					, const vhn::Image image  ///< buffer to allocate memory for
-					, const vhn::MemoryPropertyFlags flags_mem ///< additional (to the ones defined in Props) memory property flags
+					, const vhn::Image im  ///< buffer to allocate memory for
+					, const vhn::MemoryPropertyFlags memF ///< additional (to the ones defined in Props) memory property flags
 					, vhn::Result& res
 			)-> vhn::DeviceMemory {
-				auto m_id = findMemory(dev, image, flags_mem);
+				auto m_id = findMemory(dev, im, memF);
 				auto mem = vhn::DeviceMemory{};
 		#ifdef VULKAN_HPP_NO_EXCEPTIONS
-				auto alloc_mem = dev.allocateMemory({dev.getImageMemoryRequirements(image).size, m_id});
+				auto alloc_mem = dev.allocateMemory({dev.getImageMemoryRequirements(im).size, m_id});
 				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == alloc_mem.result);
                 res = alloc_mem.result;
 				if (vhn::Result::eSuccess == alloc_mem.result) {
@@ -142,14 +142,14 @@ namespace vuh {
 							, VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		#else
 				try{
-					mem = dev.allocateMemory({dev.getImageMemoryRequirements(image).size, m_id});
+					mem = dev.allocateMemory({dev.getImageMemoryRequirements(im).size, m_id});
 					res = vhn::Result::eSuccess;
 				} catch (vhn::Error& e){
 					dev.instance().report("AllocDevice failed to allocate memory, using fallback", e.what()
 											 , VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT);
 		#endif
 					auto allocFallback = AllocFallback{};
-					mem = allocFallback.allocMemory(dev, image, flags_mem, res);
+					mem = allocFallback.allocMemory(dev, im, memF, res);
 				}
 
 				return mem;
