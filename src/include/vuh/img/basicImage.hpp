@@ -35,11 +35,17 @@ namespace vuh {
                     if (vhn::Result::eSuccess != _res)
                         break;
                     auto alloc = Alloc();
-                    _mem = alloc.allocMemory(_dev, *this, vhn::MemoryPropertyFlagBits::eDeviceLocal, _res);
+                    _mem = alloc.allocMemory(_dev, vhn::Image(*this), vhn::MemoryPropertyFlagBits::eDeviceLocal, _res);
                     if (vhn::Result::eSuccess != _res)
                         break;
-                    _dev.bindImageMemory(*this, _mem, 0);
-                    _imView = alloc.makeImageView(_dev, *this, imVT, imFmt, _res);
+                #ifdef VULKAN_HPP_NO_EXCEPTIONS
+                    _res = _dev.bindImageMemory(vhn::Image(*this), _mem, 0);
+                    if (vhn::Result::eSuccess != _res)
+                        break;
+                #else
+                    _dev.bindImageMemory(vhn::Image(*this), _mem, 0);
+                #endif
+                    _imView = alloc.makeImageView(_dev, vhn::Image(*this), imVT, imFmt, _res);
                     if (vhn::Result::eSuccess != _res)
                         break;
                     _sampler = alloc.makeSampler(_dev, vhn::Filter::eNearest, vhn::SamplerAddressMode::eClampToBorder, _res);
