@@ -88,13 +88,13 @@ namespace vuh {
         };
 
         template<class T, class Alloc>
-        class DeviceSampler2D: public BasicDeviceImage2D<T, Alloc> {
+        class DeviceCombinedImage2D: public BasicDeviceImage2D<T, Alloc> {
             using Base = BasicDeviceImage2D<T, Alloc>;
         public:
             using value_type = T;
 
             /// Create an instance of DeviceArray with given number of elements. Memory is uninitialized.
-            DeviceSampler2D(const vuh::Device &dev   ///< device to create array on
+            DeviceCombinedImage2D(const vuh::Device &dev   ///< device to create array on
                     , const size_t width     ///< width of image
                     , const size_t height     ///< height of image
                     , const vhn::Format fmt = vhn::Format::eR8G8B8A8Unorm /// format
@@ -104,7 +104,7 @@ namespace vuh {
                            flags_image) {}
 
             /// Create an instance of DeviceImage2D and initialize memory by content of vuh::Array host iterable.
-            DeviceSampler2D(const vuh::Device &dev  ///< device to create array on
+            DeviceCombinedImage2D(const vuh::Device &dev  ///< device to create array on
                     , const vuh::Array<T> &arr          ///< iterable to initialize from
                     , const size_t width     ///< width of image
                     , const vhn::Format fmt = vhn::Format::eR8G8B8A8Unorm /// format

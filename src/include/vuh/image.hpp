@@ -24,13 +24,13 @@ namespace vuh {
 
         template<class Props>
         struct SamplerClass {
-            template<class T, class Alloc> using type = vuh::img::DeviceSampler2D<T, Alloc>;
+            template<class T, class Alloc> using type = vuh::img::DeviceCombinedImage2D<T, Alloc>;
         };
 
 /// Explicit trait specialization mapping ImageClass<arr::properties::Device> -> arr::Device2DImage
         template<>
         struct SamplerClass<vuh::mem::properties::Device>{
-            template<class T, class Alloc> using type = vuh::img::DeviceSampler2D<T, Alloc>;
+            template<class T, class Alloc> using type = vuh::img::DeviceCombinedImage2D<T, Alloc>;
         };
     } // namespace detail
 
@@ -42,5 +42,5 @@ namespace vuh {
     using Image2D = typename detail::ImageClass<typename Alloc::properties_t>::template type<T, Alloc>;
 
     template<class T, class Alloc=vuh::mem::AllocDevice<vuh::mem::properties::Device>>
-    using Sampler2D = typename detail::SamplerClass<typename Alloc::properties_t>::template type<T, Alloc>;
+    using CombinedImage2D = typename detail::SamplerClass<typename Alloc::properties_t>::template type<T, Alloc>;
 } // namespace vuh
