@@ -104,7 +104,7 @@ namespace vuh {
                     , const size_t imW     ///< width of image
                     , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::ImageUsageFlags imF = {})      ///< additional (to defined by allocator) buffer usage flags
-                    : Base(dev, imW, arr.size() / imW + 1, imFmt,
+                    : Base(dev, arr, imW, imFmt,
                            vhn::DescriptorType::eCombinedImageSampler, imF | vhn::ImageUsageFlagBits::eSampled) {
             }
         };
