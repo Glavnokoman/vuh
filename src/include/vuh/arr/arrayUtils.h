@@ -8,25 +8,25 @@ namespace arr {
 	auto copyBuf(const vuh::Device& dev
 	             , vhn::Buffer src
 	             , vhn::Buffer dst
-	             , size_t size_bytes
-	             , size_t src_offset=0
-	             , size_t dst_offset=0
+	             , size_t szBytes
+	             , size_t srcOff=0
+	             , size_t dstOff=0
 	             )-> void;
 
 	auto copyBufferToImage(const vuh::Device& dev
-			, const vhn::Buffer& src
-			, vhn::Image& dst
-			, const uint32_t imageWidth
-			, const uint32_t imageHeight
-			, const size_t bufferOffset=0
+			, const vhn::Buffer& buf
+			, vhn::Image& im
+			, const uint32_t imW
+			, const uint32_t imH
+			, const size_t bufOff=0
 	)-> void;
 
 	auto copyImageToBuffer(const vuh::Device& dev
-			, const vhn::Image& src
-			, vhn::Buffer& dst
-			, const uint32_t imageWidth
-			, const uint32_t imageHeight
-			, const size_t bufferOffset=0
+			, const vhn::Image& im
+			, vhn::Buffer& buf
+			, const uint32_t imW
+			, const uint32_t imH
+			, const size_t bufOff=0
 	)-> void;
 } // namespace arr
 } // namespace vuh

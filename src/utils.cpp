@@ -7,8 +7,8 @@
 namespace vuh {
 	/// Read binary shader file into array of uint32_t. little endian assumed.
 	/// Padded by 0s to a boundary of 4.
-	auto read_spirv(const char* filename)-> std::vector<char> {
-		auto fin = std::ifstream(filename, std::ios::binary);
+	auto read_spirv(const char* fn)-> std::vector<char> {
+		auto fin = std::ifstream(fn, std::ios::binary);
 		if(!fin.is_open()){
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			VULKAN_HPP_ASSERT(0);
@@ -30,62 +30,68 @@ namespace arr {
 	auto copyBuf(const vuh::Device& dev ///< device where buffers are allocated
 	             , vhn::Buffer src    ///< source buffer
 	             , vhn::Buffer dst    ///< destination buffer
-	             , size_t size_bytes ///< size of memory chunk to copy in bytes
-	             , size_t src_offset ///< source buffer offset (bytes)
-	             , size_t dst_offset ///< destination buffer offset (bytes)
+	             , size_t szBytes ///< size of memory chunk to copy in bytes
+	             , size_t srcOff ///< source buffer offset (bytes)
+	             , size_t dstOff ///< destination buffer offset (bytes)
 	             )-> void
 	{
-		auto cmd_buf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
-		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-		auto region = vk::BufferCopy(src_offset, dst_offset, size_bytes);
-		cmd_buf.copyBuffer(src, dst, 1, &region);
-		cmd_buf.end();
-		auto queue = const_cast<vuh::Device&>(dev).transferQueue();
-		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
-		queue.submit({submit_info}, nullptr);
-		queue.waitIdle();
+		auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
+		transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+		auto region = vk::BufferCopy(srcOff, dstOff, szBytes);
+		transCmdBuf.copyBuffer(src, dst, 1, &region);
+		transCmdBuf.end();
+		auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
+		auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &transCmdBuf);
+		transQueue.submit({submitInfo}, nullptr);
+		transQueue.waitIdle();
 	}
 
 	auto copyImageToBuffer(const vuh::Device& dev
-			, const vhn::Image& src
-			, vhn::Buffer& dst
-			, const uint32_t imageWidth
-			, const uint32_t imageHeight
-			, const size_t bufferOffset
+			, const vhn::Image& im
+			, vhn::Buffer& buf
+			, const uint32_t imW
+			, const uint32_t imH
+			, const size_t bufOff
 	)-> void
 	{
-		auto cmd_buf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
-		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-		vhn::BufferImageCopy region;
-		region.setBufferOffset(bufferOffset);
-		region.setImageExtent({imageWidth, imageHeight, 1});
-		cmd_buf.copyImageToBuffer(src, vhn::ImageLayout::eTransferSrcOptimal, dst, 1, &region);
-		cmd_buf.end();
-		auto queue = const_cast<vuh::Device&>(dev).transferQueue();
-		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
-		queue.submit({submit_info}, nullptr);
-		queue.waitIdle();
+		auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
+		transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+		vhn::BufferImageCopy cpyRegion;
+		cpyRegion.setBufferOffset(bufOff);
+		cpyRegion.setImageExtent({imW, imH, 1});
+		transCmdBuf.copyImageToBuffer(im, vhn::ImageLayout::eTransferSrcOptimal, buf, 1, &cpyRegion);
+		transCmdBuf.end();
+		auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
+		auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &transCmdBuf);
+		transQueue.submit({submitInfo}, nullptr);
+		transQueue.waitIdle();
 	}
 
 	auto copyBufferToImage(const vuh::Device& dev
-			, const vhn::Buffer& src
-			, vhn::Image& dst
-			, const uint32_t imageWidth
-			, const uint32_t imageHeight
-			, const size_t bufferOffset
+			, const vhn::Buffer& buf
+			, vhn::Image& im
+			, const uint32_t imW
+			, const uint32_t imH
+			, const size_t bufOff
 	)-> void
 	{
-		auto cmd_buf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
-		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-		vhn::BufferImageCopy region;
-		region.setBufferOffset(bufferOffset);
-		region.setImageExtent({imageWidth, imageHeight, 1});
-		cmd_buf.copyBufferToImage(src, dst, vhn::ImageLayout::eTransferDstOptimal, 1, &region);
-		cmd_buf.end();
-		auto queue = const_cast<vuh::Device&>(dev).transferQueue();
-		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);
-		queue.submit({submit_info}, nullptr);
-		queue.waitIdle();
+		const int layerCount = 1;
+		const int regionCount = 1;
+		auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
+		transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+		vhn::BufferImageCopy cpyRegion;
+		cpyRegion.setBufferOffset(bufOff);
+		cpyRegion.setImageExtent({imW, imH, 1});
+		vhn::ImageSubresourceLayers imSR;
+		imSR.setAspectMask(vhn::ImageAspectFlagBits::eColor);
+		imSR.setLayerCount(layerCount);
+		cpyRegion.setImageSubresource(imSR);
+		transCmdBuf.copyBufferToImage(buf, im, vhn::ImageLayout::eTransferDstOptimal, regionCount, &cpyRegion);
+		transCmdBuf.end();
+		auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
+		auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &transCmdBuf);
+		transQueue.submit({submitInfo}, nullptr);
+		transQueue.waitIdle();
 	}
 } // namespace arr
 } // namespace vuh
