@@ -20,7 +20,7 @@ namespace vuh {
             virtual auto imageDescriptor() -> vhn::DescriptorImageInfo& { return _imageDescriptor; };
             virtual auto descriptorType() const -> vhn::DescriptorType { return vhn::DescriptorType::eCombinedImageSampler; };
 
-        protected:
+        private:
             vhn::DescriptorBufferInfo  _bufferDescriptor;
             vhn::DescriptorImageInfo   _imageDescriptor;
         };
