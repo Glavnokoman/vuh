@@ -96,15 +96,13 @@ namespace arr {
 
 			srcStageMask = vhn::PipelineStageFlagBits::eTopOfPipe;
 			dstStageMask = vhn::PipelineStageFlagBits::eTransfer;
-		}
-		else if (vhn::ImageLayout::eTransferDstOptimal == lyOld && vhn::ImageLayout::eShaderReadOnlyOptimal == lyNew) {
+		} else if (vhn::ImageLayout::eTransferDstOptimal == lyOld && vhn::ImageLayout::eShaderReadOnlyOptimal == lyNew) {
 			barrier.setSrcAccessMask(vhn::AccessFlagBits::eTransferWrite);
 			barrier.setDstAccessMask(vhn::AccessFlagBits::eShaderRead);
 
 			srcStageMask = vhn::PipelineStageFlagBits::eTransfer;
 			dstStageMask = vhn::PipelineStageFlagBits::eComputeShader;
-		}
-		else {
+		} else {
 			return false;
 		}
 
