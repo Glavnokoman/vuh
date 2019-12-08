@@ -18,17 +18,17 @@ namespace vuh {
         public:
             /// Construct Image of given size in device memory
             BasicImage(const vuh::Device& dev                     ///< device to allocate array
-                    , const vhn::ImageType imT
-                    , const vhn::ImageViewType imVT
-                    , const vhn::DescriptorType imDesc
+                    , const vhn::ImageType& imT
+                    , const vhn::ImageViewType& imVT
+                    , const vhn::DescriptorType& imDesc
                     , const size_t imW    ///< desired width
                     , const size_t imH    ///< desired height
-                    , const vhn::Format imFmt=vhn::Format::eR8G8B8A8Unorm/// format
-                    , const vhn::ImageUsageFlags imF={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+                    , const vhn::Format& imFmt=vhn::Format::eR8G8B8A8Unorm/// format
+                    , const vhn::ImageUsageFlags& imF={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF, _res))
+                    : _imLayout(vhn::ImageLayout::eGeneral)
+                    , vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF, _imLayout, _res))
                     , _dev(dev)
-                    , _imLayout(vhn::ImageLayout::eGeneral)
                     , _imDesc(imDesc) {
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
                 do {
@@ -168,9 +168,9 @@ namespace vuh {
             BasicImage2D(const vuh::Device& dev                     ///< device to allocate array
                     , const size_t imW                     ///< desired width in bytes
                     , const size_t imH                     ///< desired height in bytes
-                    , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::DescriptorType imDesc = vhn::DescriptorType::eStorageImage
-                    , const vhn::ImageUsageFlags imF = {}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
+                    , const vhn::ImageUsageFlags& imF = {}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
                     : Base(dev, vhn::ImageType::e2D, vhn::ImageViewType::e2D, imDesc, imW, imH, imFmt, imF)
                     , _imW(imW)

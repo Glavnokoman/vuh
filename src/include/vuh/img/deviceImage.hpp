@@ -27,18 +27,18 @@ namespace vuh {
             BasicDeviceImage2D(const vuh::Device& dev   ///< device to create array on
                     , const size_t imW     ///< width of image
                     , const size_t imH     ///< height of image
-                    , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::DescriptorType imDesc = vhn::DescriptorType::eStorageImage
-                    , const vhn::ImageUsageFlags imF = {})   ///< additional (to defined by allocator) buffer usage flags
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
+                    , const vhn::ImageUsageFlags& imF = {})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, imH, imFmt, imDesc, imF){}
 
             /// Create an instance of BasicDeviceImage2D and initialize memory by content of vuh::Array host iterable.
             BasicDeviceImage2D(const vuh::Device& dev  ///< device to create array on
                     , const vuh::Array<T>& arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
-                    , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::DescriptorType imDesc = vhn::DescriptorType::eStorageImage
-                    , const vhn::ImageUsageFlags imFlags = {})	  ///< additional (to defined by allocator) buffer usage flags
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
+                    , const vhn::ImageUsageFlags& imFlags = {})	  ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, arr.size() / imW + 1, imFmt, imDesc, imFlags) {
                 fromArray(arr);
             }
@@ -67,8 +67,8 @@ namespace vuh {
             DeviceImage2D(const vuh::Device &dev   ///< device to create array on
                     , const size_t imW     ///< width of image
                     , const size_t imH     ///< height of image
-                    , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::ImageUsageFlags imF = {})   ///< additional (to defined by allocator) buffer usage flags
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::ImageUsageFlags& imF = {})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, imH, imFmt, vhn::DescriptorType::eStorageImage,
                            imF) {}
 
@@ -76,8 +76,8 @@ namespace vuh {
             DeviceImage2D(const vuh::Device &dev  ///< device to create array on
                     , const vuh::Array<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
-                    , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::ImageUsageFlags imF = {})      ///< additional (to defined by allocator) buffer usage flags
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, arr.size() / imW + 1, imFmt,
                            vhn::DescriptorType::eStorageImage, imF) {
             }
@@ -93,8 +93,8 @@ namespace vuh {
             DeviceCombinedImage2D(const vuh::Device &dev   ///< device to create array on
                     , const size_t imW     ///< width of image
                     , const size_t imH     ///< height of image
-                    , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::ImageUsageFlags imF = {})   ///< additional (to defined by allocator) buffer usage flags
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::ImageUsageFlags& imF = {})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, imH, imFmt, vhn::DescriptorType::eCombinedImageSampler,
                            imF | vhn::ImageUsageFlagBits::eSampled) {}
 
@@ -102,8 +102,8 @@ namespace vuh {
             DeviceCombinedImage2D(const vuh::Device &dev  ///< device to create array on
                     , const vuh::Array<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
-                    , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::ImageUsageFlags imF = {})      ///< additional (to defined by allocator) buffer usage flags
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, arr, imW, imFmt,
                            vhn::DescriptorType::eCombinedImageSampler, imF | vhn::ImageUsageFlagBits::eSampled) {
             }

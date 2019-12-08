@@ -38,12 +38,13 @@ namespace vuh {
 			}
 
 			/// Create image on a device.
-			static auto makeImage(const vuh::Device& dev   ///< device to create buffer on
-					, const vhn::ImageType imT
+			static auto makeImage(const vuh::Device& dev   ///< device to create image on
+					, const vhn::ImageType& imT
 					, const size_t imW    ///< desired width
 					, const size_t imH    ///< desired height
-					, const vhn::Format imFmt
-					, const vhn::ImageUsageFlags imF ///< additional (to the ones defined in Props) image usage flags
+					, const vhn::Format& imFmt
+					, const vhn::ImageUsageFlags& imF ///< additional (to the ones defined in Props) image usage flags
+					, const vhn::ImageLayout& imL
 					, vhn::Result& res
 			)-> vhn::Image {
 				const auto combF = imF | vhn::ImageUsageFlags(Props::image);
@@ -54,6 +55,7 @@ namespace vuh {
 				ext.setDepth(1);
 
 				vhn::ImageCreateInfo ici;
+				ici.setInitialLayout(imL);
 				ici.setImageType(imT);
 				ici.setFormat(imFmt);
 				ici.setExtent(ext);
@@ -74,10 +76,10 @@ namespace vuh {
 			}
 
 			/// Create image on a device.
-			static auto makeImageView(const vuh::Device& dev   ///< device to create buffer on
-					, const vhn::Image im
-					, const vhn::ImageViewType imVT
-					, const vhn::Format imFmt
+			static auto makeImageView(const vuh::Device& dev   ///< device to create image on
+					, const vhn::Image& im
+					, const vhn::ImageViewType& imVT
+					, const vhn::Format& imFmt
 					, vhn::Result& res
 			)-> vhn::ImageView {
 
@@ -100,9 +102,9 @@ namespace vuh {
 			}
 
 			/// Create image sampler on a device.
-			static auto makeSampler(const vuh::Device& dev   ///< device to create buffer on
-					, const vhn::Filter filter
-					, const vhn::SamplerAddressMode addressMode
+			static auto makeSampler(const vuh::Device& dev   ///< device to create sampler on
+					, const vhn::Filter& filter
+					, const vhn::SamplerAddressMode& addressMode
 					, vhn::Result& res
 			)-> vhn::Sampler {
 
@@ -125,8 +127,8 @@ namespace vuh {
 			}
 			/// Allocate memory for the image.
 			auto allocMemory(const vuh::Device& dev  ///< device to allocate memory
-					, const vhn::Image im  ///< buffer to allocate memory for
-					, const vhn::MemoryPropertyFlags memF ///< additional (to the ones defined in Props) memory property flags
+					, const vhn::Image& im  ///< image to allocate memory for
+					, const vhn::MemoryPropertyFlags& memF ///< additional (to the ones defined in Props) memory property flags
 					, vhn::Result& res
 			)-> vhn::DeviceMemory {
 				auto m_id = findMemory(dev, im, memF);
@@ -158,8 +160,8 @@ namespace vuh {
 
 			/// Allocate memory for the buffer.
 			auto allocMemory(const vuh::Device& dev  ///< device to allocate memory
-							 , const vhn::Buffer buffer  ///< buffer to allocate memory for
-							 , const vhn::MemoryPropertyFlags flags_mem ///< additional (to the ones defined in Props) memory property flags
+							 , const vhn::Buffer& buffer  ///< buffer to allocate memory for
+							 , const vhn::MemoryPropertyFlags& flags_mem ///< additional (to the ones defined in Props) memory property flags
 							 , vhn::Result& res
 							 )-> vhn::DeviceMemory {
 				auto m_id = findMemory(dev, buffer, flags_mem);
@@ -187,12 +189,12 @@ namespace vuh {
 			}
 
 			/// @return memory property flags of the memory on which actual allocation took place.
-			auto memoryProperties(const vuh::Device& dev, const vhn::Buffer& buffer, const vhn::MemoryPropertyFlags flags_mem) const-> vhn::MemoryPropertyFlags {
+			auto memoryProperties(const vuh::Device& dev, const vhn::Buffer& buffer, const vhn::MemoryPropertyFlags& flags_mem) const-> vhn::MemoryPropertyFlags {
                 uint32_t m_id = findMemory(dev, buffer, flags_mem);
                 return dev.memoryProperties(m_id);
 			}
 
-            auto memoryProperties(const vuh::Device& dev, const vhn::Image& image, const vhn::MemoryPropertyFlags flags_mem) const-> vhn::MemoryPropertyFlags {
+            auto memoryProperties(const vuh::Device& dev, const vhn::Image& image, const vhn::MemoryPropertyFlags& flags_mem) const-> vhn::MemoryPropertyFlags {
                 uint32_t m_id = findMemory(dev, image, flags_mem);
                 return dev.memoryProperties(m_id);
             }
@@ -228,7 +230,7 @@ namespace vuh {
 			/// raised.
 			static auto findMemory(const vuh::Device& dev ///< device on which to search for suitable memory
 					, const vhn::Image& im       ///< image to find suitable memory for
-					, const vhn::MemoryPropertyFlags memF={} ///< additional memory flags
+					, const vhn::MemoryPropertyFlags& memF={} ///< additional memory flags
 			)-> uint32_t {
 				auto m_id = dev.selectMemory(im
 						, vhn::MemoryPropertyFlags(vhn::MemoryPropertyFlags(Props::memory)
