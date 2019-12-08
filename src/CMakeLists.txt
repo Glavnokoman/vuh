@@ -1,6 +1,6 @@
 find_package(Vulkan REQUIRED)
 
-add_library(vuh SHARED device.cpp error.cpp instance.cpp utils.cpp)
+add_library(vuh SHARED device.cpp error.cpp instance.cpp utils/utils.cpp)
 target_link_libraries(vuh PUBLIC Vulkan::Vulkan)
 target_include_directories(vuh
    PUBLIC
