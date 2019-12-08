@@ -15,6 +15,7 @@ namespace vuh {
 		template<class T, class Alloc>
 		class BasicArray: virtual public vuh::mem::BasicMemory, public vhn::Buffer {
 			static constexpr auto descriptor_flags = vhn::BufferUsageFlagBits::eStorageBuffer;
+			using Basic = vuh::mem::BasicMemory;
 		public:
 			/// Construct SBO array of given size in device memory
 			BasicArray(const vuh::Device& dev                     ///< device to allocate array
@@ -83,11 +84,11 @@ namespace vuh {
 				return bool(_flags & vhn::MemoryPropertyFlagBits::eHostVisible);
 			}
 
-			virtual auto descriptorBufferInfo() -> vhn::DescriptorBufferInfo& override {
-				_descBufferInfo.setBuffer(buffer());
-				_descBufferInfo.setOffset(offset());
-				_descBufferInfo.setRange(size_bytes());
-				return _descBufferInfo;
+			virtual auto bufferDescriptor() -> vhn::DescriptorBufferInfo& override {
+				Basic::bufferDescriptor().setBuffer(buffer());
+				Basic::bufferDescriptor().setOffset(offset());
+				Basic::bufferDescriptor().setRange(size_bytes());
+				return Basic::bufferDescriptor();
 			}
 
 			virtual auto descriptorType() const -> vhn::DescriptorType override  {

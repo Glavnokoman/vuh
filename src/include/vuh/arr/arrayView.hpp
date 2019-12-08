@@ -10,6 +10,7 @@ namespace vuh {
 	/// to pass parts of the array data.
 	template<class Array>
 	class ArrayView : virtual public vuh::mem::BasicMemory {
+		using Basic = vuh::mem::BasicMemory;
 	public:
 		using array_type = Array;
 		using value_type = typename Array::value_type;
@@ -28,11 +29,11 @@ namespace vuh {
 		/// @return number of bytes in the view
 		auto size_bytes() const-> std::size_t {return size()*sizeof(value_type);}
 
-		virtual auto descriptorBufferInfo() -> vhn::DescriptorBufferInfo& override {
-			_descBufferInfo.setBuffer(buffer());
-			_descBufferInfo.setOffset(offset());
-			_descBufferInfo.setRange(size_bytes());
-			return _descBufferInfo;
+		virtual auto bufferDescriptor() -> vhn::DescriptorBufferInfo& override {
+			Basic::bufferDescriptor().setBuffer(buffer());
+			Basic::bufferDescriptor().setOffset(offset());
+			Basic::bufferDescriptor().setRange(size_bytes());
+			return Basic::bufferDescriptor();
 		}
 
 		virtual auto descriptorType() const -> vhn::DescriptorType override  {

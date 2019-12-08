@@ -64,11 +64,11 @@ namespace vuh {
 				r[i].setDescriptorCount(1);
 				r[i].setDescriptorType(infos[i]->descriptorType());
 				if(vhn::DescriptorType::eStorageImage == infos[i]->descriptorType()) {
-					r[i].setPImageInfo(&(infos[i]->descriptorImageInfo()));
+					r[i].setPImageInfo(&(infos[i]->imageDescriptor()));
 				} else if (vhn::DescriptorType::eStorageBuffer == infos[i]->descriptorType()) {
-					r[i].setPBufferInfo(&(infos[i]->descriptorBufferInfo()));
+					r[i].setPBufferInfo(&(infos[i]->bufferDescriptor()));
 				} else if(vhn::DescriptorType::eCombinedImageSampler == infos[i]->descriptorType()) {
-					r[i].setPImageInfo(&(infos[i]->descriptorImageInfo()));
+					r[i].setPImageInfo(&(infos[i]->imageDescriptor()));
 				}
 			}
 			return r;

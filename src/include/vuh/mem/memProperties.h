@@ -55,8 +55,7 @@ namespace vuh {
 			   static constexpr memflags_t memory = memflags_t(vhn::MemoryPropertyFlagBits::eDeviceLocal);
 			   static constexpr bufflags_t buffer = bufflags_t(vhn::BufferUsageFlagBits::eTransferSrc)
 												  | bufflags_t(vhn::BufferUsageFlagBits::eTransferDst);
-			   static constexpr imgflags_t image = imgflags_t(vhn::ImageUsageFlagBits::eTransferSrc)
-												  | imgflags_t(vhn::ImageUsageFlagBits::eTransferDst);
+			   static constexpr imgflags_t image = {};
 			};
 
 			/// Flags for buffer in device-local memory which is not supposed to take part in data
@@ -66,7 +65,7 @@ namespace vuh {
 			   using fallback_t = Host;
 			   static constexpr memflags_t memory = memflags_t(vhn::MemoryPropertyFlagBits::eDeviceLocal);
 			   static constexpr bufflags_t buffer = {};
-			   static constexpr imgflags_t image = imgflags_t(vhn::MemoryPropertyFlagBits::eDeviceLocal);
+			   static constexpr imgflags_t image = {};
 			};
 		} // namespace props
 	} // namespace mem

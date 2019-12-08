@@ -16,13 +16,13 @@ namespace vuh {
         class BasicMemory : virtual public vuh::core {
         public:
             BasicMemory() {};
-            virtual auto descriptorBufferInfo() -> vhn::DescriptorBufferInfo& { return _descBufferInfo; };
-            virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& { return _descImageInfo; };
+            virtual auto bufferDescriptor() -> vhn::DescriptorBufferInfo& { return _bufferDescriptor; };
+            virtual auto imageDescriptor() -> vhn::DescriptorImageInfo& { return _imageDescriptor; };
             virtual auto descriptorType() const -> vhn::DescriptorType { return vhn::DescriptorType::eCombinedImageSampler; };
 
         protected:
-            vhn::DescriptorBufferInfo  _descBufferInfo;
-            vhn::DescriptorImageInfo   _descImageInfo;
+            vhn::DescriptorBufferInfo  _bufferDescriptor;
+            vhn::DescriptorImageInfo   _imageDescriptor;
         };
     } // namespace mem
 } // namespace vuh

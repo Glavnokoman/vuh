@@ -14,33 +14,32 @@ namespace vuh {
 /// binding memory to buffer objects, etc...
         template<class T, class Alloc>
         class BasicImage: virtual public vuh::mem::BasicMemory, public vhn::Image {
+            using Basic = vuh::mem::BasicMemory;
         public:
             /// Construct Image of given size in device memory
             BasicImage(const vuh::Device& dev                     ///< device to allocate array
-                    , const vhn::ImageType imageType
-                    , const vhn::ImageViewType imageViewType
-                    , const vhn::DescriptorType descriptorType
-                    , const size_t width    ///< desired width
-                    , const size_t height    ///< desired height
-                    , const vhn::Format fmt=vhn::Format::eR8G8B8A8Unorm/// format
-                    , const vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
-                    , const vhn::ImageUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+                    , const vhn::ImageType imT
+                    , const vhn::ImageViewType imVT
+                    , const vhn::DescriptorType imDesc
+                    , const size_t imW    ///< desired width
+                    , const size_t imH    ///< desired height
+                    , const vhn::Format imFmt=vhn::Format::eR8G8B8A8Unorm/// format
+                    , const vhn::ImageUsageFlags imF={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : vhn::Image(Alloc::makeImage(dev, imageType, width, height, fmt, usage, _res))
+                    : vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF, _res))
                     , _dev(dev)
-                    , _imageLayout(vhn::ImageLayout::eGeneral)
-                    , _descriptorType(descriptorType) {
+                    , _imLayout(vhn::ImageLayout::eGeneral)
+                    , _imDesc(imDesc) {
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
                 do {
                     if (vhn::Result::eSuccess != _res)
                         break;
                     auto alloc = Alloc();
-                    _mem = alloc.allocMemory(_dev, *this, props, _res);
+                    _mem = alloc.allocMemory(_dev, *this, vhn::MemoryPropertyFlagBits::eDeviceLocal, _res);
                     if (vhn::Result::eSuccess != _res)
                         break;
-                    _flags = alloc.memoryProperties(_dev, *this, props);
                     _dev.bindImageMemory(*this, _mem, 0);
-                    _imageView = alloc.makeImageView(_dev, *this, imageViewType, fmt, _res);
+                    _imView = alloc.makeImageView(_dev, *this, imVT, imFmt, _res);
                     if (vhn::Result::eSuccess != _res)
                         break;
                     _sampler = alloc.makeSampler(_dev, vhn::Filter::eNearest, vhn::SamplerAddressMode::eClampToBorder, _res);
@@ -63,14 +62,13 @@ namespace vuh {
             BasicImage(BasicImage&& other) noexcept
                     : vhn::Image(other)
                     , _mem(other._mem)
-                    , _flags(other._flags)
                     , _dev(other._dev)
-                    , _imageView(other._imageView)
+                    , _imView(other._imView)
                     , _sampler(other._sampler)
-                    , _imageLayout(other._imageLayout)
-                    , _descriptorType(other._descriptorType) {
+                    , _imLayout(other._imLayout)
+                    , _imDesc(other._imDesc) {
                 static_cast<vhn::Image&>(other) = nullptr;
-                other._imageView = nullptr;
+                other._imView = nullptr;
                 other._mem = nullptr;
                 other._sampler = nullptr;
             }
@@ -78,9 +76,9 @@ namespace vuh {
             /// @return underlying image
             auto image() const -> const vhn::Image& { return *this; }
 
-            auto imageView() const -> const vhn::ImageView& { return _imageView; }
+            auto imageView() const -> const vhn::ImageView& { return _imView; }
 
-            auto imageLayout() const -> const vhn::ImageLayout& { return _imageLayout; }
+            auto imageLayout() const -> const vhn::ImageLayout& { return _imLayout; }
 
             auto sampler() const -> const vhn::Sampler& { return _sampler; }
 
@@ -93,15 +91,14 @@ namespace vuh {
             auto operator= (BasicImage&& other) noexcept-> BasicImage& {
                 release();
                 _mem = other._mem;
-                _flags = other._flags;
                 _dev = other._dev;
-                _imageView = other._imageView;
+                _imView = other._imView;
                 _sampler = other._sampler;
-                _imageLayout = other._imageLayout;
-                _descriptorType = other._descriptorType;
+                _imLayout = other._imLayout;
+                _imDesc = other._imDesc;
                 static_cast<vhn::Image&>(*this) = static_cast<vhn::Image&>(other);
                 static_cast<vhn::Image&>(other) = nullptr;
-                other._imageView = nullptr;
+                other._imView = nullptr;
                 other._mem = nullptr;
                 other._sampler = nullptr;
                 other._dev = nullptr;
@@ -113,31 +110,30 @@ namespace vuh {
                 using std::swap;
                 swap(static_cast<vhn::Image&>(&this), static_cast<vhn::Image&>(other));
                 swap(_mem, other._mem);
-                swap(_flags, other._flags);
                 swap(_dev, other._dev);
-                swap(_imageView, other._imageView);
+                swap(_imView, other._imView);
                 swap(_sampler, other._sampler);
-                swap(_imageLayout, other._imageLayout);
-                swap(_descriptorType, other._descriptorType);
+                swap(_imLayout, other._imLayout);
+                swap(_imDesc, other._imDesc);
             }
 
-            virtual auto descriptorImageInfo() -> vhn::DescriptorImageInfo& override {
-                _descImageInfo.setSampler(sampler());
-                _descImageInfo.setImageView(imageView());
-                _descImageInfo.setImageLayout(imageLayout());
-                return _descImageInfo;
+            virtual auto imageDescriptor() -> vhn::DescriptorImageInfo& override {
+                Basic::imageDescriptor().setSampler(sampler());
+                Basic::imageDescriptor().setImageView(imageView());
+                Basic::imageDescriptor().setImageLayout(imageLayout());
+                return Basic::imageDescriptor();
             }
 
             virtual auto descriptorType() const -> vhn::DescriptorType override  {
-                return _descriptorType;
+                return _imDesc;
             }
 
         private: // helpers
             /// release resources associated with current BasicArray object
             auto release() noexcept-> void {
-                if(bool(_imageView)) {
-                    _dev.destroyImageView(_imageView);
-                    _imageView = nullptr;
+                if(bool(_imView)) {
+                    _dev.destroyImageView(_imView);
+                    _imView = nullptr;
                 }
                 vhn::Image& im = static_cast<vhn::Image&>(*this);
                 if(bool(im)) {
@@ -151,12 +147,11 @@ namespace vuh {
             }
         protected: // data
             vhn::DeviceMemory          _mem;      ///< associated chunk of device memory
-            vhn::MemoryPropertyFlags   _flags;    ///< actual flags of allocated memory (may differ from those requested)
             const vuh::Device&         _dev;      ///< referes underlying logical device
-            vhn::ImageView             _imageView;
+            vhn::ImageView             _imView;
             vhn::Sampler               _sampler;
-            vhn::ImageLayout           _imageLayout;
-            vhn::DescriptorType        _descriptorType;
+            vhn::ImageLayout           _imLayout;
+            vhn::DescriptorType        _imDesc;
         }; // class BasicImage
 
         template<class T, class Alloc>
@@ -165,32 +160,31 @@ namespace vuh {
         public:
             /// Construct Image of given size in device memory
             BasicImage2D(const vuh::Device& dev                     ///< device to allocate array
-                    , const size_t width                     ///< desired width in bytes
-                    , const size_t height                     ///< desired height in bytes
-                    , const vhn::Format fmt = vhn::Format::eR8G8B8A8Unorm /// format
-                    , const vhn::DescriptorType descriptorType = vhn::DescriptorType::eStorageImage
-                    , const vhn::MemoryPropertyFlags props= {} ///< additional memory property flags. These are 'added' to flags defind by allocator.
-                    , const vhn::ImageUsageFlags usage= {}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+                    , const size_t imW                     ///< desired width in bytes
+                    , const size_t imH                     ///< desired height in bytes
+                    , const vhn::Format imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::DescriptorType imDesc = vhn::DescriptorType::eStorageImage
+                    , const vhn::ImageUsageFlags imF = {}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : Base(dev, vhn::ImageType::e2D, vhn::ImageViewType::e2D, descriptorType, width, height, fmt, props, usage)
-                    , _width(width)
-                    , _height(height)
+                    : Base(dev, vhn::ImageType::e2D, vhn::ImageViewType::e2D, imDesc, imW, imH, imFmt, imF)
+                    , _imW(imW)
+                    , _imH(imH)
             {}
 
             /// @return size of a memory chunk occupied by array elements
             /// (not the size of actually allocated chunk, which may be a bit bigger).
-            auto size_bytes() const-> uint32_t {return _height * _width * sizeof(T);}
+            auto size_bytes() const-> uint32_t {return _imH * _imW * sizeof(T);}
 
             /// @return number of elements
-            auto size() const-> size_t {return _height * _width;}
+            auto size() const-> size_t {return _imW * _imH;}
 
-            auto width() const-> uint32_t {return _width;}
+            auto width() const-> uint32_t {return _imW;}
 
-            auto height() const-> uint32_t {return _height;}
+            auto height() const-> uint32_t {return _imH;}
 
         private: // helpers
-            size_t                                      _width;    ///< desired width in bytes
-            size_t                                      _height;   ///< desired height in bytes
+            size_t                                      _imW;    ///< desired width in bytes
+            size_t                                      _imH;   ///< desired height in bytes
         }; //// class BasicImage2D
 
     } // namespace img
