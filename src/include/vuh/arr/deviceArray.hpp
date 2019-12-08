@@ -3,7 +3,7 @@
 #include "vuh/core/core.hpp"
 #include "vuh/mem/memProperties.h"
 #include "arrayIter.hpp"
-#include "arrayUtils.h"
+#include "vuh/utils/utils.h"
 #include "vuh/mem/allocDevice.hpp"
 #include "basicArray.hpp"
 #include "hostArray.hpp"
@@ -91,7 +91,7 @@ namespace vuh {
 				for(size_t i = 0; i < n_elements; ++i, ++stage_it){
 					*stage_it = fun(i);
 				}
-				copyBuf(Base::_dev, stage_buffer, *this, Base::size_bytes());
+                vuh::utils::copyBuf(Base::_dev, stage_buffer, *this, Base::size_bytes());
 			}
 
 			/// Copy data from host range to array memory.
@@ -102,7 +102,7 @@ namespace vuh {
 					Base::_dev.unmapMemory(Base::_mem);
 				} else { // memory is not host visible, use staging buffer
 					auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>(Base::_dev, begin, end);
-					copyBuf(Base::_dev, stage_buf, *this, Base::size_bytes());
+                    vuh::utils::copyBuf(Base::_dev, stage_buf, *this, Base::size_bytes());
 				}
 			}
 
@@ -114,7 +114,7 @@ namespace vuh {
 					Base::_dev.unmapMemory(Base::_mem);
 				} else { // memory is not host visible, use staging buffer
 					auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCoherent>>(Base::_dev, begin, end);
-					copyBuf(Base::_dev, stage_buf, *this, Base::size_bytes(), 0u, offset*sizeof(T));
+                    vuh::utils::copyBuf(Base::_dev, stage_buf, *this, Base::size_bytes(), 0u, offset*sizeof(T));
 				}
 			}
 
@@ -128,7 +128,7 @@ namespace vuh {
 			  } else {
 				 using std::begin; using std::end;
 				 auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, Base::size());
-				 copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
+                  vuh::utils::copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
 				 std::copy(begin(stage_buf), end(stage_buf), copy_to);
 			  }
 		   }
@@ -144,7 +144,7 @@ namespace vuh {
 			  } else {
 				 using std::begin; using std::end;
 				 auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, Base::size());
-				 copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
+				 vuh::utils::copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
 				 std::transform(begin(stage_buf), end(stage_buf), copy_to, std::forward<F>(fun));
 			  }
 		   }
@@ -163,7 +163,7 @@ namespace vuh {
 				} else {
 					using std::begin; using std::end;
 					auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev, size);
-					copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
+                    vuh::utils::copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes());
 					std::transform(begin(stage_buf), end(stage_buf), copy_to, std::forward<F>(fun));
 				}
 			}
@@ -179,7 +179,7 @@ namespace vuh {
 					using std::begin; using std::end;
 					auto stage_buf = HostArray<T, vuh::mem::AllocDevice<vuh::mem::properties::HostCached>>(Base::_dev
 																			  , offset_end - offset_begin);
-					copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes(), offset_begin, 0u);
+                    vuh::utils::copyBuf(Base::_dev, *this, stage_buf, Base::size_bytes(), offset_begin, 0u);
 					std::copy(begin(stage_buf), end(stage_buf), dst_begin);
 				}
 			}

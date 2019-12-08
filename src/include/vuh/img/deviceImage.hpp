@@ -46,13 +46,13 @@ namespace vuh {
             /// Copy data from vuh::Array to image memory.
             auto fromArray(const vuh::Array<T>& arr)-> void {
                 const vhn::Buffer& buffer = const_cast<vuh::Array<T>&>(arr).buffer();
-                arr::copyBufferToImage(Base::_dev, buffer, *this, Base::width(), Base::height());
+                vuh::utils::copyBufferToImage(Base::_dev, buffer, *this, Base::width(), Base::height());
             }
 
             /// @return copy image to vuh::Array data.
             auto toHost() const-> vuh::Array<T> {
                 vuh::Array<T> arr(Base::_dev, Base::size());
-                arr::copyImageToBuffer(Base::_dev, *this, arr, Base::width(), Base::height());
+                vuh::utils::copyImageToBuffer(Base::_dev, *this, arr, Base::width(), Base::height());
                 return arr;
             }
         }; // class BasicDeviceImage2D

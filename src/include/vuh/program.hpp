@@ -3,7 +3,7 @@
 #include "vuh/core/core.hpp"
 #include "array.hpp"
 #include "device.h"
-#include "utils.h"
+#include "vuh/utils/utils.h"
 #include "delayed.hpp"
 #include <array>
 #include <cstddef>
