@@ -30,7 +30,7 @@ namespace vuh {
 		auto numTransferQueues() const-> uint32_t { return 1u;}
 		auto memoryProperties(uint32_t id) const-> vhn::MemoryPropertyFlags;
 		auto selectMemory(const vhn::Buffer& buffer, vhn::MemoryPropertyFlags props) const-> uint32_t;
-		auto selectMemory(const vhn::Image& image, vhn::MemoryPropertyFlags props) const-> uint32_t;
+		auto selectMemory(const vhn::Image& im, vhn::MemoryPropertyFlags props) const-> uint32_t;
 		auto instance() const-> const vuh::Instance& {return _instance;}
 		auto hasSeparateQueues() const-> bool;
 
@@ -63,7 +63,7 @@ namespace vuh {
 		auto fenceFdSupported() noexcept-> bool;
 		auto fenceFdFuncExists() noexcept-> bool;
 	private: // data
-		const vuh::Instance&     			_instance;           ///< refer to Instance object used to create device
+		const vuh::Instance&  _instance;           ///< refer to Instance object used to create device
 		vhn::PhysicalDevice _phy_dev;            ///< handle to associated physical device
 		vhn::CommandPool    _cmdpool_compute;    ///< handle to command pool for compute commands
 		vhn::CommandBuffer  _cmdbuf_compute;     ///< primary command buffer associated with the compute command pool
@@ -72,6 +72,6 @@ namespace vuh {
 		uint32_t _cmp_family_id = uint32_t(-1); ///< compute queue family id. -1 if device does not have compute-capable queues.
 		uint32_t _tfr_family_id = uint32_t(-1); ///< transfer queue family id, maybe the same as compute queue id.
 		vhn::Result	_res;					///< result of vulkan's api
-		bool		_support_fence_fd;			///< if fenceFd is support, we can use epoll or select wait for fence complete
+		bool  _support_fence_fd;			///< if fenceFd is support, we can use epoll or select wait for fence complete
 	}; // class Device
 }
