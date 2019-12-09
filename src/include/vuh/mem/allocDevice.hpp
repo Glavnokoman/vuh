@@ -44,7 +44,6 @@ namespace vuh {
 					, const size_t imH    ///< desired height
 					, const vhn::Format& imFmt
 					, const vhn::ImageUsageFlags& imF ///< additional (to the ones defined in Props) image usage flags
-					, const vhn::ImageLayout& imL
 					, vhn::Result& res
 			)-> vhn::Image {
 				const auto combF = imF | vhn::ImageUsageFlags(Props::image);
@@ -55,7 +54,7 @@ namespace vuh {
 				ext.setDepth(1);
 
 				vhn::ImageCreateInfo ici;
-				ici.setInitialLayout(imL);
+				ici.setInitialLayout(vhn::ImageLayout::eUndefined);
 				ici.setImageType(imT);
 				ici.setFormat(imFmt);
 				ici.setExtent(ext);
@@ -63,6 +62,8 @@ namespace vuh {
 				ici.setTiling(vhn::ImageTiling::eOptimal);
                 ici.setMipLevels(1);
                 ici.setArrayLayers(1);
+                ici.setSamples(vhn::SampleCountFlagBits::e1);
+                ici.setSharingMode(vhn::SharingMode::eExclusive);
 
 				auto im = dev.createImage(ici);
 		#ifdef VULKAN_HPP_NO_EXCEPTIONS

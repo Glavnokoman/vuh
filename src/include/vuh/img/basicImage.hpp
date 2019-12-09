@@ -26,9 +26,9 @@ namespace vuh {
                     , const vhn::Format& imFmt=vhn::Format::eR8G8B8A8Unorm/// format
                     , const vhn::ImageUsageFlags& imF={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : _imLayout(vhn::ImageLayout::eGeneral)
-                    , vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF, _imLayout, _res))
+                    : vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF, _res))
                     , _dev(dev)
+                    , _imLayout(vhn::ImageLayout::eGeneral)
                     , _imDesc(imDesc) {
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
                 do {

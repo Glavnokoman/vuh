@@ -56,9 +56,14 @@ namespace vuh {
 		{
 			auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
 			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-			vhn::BufferImageCopy cpyRegion;
+            vhn::Extent3D ext;
+            ext.setDepth(1);
+            ext.setWidth(imW);
+            ext.setHeight(imH);
+
+            vhn::BufferImageCopy cpyRegion;
 			cpyRegion.setBufferOffset(bufOff);
-			cpyRegion.setImageExtent({imW, imH, 1});
+			cpyRegion.setImageExtent(ext);
 			transCmdBuf.copyImageToBuffer(im, vhn::ImageLayout::eTransferSrcOptimal, buf, 1, &cpyRegion);
 			transCmdBuf.end();
 			auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
@@ -73,6 +78,7 @@ namespace vuh {
 				, const vhn::ImageLayout& lyNew
 		)-> bool
 		{
+            const int layerCount = 1;
 			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 
 			vhn::ImageMemoryBarrier barrier;
@@ -84,7 +90,7 @@ namespace vuh {
 			imSR.setBaseMipLevel(0);
 			imSR.setLevelCount(1);
 			imSR.setBaseArrayLayer(0);
-			imSR.setLayerCount(1);
+			imSR.setLayerCount(layerCount);
 			barrier.setSubresourceRange(imSR);
 
 			vhn::PipelineStageFlags srcStageMask;
@@ -122,12 +128,18 @@ namespace vuh {
 			const int layerCount = 1;
 			const int regionCount = 1;
 			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-			vhn::BufferImageCopy cpyRegion;
+            vhn::Extent3D ext;
+            ext.setDepth(1);
+            ext.setWidth(imW);
+            ext.setHeight(imH);
+
+            vhn::BufferImageCopy cpyRegion;
 			cpyRegion.setBufferOffset(bufOff);
-			cpyRegion.setImageExtent({imW, imH, 1});
+			cpyRegion.setImageExtent(ext);
 			vhn::ImageSubresourceLayers imSR;
 			imSR.setAspectMask(vhn::ImageAspectFlagBits::eColor);
 			imSR.setLayerCount(layerCount);
+            imSR.setBaseArrayLayer(0);
 			cpyRegion.setImageSubresource(imSR);
 			transCmdBuf.copyBufferToImage(buf, im, vhn::ImageLayout::eTransferDstOptimal, regionCount, &cpyRegion);
 			transCmdBuf.end();
