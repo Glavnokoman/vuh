@@ -170,7 +170,7 @@ namespace vuh {
                     , const size_t imH     ///< height of image
                     , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
-                    : Base(dev, arr, imW, imFmt,
+                    : Base(dev, arr, imW, imH, imFmt,
                            vhn::DescriptorType::eCombinedImageSampler, imF | vhn::ImageUsageFlagBits::eSampled) {
             }
         };
