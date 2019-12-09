@@ -86,6 +86,18 @@ namespace vuh {
                 fromArray(arr);
             }
 
+            /// Create an instance of BasicDeviceImage2D and initialize memory by content of vuh::Array host iterable.
+            BasicDeviceImage2D(const vuh::Device& dev  ///< device to create array on
+                    , const TransArray<T>& arr          ///< iterable to initialize from
+                    , const size_t imW     ///< width of image
+                    , const size_t imH     ///< height of image
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
+                    , const vhn::ImageUsageFlags& imF = {})	  ///< additional (to defined by allocator) buffer usage flags
+                    : Base(dev, imW, imH, imFmt, imDesc, imF | vhn::ImageUsageFlagBits::eTransferDst) {
+                fromArray(arr);
+            }
+
             /// Copy data from vuh::Array to image memory.
             auto fromArray(const TransArray<T>& arr)-> void {
                 const vhn::Buffer& buffer = const_cast<TransArray<T>&>(arr).buffer();
@@ -145,6 +157,17 @@ namespace vuh {
             DeviceCombinedImage2D(const vuh::Device &dev  ///< device to create array on
                     , const TransArray<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
+                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
+                    : Base(dev, arr, imW, imFmt,
+                           vhn::DescriptorType::eCombinedImageSampler, imF | vhn::ImageUsageFlagBits::eSampled) {
+            }
+
+            /// Create an instance of DeviceCombinedImage2D and initialize memory by content of vuh::Array host iterable.
+            DeviceCombinedImage2D(const vuh::Device &dev  ///< device to create array on
+                    , const TransArray<T> &arr          ///< iterable to initialize from
+                    , const size_t imW     ///< width of image
+                    , const size_t imH     ///< height of image
                     , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, arr, imW, imFmt,
