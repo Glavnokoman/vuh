@@ -333,7 +333,7 @@ namespace vuh {
 				if (bool(_dscpool)) {
 					auto desc_set = _dev.allocateDescriptorSets({_dscpool, 1, &_dsclayout});
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-					_res = pool.result;
+					_res = desc_set.result;
 					VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
 					_dscset = desc_set.value[0];
 #else
