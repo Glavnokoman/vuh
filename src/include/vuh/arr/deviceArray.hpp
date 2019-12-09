@@ -40,7 +40,7 @@ namespace vuh {
 		/// in that case. Some do not. In case all memory is host-visible (like on integrated GPUs) using this class
 		/// may result in performance penalty.
 		template<class T, class Alloc>
-		class DeviceArray: virtual public BasicArray<T, Alloc> {
+		class DeviceArray: public BasicArray<T, Alloc> {
 			using Base = BasicArray<T, Alloc>;
 		public:
 			using value_type = T;

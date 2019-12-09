@@ -4,12 +4,55 @@
 #include "imageIter.hpp"
 #include "vuh/mem/allocDevice.hpp"
 #include "basicImage.hpp"
+#include "vuh/arr/deviceArray.hpp"
 #include <vuh/traits.hpp>
 #include <algorithm>
 #include <cassert>
 
 namespace vuh {
     namespace img {
+
+        template<class T>
+        class TransArray: public vuh::arr::DeviceArray<T, vuh::mem::AllocDevice<vuh::mem::properties::Device>> {
+            using Basic = vuh::arr::DeviceArray<T, vuh::mem::AllocDevice<vuh::mem::properties::Device>>;
+        public:
+            /// Create an instance of TransArray with given number of elements. Memory is uninitialized.
+            TransArray( const vuh::Device& dev  ///< device to create array on
+                    , const size_t n_elements     ///< number of elements
+                    , vhn::MemoryPropertyFlags memF={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::BufferUsageFlags bufF={})   ///< additional (to defined by allocator) buffer usage flags
+                    : Basic(dev, n_elements, memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
+            {}
+
+            /// Create an instance of TransArray and initialize memory by content of some host iterable.
+            template<class C, class=typename std::enable_if_t<vuh::traits::is_iterable<C>::value>>
+            TransArray( const vuh::Device& dev  ///< device to create array on
+                    , const C& c          ///< iterable to initialize from
+                    , vhn::MemoryPropertyFlags memF={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::BufferUsageFlags bufF={})	  ///< additional (to defined by allocator) buffer usage flags
+                    : Basic(dev, c.size()/sizeof(T), memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
+            {}
+
+            /// Create an instance of TransArray and initialize it from a range of values.
+            template<class It1, class It2>
+            TransArray( const vuh::Device& dev   ///< device to create array on
+                    , It1 begin           ///< range begin
+                    , It2 end             ///< range end (points to one past the last element of the range)
+                    , vhn::MemoryPropertyFlags memF={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::BufferUsageFlags bufF={})	///< additional (to defined by allocator) buffer usage flags
+                    : Basic(dev, std::distance(begin, end)/sizeof(T), memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
+            {}
+
+            /// Create an instance of TransArray of given size and initialize it using index based initializer function.
+            template<class F>\
+            TransArray( const vuh::Device& dev  ///< device to create array on
+                    , size_t n_elements    ///< number of elements
+                    , F&& fun              ///< callable of a form function<T(size_t)> mapping an offset to array value
+                    , vhn::MemoryPropertyFlags memF={} ///< additional (to defined by allocator) memory usage flags
+                    , vhn::BufferUsageFlags bufF={})	  ///< additional (to defined by allocator) buffer usage flags
+                    : Basic(dev, n_elements, memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
+            {}
+        };
 
         /// Image with host data exchange interface suitable for memory allocated in device-local space.
         /// Memory allocation and underlying buffer creation is managed by allocator defined by a template parameter.
@@ -34,7 +77,7 @@ namespace vuh {
 
             /// Create an instance of BasicDeviceImage2D and initialize memory by content of vuh::Array host iterable.
             BasicDeviceImage2D(const vuh::Device& dev  ///< device to create array on
-                    , const vuh::Array<T>& arr          ///< iterable to initialize from
+                    , const TransArray<T>& arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
                     , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
@@ -44,14 +87,14 @@ namespace vuh {
             }
 
             /// Copy data from vuh::Array to image memory.
-            auto fromArray(const vuh::Array<T>& arr)-> void {
-                const vhn::Buffer& buffer = const_cast<vuh::Array<T>&>(arr).buffer();
+            auto fromArray(const TransArray<T>& arr)-> void {
+                const vhn::Buffer& buffer = const_cast<TransArray<T>&>(arr).buffer();
                 vuh::utils::copyBufferToImage(Base::_dev, buffer, *this, Base::width(), Base::height());
             }
 
             /// @return copy image to vuh::Array data.
-            auto toHost() const-> vuh::Array<T> {
-                vuh::Array<T> arr(Base::_dev, Base::size());
+            auto toHost() const-> TransArray<T> {
+                TransArray<T> arr(Base::_dev, Base::size());
                 vuh::utils::copyImageToBuffer(Base::_dev, *this, arr, Base::width(), Base::height());
                 return arr;
             }
@@ -74,7 +117,7 @@ namespace vuh {
 
             /// Create an instance of DeviceImage2D and initialize memory by content of vuh::Array host iterable.
             DeviceImage2D(const vuh::Device &dev  ///< device to create array on
-                    , const vuh::Array<T> &arr          ///< iterable to initialize from
+                    , const TransArray<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
                     , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
@@ -100,7 +143,7 @@ namespace vuh {
 
             /// Create an instance of DeviceCombinedImage2D and initialize memory by content of vuh::Array host iterable.
             DeviceCombinedImage2D(const vuh::Device &dev  ///< device to create array on
-                    , const vuh::Array<T> &arr          ///< iterable to initialize from
+                    , const TransArray<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
                     , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
