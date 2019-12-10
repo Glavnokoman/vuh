@@ -2,7 +2,6 @@
 
 #include "vuh/mem/memProperties.h"
 #include "vuh/mem/allocDevice.hpp"
-#include "img/imageIter.hpp"
 #include "img/deviceImage.hpp"
 #include "mem/basicMemory.hpp"
 

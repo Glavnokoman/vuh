@@ -1,7 +1,6 @@
 #pragma once
 
 #include "vuh/mem/memProperties.h"
-#include "imageIter.hpp"
 #include "vuh/mem/allocDevice.hpp"
 #include "basicImage.hpp"
 #include "vuh/arr/deviceArray.hpp"
