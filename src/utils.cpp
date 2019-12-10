@@ -91,6 +91,8 @@ namespace vuh {
 			imSR.setBaseArrayLayer(0);
 			imSR.setLayerCount(layerCount);
 			barrier.setSubresourceRange(imSR);
+			barrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+			barrier.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 
 			vhn::PipelineStageFlags srcStageMask;
 			vhn::PipelineStageFlags dstStageMask;
@@ -103,10 +105,10 @@ namespace vuh {
 				dstStageMask = vhn::PipelineStageFlagBits::eTransfer;
 			} else if (vhn::ImageLayout::eTransferDstOptimal == lyOld && vhn::ImageLayout::eShaderReadOnlyOptimal == lyNew) {
 				barrier.setSrcAccessMask(vhn::AccessFlagBits::eTransferWrite);
-				barrier.setDstAccessMask(vhn::AccessFlagBits::eShaderRead);
+				barrier.setDstAccessMask(vhn::AccessFlagBits::eTransferRead);
 
 				srcStageMask = vhn::PipelineStageFlagBits::eTransfer;
-				dstStageMask = vhn::PipelineStageFlagBits::eComputeShader;
+				dstStageMask = vhn::PipelineStageFlagBits::eTransfer;
 			} else {
 				return false;
 			}
