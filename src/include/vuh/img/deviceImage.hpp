@@ -29,7 +29,7 @@ namespace vuh {
                     , const C& c          ///< iterable to initialize from
                     , vhn::MemoryPropertyFlags memF={} ///< additional (to defined by allocator) memory usage flags
                     , vhn::BufferUsageFlags bufF={})	  ///< additional (to defined by allocator) buffer usage flags
-                    : Basic(dev, c.size()/sizeof(T), memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
+                    : Basic(dev, c, memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
             {}
 
             /// Create an instance of TransArray and initialize it from a range of values.
@@ -39,17 +39,17 @@ namespace vuh {
                     , It2 end             ///< range end (points to one past the last element of the range)
                     , vhn::MemoryPropertyFlags memF={} ///< additional (to defined by allocator) memory usage flags
                     , vhn::BufferUsageFlags bufF={})	///< additional (to defined by allocator) buffer usage flags
-                    : Basic(dev, std::distance(begin, end)/sizeof(T), memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
+                    : Basic(dev, begin, end, memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
             {}
 
             /// Create an instance of TransArray of given size and initialize it using index based initializer function.
-            template<class F>\
+            template<class F>
             TransArray( const vuh::Device& dev  ///< device to create array on
                     , size_t n_elements    ///< number of elements
                     , F&& fun              ///< callable of a form function<T(size_t)> mapping an offset to array value
                     , vhn::MemoryPropertyFlags memF={} ///< additional (to defined by allocator) memory usage flags
                     , vhn::BufferUsageFlags bufF={})	  ///< additional (to defined by allocator) buffer usage flags
-                    : Basic(dev, n_elements, memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
+                    : Basic(dev, n_elements, fun, memF, bufF | vhn::BufferUsageFlagBits::eTransferSrc)
             {}
         };
 
