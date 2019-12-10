@@ -79,7 +79,6 @@ namespace vuh {
 		)-> bool
 		{
             const int layerCount = 1;
-			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 
 			vhn::ImageMemoryBarrier barrier;
 			barrier.setOldLayout(lyOld);
@@ -113,7 +112,6 @@ namespace vuh {
 			}
 
 			transCmdBuf.pipelineBarrier(srcStageMask, dstStageMask, vhn::DependencyFlags(), nullptr, nullptr, barrier);
-			transCmdBuf.end();
 			return true;
 		}
 
@@ -127,7 +125,6 @@ namespace vuh {
 		{
 			const int layerCount = 1;
 			const int regionCount = 1;
-			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
             vhn::Extent3D ext;
             ext.setDepth(1);
             ext.setWidth(imW);
@@ -142,7 +139,6 @@ namespace vuh {
             imSR.setBaseArrayLayer(0);
 			cpyRegion.setImageSubresource(imSR);
 			transCmdBuf.copyBufferToImage(buf, im, vhn::ImageLayout::eTransferDstOptimal, regionCount, &cpyRegion);
-			transCmdBuf.end();
 		}
 
 		auto copyBufferToImage(const vuh::Device& dev
@@ -154,9 +150,11 @@ namespace vuh {
 		)-> void
 		{
 			auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
+			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 			genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eUndefined, vhn::ImageLayout::eTransferDstOptimal);
 			genCopyBufferToImageCmd(transCmdBuf, buf, im, imW, imH, bufOff);
 			genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eTransferDstOptimal, vhn::ImageLayout::eShaderReadOnlyOptimal);
+			transCmdBuf.end();
 			auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
 			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &transCmdBuf);
 			transQueue.submit({submitInfo}, nullptr);
