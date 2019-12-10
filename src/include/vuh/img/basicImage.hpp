@@ -137,6 +137,10 @@ namespace vuh {
         private: // helpers
             /// release resources associated with current BasicArray object
             auto release() noexcept-> void {
+                if(bool(_sampler)) {
+                    _dev.destroySampler(_sampler);
+                    _sampler = nullptr;
+                }
                 if(bool(_imView)) {
                     _dev.destroyImageView(_imView);
                     _imView = nullptr;
