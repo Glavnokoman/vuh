@@ -10,7 +10,7 @@ layout(std430, binding = 0) buffer lay0 { float arr_y[]; }; // array parameters
 layout(binding=1) uniform sampler2D lay1; // VK_FORMAT_R32G32B32A32_SFLOAT -> sampler2D
 
 void main() {
-    const uint id = gl_GlobalInvocationID.x * 4; // current offset texelFetch read four floats
+    const uint id = gl_GlobalInvocationID.x * 4; // current offset
     if(params.size <= id){                   // drop threads outside the buffer
         return;
     }
