@@ -58,7 +58,7 @@ namespace vuh {
 					   , const C& c          ///< iterable to initialize from
 					   , vhn::MemoryPropertyFlags flags_mem={} ///< additional (to defined by allocator) memory usage flags
 					   , vhn::BufferUsageFlags flags_buffer={})	  ///< additional (to defined by allocator) buffer usage flags
-			   : DeviceArray(dev, c.size()/sizeof(T), flags_mem, flags_buffer)
+			   : DeviceArray(dev, c.size(), flags_mem, flags_buffer)
 			{
 				using std::begin; using std::end;
 				fromHost(begin(c), end(c));
