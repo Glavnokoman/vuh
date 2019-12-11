@@ -23,7 +23,7 @@ namespace vuh {
                     , const vhn::DescriptorType& imDesc
                     , const size_t imW    ///< desired width
                     , const size_t imH    ///< desired height
-                    , const vhn::Format& imFmt=vhn::Format::eR8G8B8A8Unorm/// format
+                    , const vhn::Format& imFmt=vhn::Format::eR32G32B32A32Sfloat/// format
                     , const vhn::ImageUsageFlags& imF={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
                     : vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF, _res))
@@ -172,7 +172,7 @@ namespace vuh {
             BasicImage2D(const vuh::Device& dev                     ///< device to allocate array
                     , const size_t imW                     ///< desired width in bytes
                     , const size_t imH                     ///< desired height in bytes
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
                     , const vhn::ImageUsageFlags& imF = {}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )

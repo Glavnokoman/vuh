@@ -69,7 +69,7 @@ namespace vuh {
             BasicDeviceImage2D(const vuh::Device& dev   ///< device to create array on
                     , const size_t imW     ///< width of image
                     , const size_t imH     ///< height of image
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
                     , const vhn::ImageUsageFlags& imF = {})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, imH, imFmt, imDesc, imF){}
@@ -78,7 +78,7 @@ namespace vuh {
             BasicDeviceImage2D(const vuh::Device& dev  ///< device to create array on
                     , const TransArray<T>& arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
                     , const vhn::ImageUsageFlags& imF = {})	  ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, arr.size() / imW , imFmt, imDesc, imF | vhn::ImageUsageFlagBits::eTransferDst) {
@@ -90,7 +90,7 @@ namespace vuh {
                     , const TransArray<T>& arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
                     , const size_t imH     ///< height of image
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
                     , const vhn::ImageUsageFlags& imF = {})	  ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, imH, imFmt, imDesc, imF | vhn::ImageUsageFlagBits::eTransferDst) {
@@ -121,7 +121,7 @@ namespace vuh {
             DeviceImage2D(const vuh::Device &dev   ///< device to create array on
                     , const size_t imW     ///< width of image
                     , const size_t imH     ///< height of image
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::ImageUsageFlags& imF = {})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, imH, imFmt, vhn::DescriptorType::eStorageImage,
                            imF) {}
@@ -130,7 +130,7 @@ namespace vuh {
             DeviceImage2D(const vuh::Device &dev  ///< device to create array on
                     , const TransArray<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, arr.size() / imW, imFmt,
                            vhn::DescriptorType::eStorageImage, imF) {
@@ -147,7 +147,7 @@ namespace vuh {
             DeviceCombinedImage2D(const vuh::Device &dev   ///< device to create array on
                     , const size_t imW     ///< width of image
                     , const size_t imH     ///< height of image
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::ImageUsageFlags& imF = {})   ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, imW, imH, imFmt, vhn::DescriptorType::eCombinedImageSampler,
                            imF | vhn::ImageUsageFlagBits::eSampled) {}
@@ -156,7 +156,7 @@ namespace vuh {
             DeviceCombinedImage2D(const vuh::Device &dev  ///< device to create array on
                     , const TransArray<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, arr, imW, imFmt,
                            vhn::DescriptorType::eCombinedImageSampler, imF | vhn::ImageUsageFlagBits::eSampled) {
@@ -167,7 +167,7 @@ namespace vuh {
                     , const TransArray<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
                     , const size_t imH     ///< height of image
-                    , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
+                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, arr, imW, imH, imFmt,
                            vhn::DescriptorType::eCombinedImageSampler, imF | vhn::ImageUsageFlagBits::eSampled) {
