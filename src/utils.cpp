@@ -139,6 +139,7 @@ namespace vuh {
 			imSR.setAspectMask(vhn::ImageAspectFlagBits::eColor);
 			imSR.setLayerCount(layerCount);
             imSR.setBaseArrayLayer(0);
+            imSR.setMipLevel(0);
 			cpyRegion.setImageSubresource(imSR);
 			transCmdBuf.copyBufferToImage(buf, im, vhn::ImageLayout::eTransferDstOptimal, regionCount, &cpyRegion);
 		}
