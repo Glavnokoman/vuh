@@ -49,8 +49,8 @@ namespace vuh {
 				const auto combF = imF | vhn::ImageUsageFlags(Props::image);
 
 				vhn::Extent3D ext;
-				ext.setWidth(imW);
-				ext.setHeight(imH);
+				ext.setWidth(0 == imW ? 1 : imW);
+				ext.setHeight(0 == imH ? 1 : imH);
 				ext.setDepth(1);
 
 				vhn::ImageCreateInfo ici;

@@ -81,7 +81,7 @@ namespace vuh {
                     , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
                     , const vhn::ImageUsageFlags& imF = {})	  ///< additional (to defined by allocator) buffer usage flags
-                    : Base(dev, imW, arr.size() / imW + 1, imFmt, imDesc, imF | vhn::ImageUsageFlagBits::eTransferDst) {
+                    : Base(dev, imW, arr.size() / imW , imFmt, imDesc, imF | vhn::ImageUsageFlagBits::eTransferDst) {
                 fromArray(arr);
             }
 
@@ -132,7 +132,7 @@ namespace vuh {
                     , const size_t imW     ///< width of image
                     , const vhn::Format& imFmt = vhn::Format::eR8G8B8A8Unorm /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
-                    : Base(dev, imW, arr.size() / imW + 1, imFmt,
+                    : Base(dev, imW, arr.size() / imW, imFmt,
                            vhn::DescriptorType::eStorageImage, imF) {
             }
         };
