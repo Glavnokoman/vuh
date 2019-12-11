@@ -343,10 +343,10 @@ static auto saxpy_image(AAssetManager* mgr)-> bool {
     if (instance.devices().size() > 0) {
         auto device = instance.devices().at(0);  // just get the first compute-capable device
 
-        auto d_y = vuh::Array<float>(device, y); // allocate memory on device and copy data from host
-        auto d_x = vuh::Array<float>(device, x); // same for x
-        auto i_y = vuh::Image2D<float>(device, d_y, 16);
-        auto i_x = vuh::Image2D<float>(device, d_x, 16);
+        auto d_y = vuh::img::TransArray<float>(device, y); // allocate memory on device and copy data from host
+        auto d_x = vuh::img::TransArray<float>(device, x); // same for x
+        auto i_y = vuh::CombinedImage2D<float>(device, d_y, 16);
+        auto i_x = vuh::CombinedImage2D<float>(device, d_x, 16);
         using Specs = vuh::typelist<uint32_t>;
         struct Params {
             float a;
@@ -375,32 +375,34 @@ static auto saxpy_buffer_image(AAssetManager* mgr)-> bool {
     auto instance = vuh::Instance();
     if (instance.devices().size() > 0) {
         auto device = instance.devices().at(0);  // just get the first compute-capable device
+        bool suc = false;
+        {
+            auto d_y = vuh::Array<float>(device,
+                                         y); // allocate memory on device and copy data from host
+            auto d_x = vuh::img::TransArray<float>(device, x); // same for x
 
-        auto d_y = vuh::Array<float>(device,
-                                     y); // allocate memory on device and copy data from host
-        auto d_x = vuh::Array<float>(device, x); // same for x
+            auto i_x = vuh::CombinedImage2D<float>(device, d_x, 16);
 
-        auto i_x = vuh::Sampler2D<float>(device, d_x, 16);
-
-        using Specs = vuh::typelist<uint32_t>;
-        struct Params {
-            uint32_t size;
-            float a;
-        };
-        LOGD("saxpy_buffer_image before %f",y[0]);
-        std::vector<char> code;
-        bool suc = loadComp(mgr, "imgbufsaxpy.comp", code);
-        if (suc) {
-            auto program = vuh::Program<Specs, Params>(device,
-                                                       code); // define the kernel by linking interface and spir-v implementation
-            LOGD("saxpy_buffer_image before %f",y[0]);
-            program.grid(128 / 64).spec(64)({128, a}, d_y, i_x); // run once, wait for completion
-            LOGD("saxpy_buffer_image after %f",y[0]);
-            auto z = std::vector<float>(128, 0.0f);
-            d_y.toHost(begin(z));                              // copy data back to host
-            LOGD("saxpy_buffer_image after %f",z[0]);
+            using Specs = vuh::typelist<uint32_t>;
+            struct Params {
+                uint32_t size;
+                float a;
+            };
+            std::vector<char> code;
+            suc = loadComp(mgr, "imgbufsaxpy.comp", code);
+            if (suc) {
+                auto program = vuh::Program<Specs, Params>(device,
+                                                           code); // define the kernel by linking interface and spir-v implementation
+                program.grid(128 / 64).spec(64)({128, a}, d_y,
+                                                i_x); // run once, wait for completion
+                auto z = std::vector<float>(128, 0.0f);
+                d_y.toHost(begin(z));                              // copy data back to host
+                LOGD("saxpy_buffer_image after %f,%f,%f,%f,%f,%f,%f,%f,%f,%f", z[0], z[1], z[2],
+                     z[3], z[4], z[5], z[6], z[7], z[8], z[9]);
+            } else {
+                LOGD("saxpy_buffer_image failed");
+            }
         }
-
         return suc;
     }
     return false;
