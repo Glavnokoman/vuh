@@ -17,8 +17,8 @@ void main() {
     ivec2 si = textureSize(lay1, 0);
     ivec2 idx = ivec2(id/si.x, id/si.x + si.y);
     vec4 v = texelFetch(lay1, idx, 0);
-    arr_y[id] += params.a * v.x;
-    arr_y[id + 1] += params.a * v.x;
-    arr_y[id + 2] += params.a * v.x;
-    arr_y[id + 3] += params.a * v.x;
+    arr_y[id] += params.a * v.r;
+    arr_y[id + 1] += params.a * v.g;
+    arr_y[id + 2] += params.a * v.b;
+    arr_y[id + 3] += params.a * v.a;
 }
