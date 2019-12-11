@@ -81,19 +81,7 @@ namespace vuh {
                     , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
                     , const vhn::ImageUsageFlags& imF = {})	  ///< additional (to defined by allocator) buffer usage flags
-                    : Base(dev, imW, arr.size() / imW , imFmt, imDesc, imF | vhn::ImageUsageFlagBits::eTransferDst) {
-                fromArray(arr);
-            }
-
-            /// Create an instance of BasicDeviceImage2D and initialize memory by content of vuh::Array host iterable.
-            BasicDeviceImage2D(const vuh::Device& dev  ///< device to create array on
-                    , const TransArray<T>& arr          ///< iterable to initialize from
-                    , const size_t imW     ///< width of image
-                    , const size_t imH     ///< height of image
-                    , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
-                    , const vhn::DescriptorType& imDesc = vhn::DescriptorType::eStorageImage
-                    , const vhn::ImageUsageFlags& imF = {})	  ///< additional (to defined by allocator) buffer usage flags
-                    : Base(dev, imW, imH, imFmt, imDesc, imF | vhn::ImageUsageFlagBits::eTransferDst) {
+                    : Base(dev, imW, arr.size() * sizeof(T) / vuh::utils::imageFormatPerPixelBytes(imFmt) / imW, imFmt, imDesc, imF | vhn::ImageUsageFlagBits::eTransferDst) {
                 fromArray(arr);
             }
 

@@ -56,5 +56,8 @@ namespace vuh {
 				, const uint32_t imH
 				, const size_t bufOff = 0
 		)-> void;
+
+		// image format bytes per Pixel
+		size_t imageFormatPerPixelBytes(vhn::Format fmt);
 	} // namespace utils
 } // namespace vuh
