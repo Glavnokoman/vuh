@@ -14,9 +14,11 @@ void main() {
     if(params.size <= id){                   // drop threads outside the buffer
         return;
     }
-    ivec2 si = textureSize(lay1, 0);
-    ivec2 idx = ivec2(id%si.x, id/si.x);
-    vec4 v = texelFetch(lay1, idx, 0);
+    const ivec2 si = textureSize(lay1, 0);
+    const uint row = id / 4 / si.x;
+    const uint col = id / 4 - (row * si.x);
+    const ivec2 idx = ivec2(row, col);
+    const vec4 v = texelFetch(lay1, idx, 0);
     arr_y[id] += params.a * v.r;
     arr_y[id + 1] += params.a * v.g;
     arr_y[id + 2] += params.a * v.b;
