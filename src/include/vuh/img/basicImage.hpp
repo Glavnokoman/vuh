@@ -177,8 +177,8 @@ namespace vuh {
                     , const vhn::ImageUsageFlags& imF = {}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
                     : Base(dev, vhn::ImageType::e2D, vhn::ImageViewType::e2D, imDesc, imW, imH, imFmt, imF)
-                    , _imW(imW)
-                    , _imH(imH)
+                    , _imW(0 == imW ? 1 : imW)
+                    , _imH(0 == imH ? 1 : imH)
             {}
 
             /// @return size of a memory chunk occupied by array elements
