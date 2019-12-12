@@ -1,7 +1,6 @@
 #version 440 core
 
-layout(local_size_x_id = 0) in;             // workgroup size set with specialization constant
-layout(local_size_y_id = 1) in;             // workgroup size set with specialization constant
+layout(local_size_x_id = 0, local_size_y_id = 1) in; // workgroup dimensions specialization constants
 
 layout(push_constant) uniform Parameters {  // push constants
     float a;  // scaling parameter
@@ -12,8 +11,7 @@ layout(Rgba32f, binding=1) uniform image2D lay1; // VK_FORMAT_R32G32B32A32_SFLOA
 
 // ARM Mali-T880 Driver Version 883.665.1353 apiVersion 1.0.53 Huawei Honor V8
 // change local_size_x, local_size_y from vulkan api is useless, we can only define this on glsl
-
-layout(local_size_x = 64, local_size_y = 64) in;
+layout (local_size_x = 64, local_size_y = 64, local_size_z = 1) in;
 
 void main(){
     const ivec2 si = imageSize(lay0);
@@ -24,5 +22,5 @@ void main(){
     const vec4 vs = imageLoad(lay0, idx);
     vec4 vd = imageLoad(lay1, idx);
     vd = vd + params.a * vs;
-    imageStore(lay1, idx, vd); // saxpy
+    imageStore(lay1, idx, vd);
 }

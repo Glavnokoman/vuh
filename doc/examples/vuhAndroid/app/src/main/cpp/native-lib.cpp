@@ -347,7 +347,7 @@ static auto saxpy_image(AAssetManager* mgr)-> bool {
         auto d_x = vuh::img::TransArray<float>(device, x); // same for x
         auto i_y = vuh::Image2D<float>(device, d_y, 16);
         auto i_x = vuh::Image2D<float>(device, d_x, 16);
-        using Specs = vuh::typelist<uint32_t>;
+        using Specs = vuh::typelist<uint32_t, uint32_t>;
         struct Params {
             float a;
         };
@@ -357,7 +357,7 @@ static auto saxpy_image(AAssetManager* mgr)-> bool {
         if (suc) {
             auto program = vuh::Program<Specs, Params>(device,
                                                        code); // define the kernel by linking interface and spir-v implementation
-            program.grid(128 / 64).spec(64)({a}, i_y, i_x); // run once, wait for completion
+            program.grid(vuh::div_up(i_y.width(), 16), vuh::div_up(i_y.height(), 2)).spec(16, 2)({a}, i_y, i_x); // run once, wait for completion
             auto v = i_y.toHost();                              // copy data back to host
             v.toHost(begin(y));
             LOGD("saxpy_image %f", y[0]);
