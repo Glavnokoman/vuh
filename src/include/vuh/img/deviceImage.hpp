@@ -93,7 +93,8 @@ namespace vuh {
 
             /// @return copy image to vuh::Array data.
             auto toHost() const-> TransArray<T> {
-                TransArray<T> arr(Base::_dev, Base::size());
+                const size_t n_elements = Base::size() * (vuh::utils::imageFormatPerPixelBytes(this->imageFormat()) / sizeof(T));
+                TransArray<T> arr(Base::_dev, n_elements);
                 vuh::utils::copyImageToBuffer(Base::_dev, *this, arr, Base::width(), Base::height());
                 return arr;
             }
