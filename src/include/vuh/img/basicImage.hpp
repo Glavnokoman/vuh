@@ -26,7 +26,7 @@ namespace vuh {
                     , const vhn::Format& imFmt=vhn::Format::eR32G32B32A32Sfloat/// format
                     , const vhn::ImageUsageFlags& imF={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
             )
-                    : vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF, _res))
+                    : vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF | vhn::ImageUsageFlagBits::eTransferSrc, _res))
                     , _dev(dev)
                     , _imLayout(vhn::ImageLayout::eGeneral)
                     , _imDesc(imDesc)
