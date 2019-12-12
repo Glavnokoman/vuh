@@ -345,8 +345,8 @@ static auto saxpy_image(AAssetManager* mgr)-> bool {
 
         auto d_y = vuh::img::TransArray<float>(device, y); // allocate memory on device and copy data from host
         auto d_x = vuh::img::TransArray<float>(device, x); // same for x
-        auto i_y = vuh::CombinedImage2D<float>(device, d_y, 16);
-        auto i_x = vuh::CombinedImage2D<float>(device, d_x, 16);
+        auto i_y = vuh::Image2D<float>(device, d_y, 16);
+        auto i_x = vuh::Image2D<float>(device, d_x, 16);
         using Specs = vuh::typelist<uint32_t>;
         struct Params {
             float a;
