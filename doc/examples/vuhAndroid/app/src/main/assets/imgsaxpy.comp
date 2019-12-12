@@ -19,7 +19,7 @@ void main(){
     if (all(lessThan(idx, si))) { // drop threads outside the image
         const vec4 vs = imageLoad(lay0, idx);
         vec4 vd = imageLoad(lay1, idx);
-        vd = vd + params.a * vs;
+        vd = params.a * vd + vs;
         imageStore(lay1, idx, vd);
     }
 }
