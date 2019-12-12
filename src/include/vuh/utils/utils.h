@@ -52,7 +52,8 @@ namespace vuh {
 		auto copyBufferToImage(const vuh::Device& dev
 				, const vhn::Buffer& buf
 				, vhn::Image& im
-				, const uint32_t imW
+				, const vhn::DescriptorType& imDesc
+                , const uint32_t imW
 				, const uint32_t imH
 				, const size_t bufOff = 0
 		)-> void;

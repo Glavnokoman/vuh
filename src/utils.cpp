@@ -147,6 +147,7 @@ namespace vuh {
 		auto copyBufferToImage(const vuh::Device& dev
 				, const vhn::Buffer& buf
 				, vhn::Image& im
+				, const vhn::DescriptorType& imDesc
 				, const uint32_t imW
 				, const uint32_t imH
 				, const size_t bufOff
@@ -156,7 +157,13 @@ namespace vuh {
 			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 			genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eUndefined, vhn::ImageLayout::eTransferDstOptimal);
 			genCopyBufferToImageCmd(transCmdBuf, buf, im, imW, imH, bufOff);
-			genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eTransferDstOptimal, vhn::ImageLayout::eShaderReadOnlyOptimal);
+			if (vhn::DescriptorType::eCombinedImageSampler == imDesc) {
+				genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eTransferDstOptimal,
+									   vhn::ImageLayout::eShaderReadOnlyOptimal);
+			} else {
+				genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eTransferDstOptimal,
+									   vhn::ImageLayout::eGeneral);
+			}
 			transCmdBuf.end();
 			auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
 			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &transCmdBuf);

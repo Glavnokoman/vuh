@@ -88,7 +88,7 @@ namespace vuh {
             /// Copy data from vuh::Array to image memory.
             auto fromArray(const TransArray<T>& arr)-> void {
                 const vhn::Buffer& buffer = const_cast<TransArray<T>&>(arr).buffer();
-                vuh::utils::copyBufferToImage(Base::_dev, buffer, *this, Base::width(), Base::height());
+                vuh::utils::copyBufferToImage(Base::_dev, buffer, *this, this->descriptorType(), Base::width(), Base::height());
             }
 
             /// @return copy image to vuh::Array data.

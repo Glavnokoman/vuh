@@ -29,7 +29,8 @@ namespace vuh {
                     : vhn::Image(Alloc::makeImage(dev, imT, imW, imH, imFmt, imF, _res))
                     , _dev(dev)
                     , _imLayout(vhn::ImageLayout::eGeneral)
-                    , _imDesc(imDesc) {
+                    , _imDesc(imDesc)
+                    , _imFmt(imFmt) {
                 VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
                 do {
                     if (vhn::Result::eSuccess != _res)
@@ -72,11 +73,13 @@ namespace vuh {
                     , _imView(other._imView)
                     , _sampler(other._sampler)
                     , _imLayout(other._imLayout)
-                    , _imDesc(other._imDesc) {
+                    , _imDesc(other._imDesc)
+                    , _imFmt(other._imFmt) {
                 static_cast<vhn::Image&>(other) = nullptr;
                 other._imView = nullptr;
                 other._mem = nullptr;
                 other._sampler = nullptr;
+                other._imFmt = vhn::Format::eUndefined;
             }
 
             /// @return underlying image
@@ -85,6 +88,8 @@ namespace vuh {
             auto imageView() const -> const vhn::ImageView& { return _imView; }
 
             auto imageLayout() const -> const vhn::ImageLayout& { return _imLayout; }
+
+            auto imageFormat() const -> const vhn::Format& { return _imFmt; }
 
             auto sampler() const -> const vhn::Sampler& { return _sampler; }
 
@@ -102,12 +107,14 @@ namespace vuh {
                 _sampler = other._sampler;
                 _imLayout = other._imLayout;
                 _imDesc = other._imDesc;
+                _imFmt = other._imFmt;
                 static_cast<vhn::Image&>(*this) = static_cast<vhn::Image&>(other);
                 static_cast<vhn::Image&>(other) = nullptr;
                 other._imView = nullptr;
                 other._mem = nullptr;
                 other._sampler = nullptr;
                 other._dev = nullptr;
+                other._imFmt = vhn::Format::eUndefined;
                 return *this;
             }
 
@@ -121,6 +128,7 @@ namespace vuh {
                 swap(_sampler, other._sampler);
                 swap(_imLayout, other._imLayout);
                 swap(_imDesc, other._imDesc);
+                swap(_imFmt, other._imFmt);
             }
 
             virtual auto imageDescriptor() -> vhn::DescriptorImageInfo& override {
@@ -162,6 +170,7 @@ namespace vuh {
             vhn::Sampler               _sampler;
             vhn::ImageLayout           _imLayout;
             vhn::DescriptorType        _imDesc;
+            vhn::Format                _imFmt;
         }; // class BasicImage
 
         template<class T, class Alloc>
