@@ -358,7 +358,7 @@ static auto saxpy_image(AAssetManager* mgr)-> bool {
             auto program = vuh::Program<Specs, Params>(device,
                                                        code); // define the kernel by linking interface and spir-v implementation
             program.grid(vuh::div_up(i_y.width(), 16), vuh::div_up(i_y.height(), 2)).spec(16, 2)({a}, i_y, i_x); // run once, wait for completion
-            auto v = i_y.toHost();                              // copy data back to host
+            auto v = i_x.toHost();                              // copy data back to host
             v.toHost(begin(y));
             LOGD("saxpy_image %f", y[0]);
         }
