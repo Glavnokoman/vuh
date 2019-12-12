@@ -1,120 +1,140 @@
 #pragma once
 
-#include "allocDevice.hpp"
-
+#include "vuh/core/core.hpp"
+#include "vuh/mem/allocDevice.hpp"
+#include "vuh/mem/basicMemory.hpp"
 #include <vuh/device.h>
-
-#include <vulkan/vulkan.hpp>
-
 #include <cassert>
 
 namespace vuh {
-namespace arr {
+	namespace arr {
 
-/// Covers basic array functionality. Wraps the SBO buffer.
-/// Keeps the data, handles initialization, copy/move, common interface,
-/// binding memory to buffer objects, etc...
-template<class Alloc>
-class BasicArray: public VULKAN_HPP_NAMESPACE::Buffer {
-	static constexpr auto descriptor_flags = VULKAN_HPP_NAMESPACE::BufferUsageFlagBits::eStorageBuffer;
-public:
-	static constexpr auto descriptor_class = VULKAN_HPP_NAMESPACE::DescriptorType::eStorageBuffer;
+		/// Covers basic array functionality. Wraps the SBO buffer.
+		/// Keeps the data, handles initialization, copy/move, common interface,
+		/// binding memory to buffer objects, etc...
+		template<class T, class Alloc>
+		class BasicArray: virtual public vuh::mem::BasicMemory, public vhn::Buffer {
+			static constexpr auto descriptor_flags = vhn::BufferUsageFlagBits::eStorageBuffer;
+			using Basic = vuh::mem::BasicMemory;
+		public:
+			/// Construct SBO array of given size in device memory
+			BasicArray(const vuh::Device& dev                     ///< device to allocate array
+					   , const size_t n_elements                     ///< number of elements
+					   , const vhn::MemoryPropertyFlags props={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
+					   , const vhn::BufferUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
+					   )
+			   : vhn::Buffer(Alloc::makeBuffer(dev, n_elements * sizeof(T), descriptor_flags | usage, _res))
+			   , _dev(dev)
+			   , _size(n_elements) {
+				VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
+				do {
+					if (vhn::Result::eSuccess != _res)
+						break;
+					auto alloc = Alloc();
+					_mem = alloc.allocMemory(dev, *this, props, _res);
+					if (vhn::Result::eSuccess != _res)
+						break;
+					_flags = alloc.memoryProperties(dev, *this, props);
+					_dev.bindBufferMemory(*this, _mem, 0);
+				} while (0);
+				if (vhn::Result::eSuccess != _res) { // destroy buffer if memory allocation was not successful
+					release();
+				#ifndef VULKAN_HPP_NO_EXCEPTIONS
+					throw;
+				#endif
+				}
+			}
 
-	/// Construct SBO array of given size in device memory
-	BasicArray(vuh::Device& device                     ///< device to allocate array
-	           , size_t size_bytes                     ///< desired size in bytes
-	           , VULKAN_HPP_NAMESPACE::MemoryPropertyFlags properties={} ///< additional memory property flags. These are 'added' to flags defind by allocator.
-	           , VULKAN_HPP_NAMESPACE::BufferUsageFlags usage={}         ///< additional usage flagsws. These are 'added' to flags defined by allocator.
-	           )
-	   : VULKAN_HPP_NAMESPACE::Buffer(Alloc::makeBuffer(device, size_bytes, descriptor_flags | usage, _result))
-	   , _dev(device)
-   {
-#ifdef VULKAN_HPP_NO_EXCEPTIONS
-		VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
-		if (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) {
-			auto alloc = Alloc();
-			_mem = alloc.allocMemory(device, *this, properties);
-			_flags = alloc.memoryProperties(device);
-			_dev.bindBufferMemory(*this, _mem, 0);
-		}
-		//else {
-		//	release();
-		//}
-#else
-      try{
-         auto alloc = Alloc();
-         _mem = alloc.allocMemory(device, *this, properties);
-         _flags = alloc.memoryProperties(device);
-         _dev.bindBufferMemory(*this, _mem, 0);
-      } catch(std::runtime_error&){ // destroy buffer if memory allocation was not successful
-         release();
-         throw;
-      }
-#endif
-	}
+			/// Release resources associated with current object.
+			~BasicArray() noexcept {release();}
 
-	/// Release resources associated with current object.
-	~BasicArray() noexcept {release();}
-   
-   BasicArray(const BasicArray&) = delete;
-   BasicArray& operator= (const BasicArray&) = delete;
+		   BasicArray(const BasicArray&) = delete;
+		   BasicArray& operator= (const BasicArray&) = delete;
 
-	/// Move constructor. Passes the underlying buffer ownership.
-	BasicArray(BasicArray&& other) noexcept
-	   : VULKAN_HPP_NAMESPACE::Buffer(other), _mem(other._mem), _flags(other._flags), _dev(other._dev)
-	{
-		static_cast<VULKAN_HPP_NAMESPACE::Buffer&>(other) = nullptr;
-	}
+			/// Move constructor. Passes the underlying buffer ownership.
+			BasicArray(BasicArray&& other) noexcept
+			   : vhn::Buffer(other)
+			   , _dev(other._dev)
+			   , _mem(other._mem)
+			   , _flags(other._flags)
+			   , _size(other._size)
+			{
+				static_cast<vhn::Buffer&>(other) = nullptr;
+                other._mem = nullptr;
+			}
 
-	/// @return underlying buffer
-	auto buffer()-> VULKAN_HPP_NAMESPACE::Buffer { return *this; }
+			/// @return underlying buffer
+			auto buffer() const -> const vhn::Buffer& { return *this; }
 
-	/// @return offset of the current buffer from the beginning of associated device memory.
-	/// For arrays managing their own memory this is always 0.
-	auto offset() const-> std::size_t { return 0;}
+			/// @return offset of the current buffer from the beginning of associated device memory.
+			/// For arrays managing their own memory this is always 0.
+			auto offset() const -> std::size_t { return 0;}
 
-	/// @return reference to device on which underlying buffer is allocated
-	auto device()-> vuh::Device& { return _dev; }
+			/// @return number of elements
+			auto size() const -> size_t {return _size;}
 
-	/// @return true if array is host-visible, ie can expose its data via a normal host pointer.
-	auto isHostVisible() const-> bool {
-		return bool(_flags & VULKAN_HPP_NAMESPACE::MemoryPropertyFlagBits::eHostVisible);
-	}
+			/// @return size of array in bytes.
+			auto size_bytes() const -> uint32_t { return _size*sizeof(T); }
 
-	/// Move assignment. 
-	/// Resources associated with current array are released immidiately (and not when moved from
-	/// object goes out of scope).
-	auto operator= (BasicArray&& other) noexcept-> BasicArray& {
-		release();
-		_mem = other._mem;
-		_flags = other._flags;
-		_dev = other._dev;
-		reinterpret_cast<VULKAN_HPP_NAMESPACE::Buffer&>(*this) = reinterpret_cast<VULKAN_HPP_NAMESPACE::Buffer&>(other);
-		reinterpret_cast<VULKAN_HPP_NAMESPACE::Buffer&>(other) = nullptr;
-		return *this;
-	}
-	
-	/// swap the guts of two basic arrays
-	auto swap(BasicArray& other) noexcept-> void {
-		using std::swap;
-		swap(static_cast<VULKAN_HPP_NAMESPACE::Buffer&>(&this), static_cast<VULKAN_HPP_NAMESPACE::Buffer&>(other));
-		swap(_mem, other._mem);
-		swap(_flags, other._flags);
-		swap(_dev, other._dev);
-	}
-private: // helpers
-	/// release resources associated with current BasicArray object
-	auto release() noexcept-> void {
-		if(static_cast<VULKAN_HPP_NAMESPACE::Buffer&>(*this)){
-			_dev.freeMemory(_mem);
-			_dev.destroyBuffer(*this);
-		}
-	}
-protected: // data
-	VULKAN_HPP_NAMESPACE::DeviceMemory _mem;           ///< associated chunk of device memory
-	VULKAN_HPP_NAMESPACE::MemoryPropertyFlags _flags;  ///< actual flags of allocated memory (may differ from those requested)
-	vuh::Device& _dev;               ///< referes underlying logical device
-	VULKAN_HPP_NAMESPACE::Result _result;
-}; // class BasicArray
-} // namespace arr
+			/// @return reference to device on which underlying buffer is allocated
+            auto device()-> vuh::Device& { return const_cast<vuh::Device&>(_dev); }
+
+			/// @return true if array is host-visible, ie can expose its data via a normal host pointer.
+			auto isHostVisible() const-> bool {
+				return bool(_flags & vhn::MemoryPropertyFlagBits::eHostVisible);
+			}
+
+			virtual auto bufferDescriptor() -> vhn::DescriptorBufferInfo& override {
+				Basic::bufferDescriptor().setBuffer(buffer());
+				Basic::bufferDescriptor().setOffset(offset());
+				Basic::bufferDescriptor().setRange(size_bytes());
+				return Basic::bufferDescriptor();
+			}
+
+			virtual auto descriptorType() const -> vhn::DescriptorType override  {
+				return vhn::DescriptorType::eStorageBuffer;
+			}
+
+			/// Move assignment.
+			/// Resources associated with current array are released immidiately (and not when moved from
+			/// object goes out of scope).
+			auto operator= (BasicArray&& other) noexcept-> BasicArray& {
+				release();
+                _dev = other._dev;
+				_mem = other._mem;
+				_flags = other._flags;
+                _size = other._size;
+				static_cast<vhn::Buffer&>(*this) = static_cast<vhn::Buffer&>(other);
+                static_cast<vhn::Buffer&>(other) = nullptr;
+				return *this;
+			}
+
+			/// swap the guts of two basic arrays
+			auto swap(BasicArray& other) noexcept-> void {
+				using std::swap;
+				swap(static_cast<vhn::Buffer&>(&this), static_cast<vhn::Buffer&>(other));
+                swap(const_cast<vuh::Device&>(_dev), const_cast<vuh::Device&>(other._dev));
+				swap(_mem, other._mem);
+				swap(_flags, other._flags);
+                swap(_size, other._size);
+			}
+		private: // helpers
+			/// release resources associated with current BasicArray object
+			auto release() noexcept-> void {
+				if(static_cast<vhn::Buffer&>(*this)) {
+					if (bool(_mem)) {
+						_dev.freeMemory(_mem);
+					}
+                    _mem = nullptr;
+					_dev.destroyBuffer(*this);
+                    static_cast<vhn::Buffer&>(*this) = nullptr;
+				}
+			}
+		protected: // data
+			const vuh::Device& 		   _dev;               ///< referes underlying logical device
+			vhn::DeviceMemory          _mem;           ///< associated chunk of device memory
+			vhn::MemoryPropertyFlags   _flags;  ///< actual flags of allocated memory (may differ from those requested)
+			uint32_t  				   _size; ///< number of elements
+		}; // class BasicArray
+	} // namespace arr
 } // namespace vuh

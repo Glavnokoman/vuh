@@ -28,6 +28,7 @@ set_target_properties(vulkan PROPERTIES IMPORTED_LOCATION ${Vulkan_LIBRARIES})
 # do'nt define VULKAN_HPP_TYPESAFE_CONVERSION it's not safe on 32bits system
 # from vulkan.hpp "32-bit vulkan is not typesafe for handles, so don't allow copy constructors on this platform by default."
 add_definitions(-DVK_USE_PLATFORM_ANDROID_KHR=1)
+# add_definitions(-DVULKAN_HPP_ASSERT=)
 # from https://developer.android.com/sdk/ndk/index.html
 #  With the exception of the libraries listed above, native system libraries in the Android platform are not stable and may change in future platform versions.
 # Your applications should only make use of the stable native system libraries provided in this NDK.
@@ -52,6 +53,7 @@ SET(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/main/assets)
 SET(GLSLC ${ANDROID_NDK}/shader-tools/${ANDROID_NDK_HOST_SYSTEM_NAME}/glslc${TOOL_OS_SUFFIX})
 add_custom_command(OUTPUT GLSL2SPVCMD
         COMMAND ${GLSLC} -c ${SHADER_DIR}/saxpy.comp -o ${SHADER_DIR}/saxpy.spv
+        COMMAND ${GLSLC} -c ${SHADER_DIR}/imgsaxpy.comp -o ${SHADER_DIR}/imgsaxpy.spv
         )
 add_custom_target(GLSL2SPV
         DEPENDS GLSL2SPVCMD

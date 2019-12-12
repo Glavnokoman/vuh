@@ -1,73 +1,77 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "vuh/core/core.hpp"
 #include <vuh/device.h>
 #include <vuh/resource.hpp>
 
 namespace vuh {
 	/// Class used for synchronization with host.
 	/// vulkan fence  
-	class Fence : public VULKAN_HPP_NAMESPACE::Fence {
+	class Fence : virtual public vuh::core, public vhn::Fence {
 	public:
-		Fence() : VULKAN_HPP_NAMESPACE::Fence() {
+		Fence() : vhn::Fence(), _fenFd(false) {
 
 		}
 
-		explicit Fence(vuh::Device& device, bool signaled=false)
-				: _device(&device)
-				, _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
-		{
+		explicit Fence(vuh::Device& dev, bool signaled=false, bool fenFd=false)
+				: _dev(&dev)
+				, _fenFd(fenFd) {
 #if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
-	#ifdef VK_USE_PLATFORM_WIN32_KHR
-		// which one is correct on windows ?	
-		VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
-		//VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
-	#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
-		VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eSyncFd);
-	#else
-		VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
-	#endif
+        #ifdef VK_USE_PLATFORM_WIN32_KHR
+            // which one is correct on windows ?
+            vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
+            //VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
+        #elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+            vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eSyncFd);
+        #else
+            vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
+        #endif
 #else									
 	#ifdef VK_USE_PLATFORM_WIN32_KHR
 			// which one is correct on windows ?
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
-			//VULKAN_HPP_NAMESPACE::ExportFenceWin32HandleInfoKHR efci;
+			vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBits::eOpaqueWin32);
+			//vhn::ExportFenceWin32HandleInfoKHR efci;
 	#elif VK_USE_PLATFORM_ANDROID_KHR // current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
+			vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
 	#else
-			VULKAN_HPP_NAMESPACE::ExportFenceCreateInfoKHR efci(VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
+			vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
 	#endif
-#endif			
-			VULKAN_HPP_NAMESPACE::FenceCreateInfo fci;
-			if (signaled) {
-				fci.setFlags(VULKAN_HPP_NAMESPACE::FenceCreateFlagBits::eSignaled);
+#endif
+			if (!supportFenceFd()) {
+				_fenFd = false;
 			}
-			if(_device->supportFenceFd()) {
+			vhn::FenceCreateInfo fci;
+			if (signaled) {
+				fci.setFlags(vhn::FenceCreateFlagBits::eSignaled);
+			}
+			if(_dev->supportFenceFd()) {
 				fci.setPNext(&efci);
 			}
-			auto fen = _device->createFence(fci);
+			auto fen = _dev->createFence(fci);
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-		    _result = fen.result;
-		    VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
-		    static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(fen.value);
+			_res = fen.result;
+		    VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
+		    static_cast<vhn::Fence&>(*this) = std::move(fen.value);
 #else
-			static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(fen);
+			static_cast<vhn::Fence&>(*this) = std::move(fen);
 #endif			
 		}
 		
-		explicit Fence(const vuh::Fence& fence)
-		{
-			static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(fence);
-			_device = std::move(const_cast<vuh::Fence&>(fence)._device);
-			_result = std::move(fence._result);
+		explicit Fence(const vuh::Fence& fence) {
+			static_cast<vhn::Fence&>(*this) = std::move(fence);
+			_dev = std::move(const_cast<vuh::Fence&>(fence)._dev);
+			_res = std::move(fence._res);
+			_fenFd = std::move(fence._fenFd);
 		}
 
-		~Fence()
-		{
+		~Fence() {
 			if(success()) {
-				_device->destroyFence(*this);
+				if(!_fenFd) {
+					wait();
+				}
+				_dev->destroyFence(*this);
 			}
-			_device.release();
+			_dev.release();
 		}
 
 		auto operator= (const vuh::Fence&)-> vuh::Fence& = delete;
@@ -77,9 +81,10 @@ namespace vuh {
 		/// In case the current object owns the unsignalled fence this is going to block
 		/// till that is signalled and only then proceed to taking over the move-from object.
 		auto operator= (vuh::Fence&& other) noexcept-> vuh::Fence& {
-			static_cast<VULKAN_HPP_NAMESPACE::Fence&>(*this) = std::move(other);
-			_device = std::move(other._device);
-			_result = std::move(other._result);
+			static_cast<vhn::Fence&>(*this) = std::move(other);
+			_dev = std::move(other._dev);
+			_res = std::move(other._res);
+			_fenFd = std::move(other._fenFd);
 			return *this;
 		}
 
@@ -87,33 +92,36 @@ namespace vuh {
 			return success();
 		}
 
-		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkFence () const
-		{
-			return VkFence(static_cast<const VULKAN_HPP_NAMESPACE::Fence&>(*this));
+		explicit operator VkFence () const {
+			return VkFence(static_cast<const vhn::Fence&>(*this));
 		}
 
 		/// if fenceFd() is called ,do'nt use this function wait, this function will blocked and never return
 		/// please call epoll_wait/select/poll wait for fd's signal
 		auto wait(size_t period=size_t(-1))-> bool {
 			if(success()) {
-				_device->waitForFences({*this}, true, period);
-				auto result = _device->getFenceStatus(*this);
-				return (VULKAN_HPP_NAMESPACE::Result::eSuccess == result);
+				_dev->waitForFences({*this}, true, period);
+				auto res = _dev->getFenceStatus(*this);
+				return (vhn::Result::eSuccess == res);
 			}
 			return false;
 		}
 		
 		/// if fenceFd is support, we can use epoll or select wait for fence complete
 		bool supportFenceFd() {
-			return _device->supportFenceFd();
-		}		
+			return _dev->supportFenceFd();
+		}
+
+		bool fenFd() {
+            return _fenFd;
+		}
 	
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-        auto fenceFd(HANDLE& fd)-> VULKAN_HPP_NAMESPACE::Result {
-			VULKAN_HPP_NAMESPACE::FenceGetWin32HandleInfoKHR info(*this);
-			auto res = _device->getFenceWin32HandleKHR(info);
+        auto fenceFd(HANDLE& fd)-> vhn::Result {
+			vhn::FenceGetWin32HandleInfoKHR info(*this);
+			auto res = _dev->getFenceWin32HandleKHR(info);
 #else
-		auto fenceFd(int& fd)-> VULKAN_HPP_NAMESPACE::Result {
+		auto fenceFd(int& fd)-> vhn::Result {
 			// following https://www.khronos.org/registry/vulkan/specs/1.0-wsi_extensions/html/vkspec.html
 			// current android only support VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
 			// If handleType is VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
@@ -121,35 +129,37 @@ namespace vuh {
 			// The import operation will succeed and the VkFence will have a temporarily imported payload as if a valid file descriptor had been provided.
 		#ifdef VK_USE_PLATFORM_ANDROID_KHR /* Android need dynamic load KHR extension */
         	#if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
-				VULKAN_HPP_NAMESPACE::FenceGetFdInfoKHR info(*this,VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eSyncFd);
+				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBits::eSyncFd);
             #else
-				VULKAN_HPP_NAMESPACE::FenceGetFdInfoKHR info(*this,VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
+				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBitsKHR::eSyncFd);
             #endif
-			auto res = _device->getFenceFdKHR(info,VULKAN_HPP_NAMESPACE::DispatchLoaderDynamic(VULKAN_HPP_NAMESPACE::Instance(_device->instance()),*_device));
+			auto res = _dev->getFenceFdKHR(info, vhn::DispatchLoaderDynamic(vhn::Instance(_dev->instance()), *_dev));
         #else
 			#if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
-				VULKAN_HPP_NAMESPACE::FenceGetFdInfoKHR info(*this,VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
+				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBits::eOpaqueFd);
         	#else
-				VULKAN_HPP_NAMESPACE::FenceGetFdInfoKHR info(*this,VULKAN_HPP_NAMESPACE::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
+				vhn::FenceGetFdInfoKHR info(*this, vhn::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
         	#endif
-			auto res = _device->getFenceFdKHR(info);
+			auto res = _dev->getFenceFdKHR(info);
         #endif
 #endif
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			fd = res.value;
+			if (vhn::Result::eSuccess == res.result) {
+                _fenFd = true;
+			}
 			return res.result;
 #else
 			fd = res;
-			return VULKAN_HPP_NAMESPACE::Result::eSuccess;
+			_fenFd = true;
+			return vhn::Result::eSuccess;
 #endif
 		}
-		
-		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
-		bool success() const { return (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) && bool(static_cast<const VULKAN_HPP_NAMESPACE::Fence&>(*this)) && (nullptr != _device) ; }
-		std::string error_to_string() const { return VULKAN_HPP_NAMESPACE::to_string(_result); };			
+
+		bool success() const override { return vuh::core::success() && bool(static_cast<const vhn::Fence&>(*this)) && (nullptr != _dev) ; }
 
 	private: // data
-		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _device; ///< refers to the device owning corresponding the underlying fence.
-		VULKAN_HPP_NAMESPACE::Result _result;
+		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
+		bool _fenFd;
 	};	
 } // namespace vuh

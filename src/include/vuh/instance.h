@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-
+#include "vuh/core/core.hpp"
+#include "vuh/core/vnh.hpp"
 #include <vector>
 
 namespace vuh {
@@ -18,11 +18,11 @@ namespace vuh {
 	/// In debug builds adds default validation layer/extension.
 	/// Default debug reporter sends messages to std::cerr.
 	/// Reentrant.
-	class Instance {
+	class Instance : virtual public vuh::core {
 	public:
 		explicit Instance(const std::vector<const char*>& layers={}
-		                 , const std::vector<const char*>& extension={}
-		                 , const vk::ApplicationInfo& info={nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}
+		                 , const std::vector<const char*>& ext={}
+		                 , const vhn::ApplicationInfo& info={nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}
 		                 , debug_reporter_t report_callback=nullptr
 		                 , debug_reporter_flags_t report_flags=DEF_DBG_REPORT_FLAGS
 		                 , void* report_userdata=nullptr
@@ -39,19 +39,15 @@ namespace vuh {
 		auto report(const char* prefix, const char* message
 		            , VkDebugReportFlagsEXT flags=VK_DEBUG_REPORT_INFORMATION_BIT_EXT) const-> void;
 
-		VULKAN_HPP_TYPESAFE_EXPLICIT operator vk::Instance() const { return _instance; }
+		explicit operator vhn::Instance() const { return _instance; }
 		explicit operator bool() const;
 		bool operator!() const;
 
-		vk::Result error() const;
-		std::string error_to_string() const;
-
-	private: // helpers
+    private: // helpers
 		auto clear() noexcept-> void;
 	private: // data
-		vk::Instance _instance;     ///< vulkan instance
-		debug_reporter_t _reporter; ///< points to actual reporting function. This pointer is registered with a reporter callback but can also be used directly.
-		VkDebugReportCallbackEXT _reporter_cbk; ///< report callback. Only used to release the handle in the end.
-		vk::Result	_result;
+		vhn::Instance 				_instance;     ///< vulkan instance
+		debug_reporter_t 			_reporter; ///< points to actual reporting function. This pointer is registered with a reporter callback but can also be used directly.
+		VkDebugReportCallbackEXT 	_reporter_cbk; ///< report callback. Only used to release the handle in the end.
 	}; // class Instance
 } // namespace vuh

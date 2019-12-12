@@ -1,0 +1,31 @@
+#version 440 core
+
+layout(local_size_x_id = 0) in;             // workgroup size set with specialization constant
+layout(push_constant) uniform Parameters {  // push constants
+    uint size;                               // array size
+    float a;                                 // scaling parameter
+} params;
+
+layout(std430, binding = 0) buffer lay0 { float arr_y[]; }; // array parameters
+layout(binding=1) uniform sampler2D lay1; // VK_FORMAT_R32G32B32A32_SFLOAT -> sampler2D
+
+// ARM Mali-T880 Driver Version 883.665.1353 apiVersion 1.0.53 Huawei Honor V8
+// change local_size_x from vulkan api is useless, we can only define this on glsl
+
+layout(local_size_x = 64) in;
+
+void main() {
+    const uint id = gl_GlobalInvocationID.x * 4;// current offset
+    if (params.size <= id){ // drop threads outside the buffer
+        return;
+    }
+    const ivec2 si = textureSize(lay1, 0);
+    const uint row = id / 4 / si.x;
+    const uint col = (id / 4 - (row * si.x)) % si.y;
+    const ivec2 idx = ivec2(row, col);
+    const vec4 v = texelFetch(lay1, idx, 0);
+    arr_y[id] += params.a * v.r;
+    arr_y[id + 1] += params.a * v.g;
+    arr_y[id + 2] += params.a * v.b;
+    arr_y[id + 3] += params.a * v.a;
+}

@@ -1,44 +1,40 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "vuh/core/core.hpp"
 #include <vuh/device.h>
 #include <vuh/resource.hpp>
 
 namespace vuh {
 	/// vulkan Event  
-	class Event : public VULKAN_HPP_NAMESPACE::Event {
+	class Event : virtual public vuh::core, public vhn::Event {
 	public:
-		Event() : VULKAN_HPP_NAMESPACE::Event() {
+		Event() : vhn::Event() {
 
 		}
 
-		explicit Event(vuh::Device& device)
-				: _device(&device)
-				, _result(VULKAN_HPP_NAMESPACE::Result::eSuccess)
-		{
-			auto ev = _device->createEvent(VULKAN_HPP_NAMESPACE::EventCreateInfo());
+		explicit Event(vuh::Device& dev)
+				: _dev(&dev) {
+			auto ev = _dev->createEvent(vhn::EventCreateInfo());
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
-			_result = ev.result;
-			VULKAN_HPP_ASSERT(VULKAN_HPP_NAMESPACE::Result::eSuccess == _result);
-			static_cast<VULKAN_HPP_NAMESPACE::Event&>(*this) = std::move(ev.value);
+			_res = ev.result;
+			VULKAN_HPP_ASSERT(vhn::Result::eSuccess == _res);
+			static_cast<vhn::Event&>(*this) = std::move(ev.value);
 #else
-			static_cast<VULKAN_HPP_NAMESPACE::Event&>(*this) = std::move(ev);
+			static_cast<vhn::Event&>(*this) = std::move(ev);
 #endif	
 		}
 		
-		explicit Event(const vuh::Event& ev)
-		{
-			static_cast<VULKAN_HPP_NAMESPACE::Event&>(*this) = std::move(ev);
-			_device = std::move(const_cast<vuh::Event&>(ev)._device);
-			_result = std::move(ev._result);
+		explicit Event(const vuh::Event& ev) {
+			static_cast<vhn::Event&>(*this) = std::move(ev);
+			_dev = std::move(const_cast<vuh::Event&>(ev)._dev);
+			_res = std::move(ev._res);
 		}
 
-		~Event()
-		{
+		~Event() {
 			if(success()) {
-				_device->destroyEvent(*this);
+				_dev->destroyEvent(*this);
 			}
-			_device.release();
+			_dev.release();
 		}
 
 		auto operator= (const vuh::Event&)-> vuh::Event& = delete;
@@ -48,9 +44,9 @@ namespace vuh {
 		/// In case the current object owns the unsignalled fence this is going to block
 		/// till that is signalled and only then proceed to taking over the move-from object.
 		auto operator= (vuh::Event&& other) noexcept-> vuh::Event& {
-			static_cast<VULKAN_HPP_NAMESPACE::Event&>(*this) = std::move(other);
-			_device = std::move(other._device);
-			_result = std::move(other._result);
+			static_cast<vhn::Event&>(*this) = std::move(other);
+			_dev = std::move(other._dev);
+			_res = std::move(other._res);
 			return *this;
 		}
 
@@ -58,25 +54,20 @@ namespace vuh {
 			return success();
 		}
 
-		VULKAN_HPP_TYPESAFE_EXPLICIT operator VkEvent() const
-		{
-			return VkEvent(static_cast<const VULKAN_HPP_NAMESPACE::Event&>(*this));
+		explicit operator VkEvent() const {
+			return VkEvent(static_cast<const vhn::Event&>(*this));
 		}
 
 		bool setEvent() const {
 			if(success()) {
-				_device->setEvent(*this);
+				_dev->setEvent(*this);
 				return true;
 			}
 			return false;
 		}
-		
-		VULKAN_HPP_NAMESPACE::Result error() const { return _result; };
-		bool success() const { return (VULKAN_HPP_NAMESPACE::Result::eSuccess == _result) && bool(static_cast<const VULKAN_HPP_NAMESPACE::Event&>(*this)) && (nullptr != _device); }
-		std::string error_to_string() const { return VULKAN_HPP_NAMESPACE::to_string(_result); };			
 
+		bool success() const override { return vuh::core::success() && bool(static_cast<const vhn::Event&>(*this)) && (nullptr != _dev); }
 	private: // data
-		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _device; ///< refers to the device owning corresponding the underlying fence.
-		VULKAN_HPP_NAMESPACE::Result _result;
+		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
 	};	
 } // namespace vuh

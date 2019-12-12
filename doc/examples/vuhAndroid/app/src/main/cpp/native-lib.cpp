@@ -2,6 +2,7 @@
 #include <string>
 
 #include <vuh/array.hpp>
+#include <vuh/image.hpp>
 #include <vuh/vuh.h>
 #include <vector>
 #include "glsl2spv.h"
@@ -11,7 +12,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-static char * loadFromAsset(AAssetManager* mgr,const char* file,size_t& len) {
+static char * loadFromAsset(AAssetManager* mgr, const char* file, size_t& len) {
     AAsset * asset = AAssetManager_open(mgr, file, AASSET_MODE_BUFFER);
     if (NULL != asset) {
         len = AAsset_getLength(asset);
@@ -23,7 +24,7 @@ static char * loadFromAsset(AAssetManager* mgr,const char* file,size_t& len) {
     return NULL;
 }
 
-static bool loadFromAsset(AAssetManager* mgr,const char* file,std::vector<char>& buf) {
+static bool loadFromAsset(AAssetManager* mgr, const char* file, std::vector<char>& buf) {
     AAsset * asset = AAssetManager_open(mgr, file, AASSET_MODE_BUFFER);
     if(NULL != asset ) {
         size_t length = AAsset_getLength(asset);
@@ -35,9 +36,9 @@ static bool loadFromAsset(AAssetManager* mgr,const char* file,std::vector<char>&
     return false;
 }
 
-static bool loadSaxpyComp(AAssetManager* mgr,std::vector<char>& code) {
+static bool loadComp(AAssetManager* mgr, const char* file, std::vector<char>& code) {
     size_t len = 0;
-    char * saxpy = loadFromAsset(mgr,"saxpy.comp",len);
+    char * saxpy = loadFromAsset(mgr, file, len);
     if(NULL != saxpy) {
         std::vector<unsigned int> spirv;
         bool suc = glsl2spv(VK_SHADER_STAGE_COMPUTE_BIT,saxpy,spirv);
@@ -50,6 +51,11 @@ static bool loadSaxpyComp(AAssetManager* mgr,std::vector<char>& code) {
         }
     }
     return false;
+
+}
+
+static bool loadSaxpyComp(AAssetManager* mgr,std::vector<char>& code) {
+    return loadComp(mgr, "saxpy.comp", code);
 }
 
 static bool loadSaxpySpv(AAssetManager* mgr,std::vector<char>& code) {
@@ -140,7 +146,7 @@ static auto saxpyValidationLayers(AAssetManager* mgr)-> bool {
     auto x = std::vector<float>(128, 2.0f);
     const auto a = 0.1f; // saxpy scaling constant
     vuh::debug_reporter_flags_t flags = DEF_DBG_REPORT_FLAGS | VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
-    auto instance = vuh::Instance(layer_names,{VK_EXT_DEBUG_REPORT_EXTENSION_NAME},{nullptr, 0, nullptr, 0, VK_API_VERSION_1_0},debugReporter,flags);
+    auto instance = vuh::Instance(layer_names, {VK_EXT_DEBUG_REPORT_EXTENSION_NAME}, {nullptr, 0, nullptr, 0, VK_API_VERSION_1_0}, debugReporter, flags);
     if (instance.devices().size() > 0) {
         auto device = instance.devices().at(0);  // just get the first compute-capable device
 
@@ -194,11 +200,14 @@ static auto saxpyAsync(AAssetManager* mgr,bool comp)-> bool {
                                                        code); // define the kernel by linking interface and spir-v implementation
             {
                 LOGD("saxpy async before %f",y[0]);
+
                 auto d_y = vuh::Array<float>(device,
                                              y); // allocate memory on device and copy data from host
                 auto d_x = vuh::Array<float>(device, x); // same for x
+                auto d_z = vuh::Array<float>(device, x); // same for x
 
                 auto delay = program.grid(128 / 64).spec(64).run_async({128, a}, d_y, d_x);
+
                 delay.wait(); // run once, wait for completion
                 d_y.toHost(begin(y));                              // copy data back to host
                 LOGD("saxpy async after %f", y[0]);
@@ -326,6 +335,79 @@ static auto saxpy_epoll(AAssetManager* mgr)-> bool {
     return false;
 }
 
+static auto saxpy_image(AAssetManager* mgr)-> bool {
+    auto y = std::vector<float>(128, 1.0f);
+    auto x = std::vector<float>(128, 2.0f);
+    const auto a = 0.1f; // saxpy scaling constant
+    auto instance = vuh::Instance();
+    if (instance.devices().size() > 0) {
+        auto device = instance.devices().at(0);  // just get the first compute-capable device
+
+        auto d_y = vuh::img::TransArray<float>(device, y); // allocate memory on device and copy data from host
+        auto d_x = vuh::img::TransArray<float>(device, x); // same for x
+        auto i_y = vuh::Image2D<float>(device, d_y, 16);
+        auto i_x = vuh::Image2D<float>(device, d_x, 16);
+        using Specs = vuh::typelist<uint32_t, uint32_t>;
+        struct Params {
+            float a;
+        };
+        LOGD("saxpy_image before %f",y[0]);
+        std::vector<char> code;
+        bool suc = loadFromAsset(mgr, "imgsaxpy.spv", code);
+        if (suc) {
+            auto program = vuh::Program<Specs, Params>(device,
+                                                       code); // define the kernel by linking interface and spir-v implementation
+            program.grid(vuh::div_up(i_y.width(), 16), vuh::div_up(i_y.height(), 2)).spec(16, 2)({a}, i_y, i_x); // run once, wait for completion
+            auto v = i_x.toHost();                              // copy data back to host
+            v.toHost(begin(y));
+            LOGD("saxpy_image %f", y[0]);
+        }
+
+        return suc;
+    }
+    return false;
+}
+
+static auto saxpy_buffer_image(AAssetManager* mgr)-> bool {
+    auto y = std::vector<float>(128, 1.0f);
+    auto x = std::vector<float>(128, 2.0f);
+    const auto a = 0.1f; // saxpy scaling constant
+    auto instance = vuh::Instance();
+    if (instance.devices().size() > 0) {
+        auto device = instance.devices().at(0);  // just get the first compute-capable device
+        bool suc = false;
+        {
+            auto d_y = vuh::Array<float>(device,
+                                         y); // allocate memory on device and copy data from host
+            auto d_x = vuh::img::TransArray<float>(device, x); // same for x
+
+            auto i_x = vuh::CombinedImage2D<float>(device, d_x, 16);
+
+            using Specs = vuh::typelist<uint32_t>;
+            struct Params {
+                uint32_t size;
+                float a;
+            };
+            std::vector<char> code;
+            suc = loadComp(mgr, "imgbufsaxpy.comp", code);
+            if (suc) {
+                auto program = vuh::Program<Specs, Params>(device,
+                                                           code); // define the kernel by linking interface and spir-v implementation
+                program.grid(128 / 64).spec(64)({128, a}, d_y,
+                                                i_x); // run once, wait for completion
+                auto z = std::vector<float>(128, 0.0f);
+                d_y.toHost(begin(z));                              // copy data back to host
+                LOGD("saxpy_buffer_image after %f,%f,%f,%f,%f,%f,%f,%f,%f,%f", z[0], z[1], z[2],
+                     z[3], z[4], z[5], z[6], z[7], z[8], z[9]);
+            } else {
+                LOGD("saxpy_buffer_image failed");
+            }
+        }
+        return suc;
+    }
+    return false;
+}
+
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_mobibrw_vuhandroid_MainActivity_stringFromJNI(
         JNIEnv *env,
@@ -338,5 +420,7 @@ Java_com_mobibrw_vuhandroid_MainActivity_stringFromJNI(
     saxpyValidationLayers(assetMgr);
     saxpyAsync(assetMgr, false);
     saxpy_epoll(assetMgr);
+    saxpy_image(assetMgr);
+    saxpy_buffer_image(assetMgr);
     return env->NewStringUTF(hello.c_str());
 }
