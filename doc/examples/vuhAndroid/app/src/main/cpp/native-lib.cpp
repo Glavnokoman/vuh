@@ -420,7 +420,7 @@ Java_com_mobibrw_vuhandroid_MainActivity_stringFromJNI(
     saxpyValidationLayers(assetMgr);
     saxpyAsync(assetMgr, false);
     saxpy_epoll(assetMgr);
-    //saxpy_image(assetMgr);
+    saxpy_image(assetMgr);
     saxpy_buffer_image(assetMgr);
     return env->NewStringUTF(hello.c_str());
 }
