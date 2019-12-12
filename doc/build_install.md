@@ -82,5 +82,6 @@ export VK_ICD_FILENAMES=~/MoltenVK/Package/Release/MoltenVK/macOS/dynamic/Molten
 ```  
 run test (build vuh first)
 ```bash
-${VUH_SOURCE_DIR}/test/correctness/test_vuh
+cd ${VUH_SOURCE_DIR}/test/correctness/
+./test_vuh
 ``` 
