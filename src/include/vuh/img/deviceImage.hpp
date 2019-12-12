@@ -119,7 +119,7 @@ namespace vuh {
                     , const TransArray<T> &arr          ///< iterable to initialize from
                     , const size_t imW     ///< width of image
                     , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
-                    , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
+                    , const vhn::ImageUsageFlags& imF = vhn::ImageUsageFlagBits::eStorage)      ///< additional (to defined by allocator) buffer usage flags
                     : Base(dev, arr, imW, imFmt,
                            vhn::DescriptorType::eStorageImage, imF) {
             }
