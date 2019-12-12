@@ -83,7 +83,7 @@ namespace vuh {
 		{
 			auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
 			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-			genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eUndefined, vhn::ImageLayout::eTransferSrcOptimal);
+			genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eTransferDstOptimal, vhn::ImageLayout::eTransferSrcOptimal);
             genCopyImageToBufferCmd(transCmdBuf, im, buf, imW, imH, bufOff);
 			transCmdBuf.end();
 			auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
@@ -124,6 +124,12 @@ namespace vuh {
 				srcStageMask = vhn::PipelineStageFlagBits::eTopOfPipe;
 				dstStageMask = vhn::PipelineStageFlagBits::eTransfer;
 			} else if (vhn::ImageLayout::eTransferDstOptimal == lyOld && vhn::ImageLayout::eShaderReadOnlyOptimal == lyNew) {
+				barrier.setSrcAccessMask(vhn::AccessFlagBits::eTransferWrite);
+				barrier.setDstAccessMask(vhn::AccessFlagBits::eTransferRead);
+
+				srcStageMask = vhn::PipelineStageFlagBits::eTransfer;
+				dstStageMask = vhn::PipelineStageFlagBits::eTransfer;
+			} else if (vhn::ImageLayout::eTransferDstOptimal == lyOld && vhn::ImageLayout::eTransferSrcOptimal == lyNew) {
 				barrier.setSrcAccessMask(vhn::AccessFlagBits::eTransferWrite);
 				barrier.setDstAccessMask(vhn::AccessFlagBits::eTransferRead);
 
