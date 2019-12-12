@@ -9,12 +9,13 @@ namespace vuh {
 	/// vulkan fence  
 	class Fence : virtual public vuh::core, public vhn::Fence {
 	public:
-		Fence() : vhn::Fence() {
+		Fence() : vhn::Fence(), _fenFd(false) {
 
 		}
 
-		explicit Fence(vuh::Device& dev, bool signaled=false)
-				: _dev(&dev) {
+		explicit Fence(vuh::Device& dev, bool signaled=false, bool fenFd=false)
+				: _dev(&dev)
+				, _fenFd(fenFd) {
 #if VK_HEADER_VERSION >= 70 // ExternalFenceHandleTypeFlagBits define changed from VK_HEADER_VERSION(70)
         #ifdef VK_USE_PLATFORM_WIN32_KHR
             // which one is correct on windows ?
@@ -36,6 +37,9 @@ namespace vuh {
 			vhn::ExportFenceCreateInfoKHR efci(vhn::ExternalFenceHandleTypeFlagBitsKHR::eOpaqueFd);
 	#endif
 #endif
+			if (!supportFenceFd()) {
+				_fenFd = false;
+			}
 			vhn::FenceCreateInfo fci;
 			if (signaled) {
 				fci.setFlags(vhn::FenceCreateFlagBits::eSignaled);
@@ -57,10 +61,14 @@ namespace vuh {
 			static_cast<vhn::Fence&>(*this) = std::move(fence);
 			_dev = std::move(const_cast<vuh::Fence&>(fence)._dev);
 			_res = std::move(fence._res);
+			_fenFd = std::move(fence._fenFd);
 		}
 
 		~Fence() {
 			if(success()) {
+				if(!_fenFd) {
+					wait();
+				}
 				_dev->destroyFence(*this);
 			}
 			_dev.release();
@@ -76,6 +84,7 @@ namespace vuh {
 			static_cast<vhn::Fence&>(*this) = std::move(other);
 			_dev = std::move(other._dev);
 			_res = std::move(other._res);
+			_fenFd = std::move(other._fenFd);
 			return *this;
 		}
 
@@ -132,9 +141,13 @@ namespace vuh {
 #endif
 #ifdef VULKAN_HPP_NO_EXCEPTIONS
 			fd = res.value;
+			if (vhn::Result::eSuccess == res.result) {
+                _fenFd = true;
+			}
 			return res.result;
 #else
 			fd = res;
+			_fenFd = true;
 			return vhn::Result::eSuccess;
 #endif
 		}
@@ -143,5 +156,6 @@ namespace vuh {
 
 	private: // data
 		std::unique_ptr<vuh::Device, util::NoopDeleter<vuh::Device>> _dev; ///< refers to the device owning corresponding the underlying fence.
+		bool _fenFd;
 	};	
 } // namespace vuh
