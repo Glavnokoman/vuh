@@ -353,7 +353,7 @@ static auto saxpy_image(AAssetManager* mgr)-> bool {
         };
         LOGD("saxpy_image before %f",y[0]);
         std::vector<char> code;
-        bool suc = loadComp(mgr, "imgsaxpy.comp", code);
+        bool suc = loadFromAsset(mgr, "imgsaxpy.spv", code);
         if (suc) {
             auto program = vuh::Program<Specs, Params>(device,
                                                        code); // define the kernel by linking interface and spir-v implementation

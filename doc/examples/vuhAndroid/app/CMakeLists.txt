@@ -53,6 +53,7 @@ SET(SHADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/main/assets)
 SET(GLSLC ${ANDROID_NDK}/shader-tools/${ANDROID_NDK_HOST_SYSTEM_NAME}/glslc${TOOL_OS_SUFFIX})
 add_custom_command(OUTPUT GLSL2SPVCMD
         COMMAND ${GLSLC} -c ${SHADER_DIR}/saxpy.comp -o ${SHADER_DIR}/saxpy.spv
+        COMMAND ${GLSLC} -c ${SHADER_DIR}/imgsaxpy.comp -o ${SHADER_DIR}/imgsaxpy.spv
         )
 add_custom_target(GLSL2SPV
         DEPENDS GLSL2SPVCMD
