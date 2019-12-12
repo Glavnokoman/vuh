@@ -120,7 +120,7 @@ namespace vuh {
                     , const size_t imW     ///< width of image
                     , const vhn::Format& imFmt = vhn::Format::eR32G32B32A32Sfloat /// format
                     , const vhn::ImageUsageFlags& imF = {})      ///< additional (to defined by allocator) buffer usage flags
-                    : Base(dev, imW, arr.size() / imW, imFmt,
+                    : Base(dev, arr, imW, imFmt,
                            vhn::DescriptorType::eStorageImage, imF) {
             }
         };
