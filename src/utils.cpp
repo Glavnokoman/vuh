@@ -83,6 +83,7 @@ namespace vuh {
 		{
 			auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
 			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+			genTransImageLayoutCmd(transCmdBuf, im, vhn::ImageLayout::eUndefined, vhn::ImageLayout::eTransferSrcOptimal);
             genCopyImageToBufferCmd(transCmdBuf, im, buf, imW, imH, bufOff);
 			transCmdBuf.end();
 			auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
