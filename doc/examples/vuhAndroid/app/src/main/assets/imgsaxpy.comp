@@ -11,7 +11,8 @@ layout(Rgba32f, binding=1) uniform image2D lay1; // VK_FORMAT_R32G32B32A32_SFLOA
 
 // ARM Mali-T880 Driver Version 883.665.1353 apiVersion 1.0.53 Huawei Honor V8
 // change local_size_x, local_size_y from vulkan api is useless, we can only define this on glsl
-layout (local_size_x = 64, local_size_y = 64, local_size_z = 1) in;
+// on ARM  (local_size_x = 64, local_size_y = 64, local_size_z = 1) will crash take care of this limit
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 void main(){
     const ivec2 si = imageSize(lay0);
