@@ -1,19 +1,28 @@
-#version 440
+#version 440 core
 
 layout(local_size_x_id = 0) in;             // workgroup size set with specialization constant
+layout(local_size_y_id = 1) in;             // workgroup size set with specialization constant
+
 layout(push_constant) uniform Parameters {  // push constants
     float a;  // scaling parameter
 } params;
 
-layout(binding=0) uniform isampler2D lay0; // VK_FORMAT_R8G8B8A8_UNORM -> isampler2D
-layout(rgba8, binding=1) uniform image2D lay1;
+layout(Rgba32f, binding=0) uniform image2D lay0; // VK_FORMAT_R32G32B32A32_SFLOAT -> Rgba32f image2D
+layout(Rgba32f, binding=1) uniform image2D lay1; // VK_FORMAT_R32G32B32A32_SFLOAT -> Rgba32f image2D
+
+// ARM Mali-T880 Driver Version 883.665.1353 apiVersion 1.0.53 Huawei Honor V8
+// change local_size_x, local_size_y from vulkan api is useless, we can only define this on glsl
+
+layout(local_size_x = 64, local_size_y = 64) in;
 
 void main(){
+    const ivec2 si = imageSize(lay0);
     const ivec2 idx =  ivec2(gl_GlobalInvocationID.xy);
-    ivec4 vi = texelFetch(lay0, idx, 0);
-    vec4 vf = intBitsToFloat(vi);
-    vec4 vf2 = imageLoad(lay1, idx);
-    vf = vf + params.a * vf2;
-    vi = floatBitsToInt(vf);
-    imageStore(lay1, idx, vi); // saxpy
+    if (idx.x > si.x || idx.y > si.y) { // drop threads outside the buffer
+        return;
+    }
+    const vec4 vs = imageLoad(lay0, idx);
+    vec4 vd = imageLoad(lay1, idx);
+    vd = vd + params.a * vs;
+    imageStore(lay1, idx, vd); // saxpy
 }
