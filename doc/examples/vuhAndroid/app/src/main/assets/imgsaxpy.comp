@@ -16,11 +16,10 @@ layout (local_size_x = 64, local_size_y = 64, local_size_z = 1) in;
 void main(){
     const ivec2 si = imageSize(lay0);
     const ivec2 idx =  ivec2(gl_GlobalInvocationID.xy);
-    if (idx.x > si.x || idx.y > si.y) { // drop threads outside the buffer
-        return;
+    if (all(lessThan(idx, si))) { // drop threads outside the image
+        const vec4 vs = imageLoad(lay0, idx);
+        vec4 vd = imageLoad(lay1, idx);
+        vd = vd + params.a * vs;
+        imageStore(lay1, idx, vd);
     }
-    const vec4 vs = imageLoad(lay0, idx);
-    vec4 vd = imageLoad(lay1, idx);
-    vd = vd + params.a * vs;
-    imageStore(lay1, idx, vd);
 }
