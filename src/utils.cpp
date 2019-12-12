@@ -46,6 +46,33 @@ namespace vuh {
 			transQueue.waitIdle();
 		}
 
+        auto genCopyImageToBufferCmd(const vhn::CommandBuffer& transCmdBuf
+                , const vhn::Image& im
+                , vhn::Buffer& buf
+                , const uint32_t imW
+                , const uint32_t imH
+                , const size_t bufOff
+        )-> void
+        {
+			const int layerCount = 1;
+            vhn::Extent3D ext;
+            ext.setDepth(1);
+            ext.setWidth(imW);
+            ext.setHeight(imH);
+
+			vhn::ImageSubresourceLayers imSR;
+			imSR.setAspectMask(vhn::ImageAspectFlagBits::eColor);
+			imSR.setLayerCount(layerCount);
+			imSR.setBaseArrayLayer(0);
+			imSR.setMipLevel(0);
+
+            vhn::BufferImageCopy cpyRegion;
+            cpyRegion.setBufferOffset(bufOff);
+            cpyRegion.setImageExtent(ext);
+			cpyRegion.setImageSubresource(imSR);
+            transCmdBuf.copyImageToBuffer(im, vhn::ImageLayout::eTransferSrcOptimal, buf, 1, &cpyRegion);
+        }
+
 		auto copyImageToBuffer(const vuh::Device& dev
 				, const vhn::Image& im
 				, vhn::Buffer& buf
@@ -56,15 +83,7 @@ namespace vuh {
 		{
 			auto transCmdBuf = const_cast<vuh::Device&>(dev).transferCmdBuffer();
 			transCmdBuf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-            vhn::Extent3D ext;
-            ext.setDepth(1);
-            ext.setWidth(imW);
-            ext.setHeight(imH);
-
-            vhn::BufferImageCopy cpyRegion;
-			cpyRegion.setBufferOffset(bufOff);
-			cpyRegion.setImageExtent(ext);
-			transCmdBuf.copyImageToBuffer(im, vhn::ImageLayout::eTransferSrcOptimal, buf, 1, &cpyRegion);
+            genCopyImageToBufferCmd(transCmdBuf, im, buf, imW, imH, bufOff);
 			transCmdBuf.end();
 			auto transQueue = const_cast<vuh::Device&>(dev).transferQueue();
 			auto submitInfo = vk::SubmitInfo(0, nullptr, nullptr, 1, &transCmdBuf);

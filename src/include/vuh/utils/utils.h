@@ -27,6 +27,14 @@ namespace vuh {
 				, size_t dstOff = 0///< destination buffer offset (bytes)
 		)-> void;
 
+        auto genCopyImageToBufferCmd(const vhn::CommandBuffer& transCmdBuf
+                , const vhn::Image& im
+                , vhn::Buffer& buf
+                , const uint32_t imW
+                , const uint32_t imH
+                , const size_t bufOff = 0
+        )-> void;
+
 		auto copyImageToBuffer(const vuh::Device& dev
 				, const vhn::Image& im
 				, vhn::Buffer& buf
