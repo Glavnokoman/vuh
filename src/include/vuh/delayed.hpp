@@ -113,7 +113,11 @@ namespace vuh {
 			if(bool(_dev)){
 				bool release = false;
 				if (success()) {
-					release = static_cast<vuh::Fence&>(*this).wait(period);
+					if (static_cast<bool>(static_cast<vuh::Fence&>(*this))) {
+						if (!static_cast<vuh::Fence&>(*this).fenFd()) {
+							release = static_cast<vuh::Fence &>(*this).wait(period);
+						}
+					}
 				} else {
 					release = true;
 				}

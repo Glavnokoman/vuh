@@ -110,7 +110,11 @@ namespace vuh {
 		/// if fenceFd is support, we can use epoll or select wait for fence complete
 		bool supportFenceFd() {
 			return _dev->supportFenceFd();
-		}		
+		}
+
+		bool fenFd() {
+            return _fenFd;
+		}
 	
 #ifdef VK_USE_PLATFORM_WIN32_KHR
         auto fenceFd(HANDLE& fd)-> vhn::Result {
