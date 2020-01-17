@@ -203,10 +203,8 @@ namespace vuh {
 			return Delayed<Copy>{array.device(), Copy::wrap(detail::Noop{})};
 		} else { // copy first to staging buffer and then async copy from staging buffer to device
 			auto stage = detail::CopyStageFromHost<T>(array.device(), src_begin, src_end);
-			return Delayed<Copy>{
-				         stage.copy_async(device_begin(stage.array), device_end(stage.array), dst_begin)
-			          , Copy::wrap(std::move(stage))
-			};
+			auto cpy = stage.copy_async(device_begin(stage.array), device_end(stage.array), dst_begin);
+			return Delayed<Copy>{std::move(cpy), Copy::wrap(std::move(stage))};
 		}
 	}
 
