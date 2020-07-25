@@ -30,7 +30,7 @@ namespace vuh {
 			/// Release the buffer resources
 			auto release() noexcept-> void {
 				if(device){
-					device->freeCommandBuffers(device->transferCmdPool(), 1, &cmd_buffer);
+					device->freeCommandBuffers(device->transferCmdPool(), cmd_buffer);
 				}
 			}
 		public: // data
