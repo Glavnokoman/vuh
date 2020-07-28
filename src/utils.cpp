@@ -33,7 +33,7 @@ namespace arr {
 		auto cmd_buf = device.transferCmdBuffer();
 		cmd_buf.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 		auto region = vk::BufferCopy(src_offset, dst_offset, size_bytes);
-		cmd_buf.copyBuffer(src, dst, 1, &region);
+		cmd_buf.copyBuffer(src, dst, region);
 		cmd_buf.end();
 		auto queue = device.transferQueue();
 		auto submit_info = vk::SubmitInfo(0, nullptr, nullptr, 1, &cmd_buf);

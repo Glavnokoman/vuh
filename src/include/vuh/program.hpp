@@ -84,7 +84,7 @@ namespace vuh {
 			/// Buffer is released from device's compute command pool.
 			auto release() noexcept-> void {
 				if(device){
-					device->freeCommandBuffers(device->computeCmdPool(), 1, &cmd_buffer);
+					device->freeCommandBuffers(device->computeCmdPool(), cmd_buffer);
 				}
 			}
 		public: // data
