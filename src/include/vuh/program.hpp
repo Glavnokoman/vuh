@@ -491,6 +491,13 @@ namespace vuh {
 		   : Base (device, code, flags)
 		{}
 
+		/// Initialize program on a device from binary SPIR-V code in plain array
+		Program(vuh::Device& device, uint32_t size, const uint32_t* code
+		        , vk::ShaderModuleCreateFlags flags={}
+		        )
+		   : Base(device, size, code, flags)
+		{}
+
 		using Base::run;
 		using Base::run_async;
 
