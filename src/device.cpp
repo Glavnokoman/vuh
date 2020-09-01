@@ -1,7 +1,7 @@
 #include <vuh/device.h>
 
 #include <cassert>
-#include <cstdint>
+#include <stdint.h>
 #include <limits>
 
 namespace {
