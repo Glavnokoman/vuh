@@ -3,19 +3,28 @@
 #include <vuh/arr/arrayUtils.h>
 
 #include <fstream>
+#include <iterator>
 
 namespace vuh {
+	struct UInt32 {
+		uint32_t v;
+
+		operator uint32_t () const {
+			return v;
+		}
+	};
+
+	std::istream & operator >> (std::istream & is, UInt32 v) {
+		return is.read(reinterpret_cast<char *>(&v.v), sizeof v.v);
+	}
+
 	/// Read binary shader file into array of uint32_t. little endian assumed.
-	/// Padded by 0s to a boundary of 4.
-	auto read_spirv(const char* filename)-> std::vector<char> {
+	auto read_spirv(const char* filename)-> std::vector<uint32_t> {
 		auto fin = std::ifstream(filename, std::ios::binary);
 		if(!fin.is_open()){
 			throw FileReadFailure(std::string("could not open file ") + filename + " for reading");
 		}
-		auto ret = std::vector<char>(std::istreambuf_iterator<char>(fin), std::istreambuf_iterator<char>());
-
-		ret.resize(4u*div_up(uint32_t(ret.size()), 4u));
-		return ret;
+		return std::vector<uint32_t>(std::istream_iterator<UInt32>(fin), std::istream_iterator<UInt32>());
 	}
 
 namespace arr {
