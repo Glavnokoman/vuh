@@ -8,7 +8,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include <array>
-#include <cstddef>
+#include <stdint.h>
 #include <tuple>
 #include <utility>
 
@@ -143,17 +143,16 @@ namespace vuh {
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
-			ProgramBase(vuh::Device& device              ///< device used to run the code
-			            , const std::vector<char>& code  ///< actual binary SPIR-V shader code
+			ProgramBase(vuh::Device& device                  ///< device used to run the code
+			            , const std::vector<uint32_t>& code  ///< actual binary SPIR-V shader code
 			            , vk::ShaderModuleCreateFlags flags={}
 			            )
-				: ProgramBase(device, uint32_t(code.size()),
-				              reinterpret_cast<const uint32_t*>(code.data()))
+				: ProgramBase(device, sizeof(uint32_t) * code.size(), code.data())
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code as plain array.
 			ProgramBase(vuh::Device& device              ///< device used to run the code
-			            , uint32_t size                  ///< size of binary shader code
+			            , size_t size                    ///< size of binary shader code
 			            , const uint32_t* code           ///< actual binary SPIR-V shader code
 			            , vk::ShaderModuleCreateFlags flags={}
 			            )
@@ -308,12 +307,12 @@ namespace vuh {
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
-			SpecsBase(Device& device, const std::vector<char>& code, vk::ShaderModuleCreateFlags f={})
+			SpecsBase(Device& device, const std::vector<uint32_t>& code, vk::ShaderModuleCreateFlags f={})
 			   : ProgramBase(device, code, f)
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code in plain array.
-			SpecsBase(Device& device, uint32_t size, const uint32_t* code, vk::ShaderModuleCreateFlags f={})
+			SpecsBase(Device& device, size_t size, const uint32_t* code, vk::ShaderModuleCreateFlags f={})
 			   : ProgramBase(device, size, code, f)
 			{}
 
@@ -344,12 +343,12 @@ namespace vuh {
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code.
-			SpecsBase(Device& device, const std::vector<char>& code, vk::ShaderModuleCreateFlags f={})
+			SpecsBase(Device& device, const std::vector<uint32_t>& code, vk::ShaderModuleCreateFlags f={})
 			   : ProgramBase(device, code, f)
 			{}
 
 			/// Construct object using given a vuh::Device a SPIR-V shader code in plain array.
-			SpecsBase(Device& device, uint32_t size, const uint32_t* code, vk::ShaderModuleCreateFlags f={})
+			SpecsBase(Device& device, size_t size, const uint32_t* code, vk::ShaderModuleCreateFlags f={})
 			   : ProgramBase(device, size, code, f)
 			{}
 
@@ -384,14 +383,14 @@ namespace vuh {
 		{}
 
 		/// Initialize program on a device from binary SPIR-V code
-		Program(vuh::Device& device, const std::vector<char>& code
+		Program(vuh::Device& device, const std::vector<uint32_t>& code
 		        , vk::ShaderModuleCreateFlags flags={}
 		        )
 		   : Base(device, code, flags)
 		{}
 
 		/// Initialize program on a device from binary SPIR-V code in plain array
-		Program(vuh::Device& device, uint32_t size, const uint32_t* code
+		Program(vuh::Device& device, size_t size, const uint32_t* code
 		        , vk::ShaderModuleCreateFlags flags={}
 		        )
 		   : Base(device, size, code, flags)
@@ -485,10 +484,17 @@ namespace vuh {
 		{}
 
 		/// Initialize program on a device from binary SPIR-V code
-		Program(vuh::Device& device, const std::vector<char>& code
+		Program(vuh::Device& device, const std::vector<uint32_t>& code
 		        , vk::ShaderModuleCreateFlags flags={}
 		        )
 		   : Base (device, code, flags)
+		{}
+
+		/// Initialize program on a device from binary SPIR-V code in plain array
+		Program(vuh::Device& device, size_t size, const uint32_t* code
+		        , vk::ShaderModuleCreateFlags flags={}
+		        )
+		   : Base(device, size, code, flags)
 		{}
 
 		using Base::run;

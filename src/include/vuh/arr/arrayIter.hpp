@@ -5,7 +5,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include <cassert>
-#include <cstdint>
+#include <stdint.h>
 
 namespace vuh {
 	/// Iterator to use in device-side copying and kernel calls.
