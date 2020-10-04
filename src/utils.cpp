@@ -6,25 +6,20 @@
 #include <iterator>
 
 namespace vuh {
-	struct UInt32 {
-		uint32_t v;
-
-		operator uint32_t () const {
-			return v;
-		}
-	};
-
-	std::istream & operator >> (std::istream & is, UInt32 v) {
-		return is.read(reinterpret_cast<char *>(&v.v), sizeof v.v);
-	}
-
+	
 	/// Read binary shader file into array of uint32_t. little endian assumed.
 	auto read_spirv(const char* filename)-> std::vector<uint32_t> {
-		auto fin = std::ifstream(filename, std::ios::binary);
+		auto fin = std::ifstream(filename, std::ios::binary | std::ios::ate);
 		if(!fin.is_open()){
-			throw FileReadFailure(std::string("could not open file ") + filename + " for reading");
+			throw std::runtime_error(std::string("failed opening file ") + filename + " for reading");
 		}
-		return std::vector<uint32_t>(std::istream_iterator<UInt32>(fin), std::istream_iterator<UInt32>());
+		const auto stream_size = unsigned(fin.tellg());
+		fin.seekg(0);
+
+		auto ret = std::vector<std::uint32_t>((stream_size + 3)/4, 0);
+		std::copy( std::istreambuf_iterator<char>(fin), std::istreambuf_iterator<char>()
+	         	  , reinterpret_cast<char*>(ret.data()));
+		return ret;
 	}
 
 namespace arr {
