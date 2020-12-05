@@ -138,6 +138,7 @@ auto to_specs( const PhysicalDevice& phys_device
 		}
 	}
 
+	return std::vector<QueueSpec>{};
 }
 } // namespace
 
