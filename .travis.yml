@@ -7,9 +7,9 @@ sudo: required
 #   except:
 #      - /dev-appveyor.*/
 
-common_sources: &all_sources
-  - ubuntu-toolchain-r-test
-  - llvm-toolchain-trusty-6.0
+# common_sources: &all_sources
+  # - ubuntu-toolchain-r-test
+  # - llvm-toolchain-trusty-6.0
 
 matrix:
   include:
