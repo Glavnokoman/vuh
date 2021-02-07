@@ -1,6 +1,8 @@
 find_package(Vulkan REQUIRED)
 
-add_library(vuh SHARED device.cpp error.cpp instance.cpp utils.cpp)
+set(vuh_BUILD_TYPE SHARED CACHE STRING "STATIC or SHARED")
+set_property(CACHE vuh_BUILD_TYPE PROPERTY STRINGS STATIC SHARED)
+add_library(vuh ${vuh_BUILD_TYPE} device.cpp error.cpp instance.cpp utils.cpp)
 target_link_libraries(vuh PUBLIC Vulkan::Vulkan)
 target_include_directories(vuh
    PUBLIC
