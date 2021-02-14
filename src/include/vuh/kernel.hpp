@@ -156,8 +156,11 @@ private: // data
 ///
 class Kernel {
 public:
-	explicit Kernel( Device& device, std::string_view source
-	               , std::string entry_point="main", VkShaderModuleCreateFlags flags={});
+	Kernel( Device& device, std::string_view source // source file name
+	      , std::string entry_point="main", VkShaderModuleCreateFlags flags={});
+
+	Kernel( Device& device, size_t byte_size, const uint32_t source[] // source code array
+	      , std::string entry_point="main", VkShaderModuleCreateFlags flags={});
 
 	~Kernel() noexcept;
 

@@ -23,8 +23,28 @@ Kernel::Kernel( Device& device
 	const auto create_info = VkShaderModuleCreateInfo {
 	                         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr
 	                         , flags
-                             , code.size()*sizeof(decltype(code)::value_type) // byte size
+	                         , code.size()*sizeof(decltype(code)::value_type) // byte size
 	                         , code.data() };
+	VUH_CHECK(vkCreateShaderModule(device, &create_info, nullptr, &_module));
+}
+
+///
+Kernel::Kernel( Device& device
+              , size_t byte_size
+              , const uint32_t source[]
+              , std::string entry_point
+              , VkShaderModuleCreateFlags flags)
+   : _entry_point(std::move(entry_point))
+   , _cmdbuf{nullptr}
+   , _cmdpool{nullptr}
+   , _pipeline{nullptr}
+   , _device{device}
+{
+	const auto create_info = VkShaderModuleCreateInfo {
+	                         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr
+	                         , flags
+	                         , byte_size
+	                         , source };
 	VUH_CHECK(vkCreateShaderModule(device, &create_info, nullptr, &_module));
 }
 
