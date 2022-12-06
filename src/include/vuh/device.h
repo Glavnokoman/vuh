@@ -45,10 +45,10 @@ namespace vuh {
 		                    , vk::PipelineCache pipe_cache
 		                    , const vk::PipelineShaderStageCreateInfo& shader_stage_info
 		                    , vk::PipelineCreateFlags flags={}
-		                    )-> vk::Pipeline;
+		                    )-> vk::ResultValue<vk::Pipeline>;
 		auto instance()-> vuh::Instance& { return _instance; }
 		auto releaseComputeCmdBuffer()-> vk::CommandBuffer;
-		
+
 	private: // helpers
 		explicit Device(vuh::Instance& instance, vk::PhysicalDevice physdevice
 		                , const std::vector<vk::QueueFamilyProperties>& families);

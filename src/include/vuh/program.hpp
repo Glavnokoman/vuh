@@ -184,7 +184,7 @@ namespace vuh {
 				o._shader = nullptr; //
 			}
 
-			/// Move assignment. Releases resources allocated for current instance before taking 
+			/// Move assignment. Releases resources allocated for current instance before taking
 			/// ownership over those of the other instance.
 			ProgramBase& operator= (ProgramBase&& o) noexcept {
 				release();
@@ -193,12 +193,12 @@ namespace vuh {
 				_dsclayout  = o._dsclayout;
 				_dscpool    = o._dscpool;
 				_dscset     = o._dscset;
-				_pipecache  = o._pipecache; 
+				_pipecache  = o._pipecache;
 				_pipelayout	= o._pipelayout;
 				_pipeline   = o._pipeline;
 				_device     = o._device;
-				_batch      = o._batch;	
-			
+				_batch      = o._batch;
+
 				o._shader = nullptr;
 				return *this;
 			}
@@ -318,7 +318,7 @@ namespace vuh {
 
 			/// Initialize the pipeline.
 			/// Specialization constants interface is defined here.
-			auto init_pipeline()-> void {
+			auto init_pipeline()-> vk::Result {
 				auto specEntries = specs2mapentries(_specs);
 				auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
 																	, sizeof(_specs), &_specs);
@@ -327,7 +327,11 @@ namespace vuh {
 				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
 																				 , vk::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", &specInfo);
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+
+				VUH_TRY(_device.createPipeline(_pipelayout, _pipecache, stageCI), pipeline);
+				_pipeline = std::move(pipeline);
+
+				return vk::Result::eSuccess;
 			}
 		protected:
 			std::tuple<Spec_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
@@ -353,12 +357,15 @@ namespace vuh {
 			{}
 
 			/// Initialize the pipeline with empty specialialization constants interface.
-			auto init_pipeline()-> void {
+			auto init_pipeline()-> vk::Result {
 				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
 																				 , vk::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", nullptr);
 
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+				VUH_TRY(_device.createPipeline(_pipelayout, _pipecache, stageCI), pipeline);
+				_pipeline = std::move(pipeline);
+
+				return vk::Result::eSuccess;
 			}
 		}; // class SpecsBase
 	} // namespace detail

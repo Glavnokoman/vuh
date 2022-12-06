@@ -3,6 +3,13 @@
 #include <stdint.h>
 #include <vector>
 
+#define VUH_TRY(expression, identifier) \
+auto maybe_##identifier = (expression); \
+if((maybe_##identifier).result != vk::Result::eSuccess) \
+	return (maybe_##identifier).result; \
+auto identifier = std::move((maybe_##identifier).value)
+
+
 namespace vuh {
 	/// Typelist. That is all about it.
 	template<class... Ts> struct typelist{};
