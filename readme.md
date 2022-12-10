@@ -1,3 +1,7 @@
+# Watch out!
+I do not have time or interest any more to further maintain or develop this.
+I will lazily review the bug-fix requests but no(t much) effort is made to maintain the code quality or style and no new releases will be made.
+
 # Vuh. A Vulkan-based GPGPU computing framework.
 [![Build Status](https://travis-ci.org/Glavnokoman/vuh.svg?branch=master)](https://travis-ci.org/Glavnokoman/vuh)
 
