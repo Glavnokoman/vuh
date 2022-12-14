@@ -45,9 +45,10 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 		using Specs = vuh::typelist<uint32_t>;
 		struct Params{uint32_t size; float a;};
 		auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
-		auto fence_p = program.grid(tile_size/grid_x).spec(grid_x)
+
+		VUH_TRY_TEST(program.grid(tile_size/grid_x).spec(grid_x)
 		                      .run_async({tile_size, a}, vuh::array_view(d_y, 0, tile_size)
-		                                               , vuh::array_view(d_x, 0, tile_size));
+		                                               , vuh::array_view(d_x, 0, tile_size)), fence_p, "processing");
 		fence_cpy = vuh::copy_async(begin(y) + tile_size, end(y), device_begin(d_y) + tile_size);
 		fence_cpx = vuh::copy_async(begin(x) + tile_size, end(x), device_begin(d_x) + tile_size);
 
@@ -57,8 +58,9 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 		                                       , begin(y));
 		fence_cpy.wait();
 		fence_cpx.wait();
-		fence_p = program.run_async({tile_size, a}, vuh::array_view(d_y, tile_size, arr_size)
-		                                          , vuh::array_view(d_x, tile_size, arr_size));
+		VUH_TRY_TEST(program.run_async({tile_size, a}, vuh::array_view(d_y, tile_size, arr_size)
+		                                          , vuh::array_view(d_x, tile_size, arr_size)), _fence_p, "?");
+		fence_p = std::move(_fence_p);
 
 		// wait for everything to complete
 		fence_p.wait();
@@ -91,8 +93,8 @@ TEST_CASE("data transfer and computation interleaved. sync host side.", "[correc
 		{ // phase 3. copy back first result tile, run kernel on second tiles
 			auto f_y1 = vuh::copy_async(device_begin(d_y), device_begin(d_y) + tile_size, begin(y));
 
-			program.run_async({tile_size, a}, vuh::array_view(d_y, tile_size, arr_size)
-			                                , vuh::array_view(d_x, tile_size, arr_size));
+			REQUIRE(!program.run_async({tile_size, a}, vuh::array_view(d_y, tile_size, arr_size)
+			                                , vuh::array_view(d_x, tile_size, arr_size)).is_error());
 			auto f_y2 = vuh::copy_async(device_begin(d_y) + tile_size, device_end(d_y), begin(y) + tile_size);
 			f_y1.wait();
 		}

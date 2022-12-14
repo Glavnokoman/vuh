@@ -32,8 +32,11 @@ auto main()-> int {
 	using Specs = vuh::typelist<uint32_t, uint32_t>;   // width, height of a workgroup
 	struct Params{uint32_t width; uint32_t height;};   // width, height of an image
 	auto program = vuh::Program<Specs, Params>(device, "mandelbrot.spv");
-	program.grid(vuh::div_up(width, 32), vuh::div_up(height, 32))
+	const auto result = program.grid(vuh::div_up(width, 32), vuh::div_up(height, 32))
           .spec(32, 32)({width, height}, mandel);   // run the kernel
+
+   if(result.is_error())
+      return (int)result.error();
 
    write_ppm("mandelebrot.ppm", mandel.data(), width, height);
 

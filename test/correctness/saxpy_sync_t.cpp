@@ -30,7 +30,7 @@ TEST_CASE("saxpy_once_1D", "[program][correctness]"){
 		using Specs = vuh::typelist<uint32_t>;
 		struct Params{uint32_t size; float a;};
 		auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv"); // define the kernel by linking interface and spir-v implementation
-		program.grid(128/64).spec(64)({128, a}, d_y, d_x); // run once, wait for completion
+		REQUIRE(!program.grid(128/64).spec(64)({128, a}, d_y, d_x).is_error()); // run once, wait for completion
 		d_y.toHost(begin(y));                              // copy data back to host
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5).verbose());
@@ -38,7 +38,7 @@ TEST_CASE("saxpy_once_1D", "[program][correctness]"){
 	SECTION("no specialization constants"){
 		struct Params{uint32_t size; float a;};
 		auto program = vuh::Program<vuh::typelist<>, Params>(device, "../shaders/saxpy_nospec.spv");
-		program.grid(2)({128, a}, d_y, d_x);
+		REQUIRE(!program.grid(2)({128, a}, d_y, d_x).is_error());
 		d_y.toHost(begin(y));
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5));
@@ -46,14 +46,14 @@ TEST_CASE("saxpy_once_1D", "[program][correctness]"){
 	SECTION("no push constants"){
 		using Specs = vuh::typelist<uint32_t>;
 		auto program = vuh::Program<Specs>(device, "../shaders/saxpy_nopush.spv");
-		program.grid(2).spec(64)(d_y, d_x);
+		REQUIRE(!program.grid(2).spec(64)(d_y, d_x).is_error());
 		d_y.toHost(begin(y));
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5));
 	}
 	SECTION("no push or specialization constants"){
 		auto program = vuh::Program<>(device, "../shaders/saxpy_noth.spv");
-		program.grid(2)(d_y, d_x);
+		REQUIRE(!program.grid(2)(d_y, d_x).is_error());
 		d_y.toHost(begin(y));
 
 		REQUIRE(y == approx(out_ref).eps(1.e-5));
@@ -81,9 +81,9 @@ TEST_CASE("saxpy_repeated_1D", "[correctness]"){
 		using Specs = vuh::typelist<uint32_t>;
 		struct Params{uint32_t size; float a;};
 		auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv");
-		program.grid(128/64)                // set number of wrokgroups to run
+		REQUIRE(!program.grid(128/64)                // set number of wrokgroups to run
 		       .spec(64)                    // set the specialization constants
-		       .bind({128, a}, d_y, d_x);   // bind arrays and non-array parameters
+		       .bind({128, a}, d_y, d_x).is_error());   // bind arrays and non-array parameters
 		for(size_t i = 0; i < n_repeat; ++i){
 			program.run();
 		}
@@ -97,7 +97,7 @@ TEST_CASE("saxpy_repeated_1D", "[correctness]"){
 		auto program = vuh::Program<Specs, Params>(device, "../shaders/saxpy.spv");
 		program.grid(128/64).spec(64);
 		for(size_t i = 0; i < n_repeat; ++i){
-			program({128, a}, d_y, d_x);
+			REQUIRE(!program({128, a}, d_y, d_x).is_error());
 		}
 		d_y.toHost(begin(y));
 

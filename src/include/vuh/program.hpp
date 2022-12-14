@@ -430,7 +430,7 @@ namespace vuh {
 			if(!Base::_pipeline){ // handle multiple rebind
 				init_pipelayout(args...);
 				Base::alloc_descriptor_sets(args...);
-				Base::init_pipeline();
+				VUH_TRY_VOID(Base::init_pipeline())
 			}
 			create_command_buffer(p, args...);
 			return *this;
@@ -447,18 +447,19 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-			bind(params, args...);
 		auto operator()(const Params& params, Arrs&&... args)-> Result<void> {
 			VUH_TRY_VOID(bind(params, args...))
 			Base::run();
+
+			return vk::Result::eSuccess;
 		}
 
 		/// Initiate execution of the program with provided parameters and immidiately return.
 		/// @return Delayed<Compute> object for synchronization with host.
 		/// @pre grid dimensions should be specified before callind this.
 		template<class... Arrs>
-			bind(params, args...);
 		auto run_async(const Params& params, Arrs&&... args)-> Result<Delayed<detail::Compute>> {
+			VUH_TRY_VOID(bind(params, args...));
 			return Base::run_async();
 		}
 	private: // helpers
@@ -532,7 +533,7 @@ namespace vuh {
 			if(!Base::_pipeline){ // handle multiple rebind
 				Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
 				Base::alloc_descriptor_sets(args...);
-				Base::init_pipeline();
+				VUH_TRY_VOID(Base::init_pipeline());
 			}
 			Base::command_buffer_begin(args...);
 			Base::command_buffer_end();
@@ -542,17 +543,19 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-			bind(args...);
 		auto operator()(Arrs&&... args)-> Result<void> {
+			VUH_TRY_VOID(bind(args...));
 			Base::run();
+
+			return vk::Result::eSuccess;
 		}
 
 		/// Initiate execution of the program with provided parameters and immidiately return.
 		/// @return Delayed<Compute> object for synchronization with host.
 		/// @pre grid dimensions should be specified before callind this.
 		template<class... Arrs>
-			bind(args...);
 		auto run_async(Arrs&&... args)-> Result<vuh::Delayed<detail::Compute>> {
+			VUH_TRY_VOID(bind(args...));
 			return Base::run_async();
 		}
 	}; // class Program
