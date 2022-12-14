@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vuh/result.hpp"
 #include <vulkan/vulkan.hpp>
 
 #include <vector>
@@ -45,7 +46,7 @@ namespace vuh {
 		                    , vk::PipelineCache pipe_cache
 		                    , const vk::PipelineShaderStageCreateInfo& shader_stage_info
 		                    , vk::PipelineCreateFlags flags={}
-		                    )-> vk::ResultValue<vk::Pipeline>;
+		                    )-> Result<vk::Pipeline>;
 		auto instance()-> vuh::Instance& { return _instance; }
 		auto releaseComputeCmdBuffer()-> vk::CommandBuffer;
 

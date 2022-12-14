@@ -4,6 +4,7 @@
 #include "device.h"
 #include "utils.h"
 #include "delayed.hpp"
+#include "result.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -318,7 +319,7 @@ namespace vuh {
 
 			/// Initialize the pipeline.
 			/// Specialization constants interface is defined here.
-			auto init_pipeline()-> vk::Result {
+			auto init_pipeline()-> Result<void> {
 				auto specEntries = specs2mapentries(_specs);
 				auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
 																	, sizeof(_specs), &_specs);
@@ -357,7 +358,7 @@ namespace vuh {
 			{}
 
 			/// Initialize the pipeline with empty specialialization constants interface.
-			auto init_pipeline()-> vk::Result {
+			[[nodiscard]] auto init_pipeline()-> Result<void> {
 				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
 																				 , vk::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", nullptr);
@@ -425,7 +426,7 @@ namespace vuh {
 		/// @pre Grid dimensions and specialization constants (if applicable)
 		/// should be specified before calling this.
 		template<class... Arrs>
-		auto bind(const Params& p, Arrs&&... args)-> const Program& {
+		auto bind(const Params& p, Arrs&&... args)-> Result<const Program&> {
 			if(!Base::_pipeline){ // handle multiple rebind
 				init_pipelayout(args...);
 				Base::alloc_descriptor_sets(args...);
@@ -446,8 +447,9 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-		auto operator()(const Params& params, Arrs&&... args)-> void {
 			bind(params, args...);
+		auto operator()(const Params& params, Arrs&&... args)-> Result<void> {
+			VUH_TRY_VOID(bind(params, args...))
 			Base::run();
 		}
 
@@ -455,8 +457,8 @@ namespace vuh {
 		/// @return Delayed<Compute> object for synchronization with host.
 		/// @pre grid dimensions should be specified before callind this.
 		template<class... Arrs>
-		auto run_async(const Params& params, Arrs&&... args)-> vuh::Delayed<detail::Compute> {
 			bind(params, args...);
+		auto run_async(const Params& params, Arrs&&... args)-> Result<Delayed<detail::Compute>> {
 			return Base::run_async();
 		}
 	private: // helpers
@@ -526,7 +528,7 @@ namespace vuh {
 		/// @pre Grid dimensions and specialization constants (if applicable)
 		/// should be specified before calling this.
 		template<class... Arrs>
-		auto bind(Arrs&&... args)-> const Program& {
+		auto bind(Arrs&&... args)-> Result<const Program&> {
 			if(!Base::_pipeline){ // handle multiple rebind
 				Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
 				Base::alloc_descriptor_sets(args...);
@@ -540,8 +542,8 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-		auto operator()(Arrs&&... args)-> void {
 			bind(args...);
+		auto operator()(Arrs&&... args)-> Result<void> {
 			Base::run();
 		}
 
@@ -549,8 +551,8 @@ namespace vuh {
 		/// @return Delayed<Compute> object for synchronization with host.
 		/// @pre grid dimensions should be specified before callind this.
 		template<class... Arrs>
-		auto run_async(Arrs&&... args)-> vuh::Delayed<detail::Compute> {
 			bind(args...);
+		auto run_async(Arrs&&... args)-> Result<vuh::Delayed<detail::Compute>> {
 			return Base::run_async();
 		}
 	}; // class Program

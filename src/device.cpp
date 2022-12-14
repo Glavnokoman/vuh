@@ -214,7 +214,7 @@ namespace vuh {
 	                            , vk::PipelineCache pipe_cache
 	                            , const vk::PipelineShaderStageCreateInfo& shader_stage_info
 	                            , vk::PipelineCreateFlags flags
-	                            )-> vk::ResultValue<vk::Pipeline>
+	                            )-> Result<vk::Pipeline>
 	{
 		auto pipelineCI = vk::ComputePipelineCreateInfo(flags
 																		, shader_stage_info, pipe_layout);
