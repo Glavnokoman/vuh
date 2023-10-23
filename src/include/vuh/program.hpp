@@ -4,6 +4,7 @@
 #include "device.h"
 #include "utils.h"
 #include "delayed.hpp"
+#include "result.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -184,7 +185,7 @@ namespace vuh {
 				o._shader = nullptr; //
 			}
 
-			/// Move assignment. Releases resources allocated for current instance before taking 
+			/// Move assignment. Releases resources allocated for current instance before taking
 			/// ownership over those of the other instance.
 			ProgramBase& operator= (ProgramBase&& o) noexcept {
 				release();
@@ -193,12 +194,12 @@ namespace vuh {
 				_dsclayout  = o._dsclayout;
 				_dscpool    = o._dscpool;
 				_dscset     = o._dscset;
-				_pipecache  = o._pipecache; 
+				_pipecache  = o._pipecache;
 				_pipelayout	= o._pipelayout;
 				_pipeline   = o._pipeline;
 				_device     = o._device;
-				_batch      = o._batch;	
-			
+				_batch      = o._batch;
+
 				o._shader = nullptr;
 				return *this;
 			}
@@ -318,7 +319,7 @@ namespace vuh {
 
 			/// Initialize the pipeline.
 			/// Specialization constants interface is defined here.
-			auto init_pipeline()-> void {
+			auto init_pipeline()-> Result<void> {
 				auto specEntries = specs2mapentries(_specs);
 				auto specInfo = vk::SpecializationInfo(uint32_t(specEntries.size()), specEntries.data()
 																	, sizeof(_specs), &_specs);
@@ -327,7 +328,11 @@ namespace vuh {
 				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
 																				 , vk::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", &specInfo);
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+
+				VUH_TRY(_device.createPipeline(_pipelayout, _pipecache, stageCI), pipeline);
+				_pipeline = std::move(pipeline);
+
+				return vk::Result::eSuccess;
 			}
 		protected:
 			std::tuple<Spec_Ts...> _specs; ///< hold the state of specialization constants between call to specs() and actual pipeline creation
@@ -353,12 +358,15 @@ namespace vuh {
 			{}
 
 			/// Initialize the pipeline with empty specialialization constants interface.
-			auto init_pipeline()-> void {
+			[[nodiscard]] auto init_pipeline()-> Result<void> {
 				auto stageCI = vk::PipelineShaderStageCreateInfo(vk::PipelineShaderStageCreateFlags()
 																				 , vk::ShaderStageFlagBits::eCompute
 																				 , _shader, "main", nullptr);
 
-				_pipeline = _device.createPipeline(_pipelayout, _pipecache, stageCI);
+				VUH_TRY(_device.createPipeline(_pipelayout, _pipecache, stageCI), pipeline);
+				_pipeline = std::move(pipeline);
+
+				return vk::Result::eSuccess;
 			}
 		}; // class SpecsBase
 	} // namespace detail
@@ -418,11 +426,11 @@ namespace vuh {
 		/// @pre Grid dimensions and specialization constants (if applicable)
 		/// should be specified before calling this.
 		template<class... Arrs>
-		auto bind(const Params& p, Arrs&&... args)-> const Program& {
+		auto bind(const Params& p, Arrs&&... args)-> Result<const Program&> {
 			if(!Base::_pipeline){ // handle multiple rebind
 				init_pipelayout(args...);
 				Base::alloc_descriptor_sets(args...);
-				Base::init_pipeline();
+				VUH_TRY_VOID(Base::init_pipeline())
 			}
 			create_command_buffer(p, args...);
 			return *this;
@@ -439,17 +447,19 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-		auto operator()(const Params& params, Arrs&&... args)-> void {
-			bind(params, args...);
+		auto operator()(const Params& params, Arrs&&... args)-> Result<void> {
+			VUH_TRY_VOID(bind(params, args...))
 			Base::run();
+
+			return vk::Result::eSuccess;
 		}
 
 		/// Initiate execution of the program with provided parameters and immidiately return.
 		/// @return Delayed<Compute> object for synchronization with host.
 		/// @pre grid dimensions should be specified before callind this.
 		template<class... Arrs>
-		auto run_async(const Params& params, Arrs&&... args)-> vuh::Delayed<detail::Compute> {
-			bind(params, args...);
+		auto run_async(const Params& params, Arrs&&... args)-> Result<Delayed<detail::Compute>> {
+			VUH_TRY_VOID(bind(params, args...));
 			return Base::run_async();
 		}
 	private: // helpers
@@ -519,11 +529,11 @@ namespace vuh {
 		/// @pre Grid dimensions and specialization constants (if applicable)
 		/// should be specified before calling this.
 		template<class... Arrs>
-		auto bind(Arrs&&... args)-> const Program& {
+		auto bind(Arrs&&... args)-> Result<const Program&> {
 			if(!Base::_pipeline){ // handle multiple rebind
 				Base::init_pipelayout(std::array<vk::PushConstantRange, 0>{}, args...);
 				Base::alloc_descriptor_sets(args...);
-				Base::init_pipeline();
+				VUH_TRY_VOID(Base::init_pipeline());
 			}
 			Base::command_buffer_begin(args...);
 			Base::command_buffer_end();
@@ -533,17 +543,19 @@ namespace vuh {
 		/// Run program with provided parameters.
 		/// @pre grid dimensions should be specified before calling this.
 		template<class... Arrs>
-		auto operator()(Arrs&&... args)-> void {
-			bind(args...);
+		auto operator()(Arrs&&... args)-> Result<void> {
+			VUH_TRY_VOID(bind(args...));
 			Base::run();
+
+			return vk::Result::eSuccess;
 		}
 
 		/// Initiate execution of the program with provided parameters and immidiately return.
 		/// @return Delayed<Compute> object for synchronization with host.
 		/// @pre grid dimensions should be specified before callind this.
 		template<class... Arrs>
-		auto run_async(Arrs&&... args)-> vuh::Delayed<detail::Compute> {
-			bind(args...);
+		auto run_async(Arrs&&... args)-> Result<vuh::Delayed<detail::Compute>> {
+			VUH_TRY_VOID(bind(args...));
 			return Base::run_async();
 		}
 	}; // class Program

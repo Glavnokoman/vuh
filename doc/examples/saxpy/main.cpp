@@ -16,7 +16,10 @@ auto main()-> int {
 	using Specs = vuh::typelist<uint32_t>;
 	struct Params{uint32_t size; float a;};
 	auto program = vuh::Program<Specs, Params>(device, "saxpy.spv"); // define the kernel by linking interface and spir-v implementation
-	program.grid(128/64).spec(64)({128, a}, d_y, d_x); // run once, wait for completion
+	const auto result = program.grid(128/64).spec(64)({128, a}, d_y, d_x); // run once, wait for completion
+	if(result.is_error())
+		return (int)result.error();
+
 	d_y.toHost(begin(y));                              // copy data back to host
 
    return 0;

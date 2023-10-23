@@ -5,6 +5,7 @@
 #include <vuh/resource.hpp>
 
 #include <cassert>
+#include <memory>
 
 namespace vuh {
 	namespace detail{

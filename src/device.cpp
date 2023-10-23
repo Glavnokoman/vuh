@@ -214,12 +214,11 @@ namespace vuh {
 	                            , vk::PipelineCache pipe_cache
 	                            , const vk::PipelineShaderStageCreateInfo& shader_stage_info
 	                            , vk::PipelineCreateFlags flags
-	                            )-> vk::Pipeline
+	                            )-> Result<vk::Pipeline>
 	{
 		auto pipelineCI = vk::ComputePipelineCreateInfo(flags
 																		, shader_stage_info, pipe_layout);
 		return createComputePipeline(pipe_cache, pipelineCI, nullptr);
-		
 	}
 
 	/// Detach the current compute command buffer for sync operations and create the new one.
